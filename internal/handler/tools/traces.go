@@ -18,7 +18,7 @@ func (h *Handler) RegisterTracesHandlers(s *server.MCPServer) {
 	h.logger.Debug("Registering traces handlers")
 
 	// aggregate_traces: compute statistics over traces with GROUP BY
-	aggregateTracesTool := mcp.NewTool("signoz_aggregate_traces",
+	aggregateTracesTool := mcp.NewTool("bylonis_aggregate_traces",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -46,7 +46,7 @@ func (h *Handler) RegisterTracesHandlers(s *server.MCPServer) {
 
 	addTool(s, aggregateTracesTool, h.handleAggregateTraces)
 
-	searchTracesTool := mcp.NewTool("signoz_search_traces",
+	searchTracesTool := mcp.NewTool("bylonis_search_traces",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -68,7 +68,7 @@ func (h *Handler) RegisterTracesHandlers(s *server.MCPServer) {
 
 	addTool(s, searchTracesTool, h.handleSearchTraces)
 
-	getTraceDetailsTool := mcp.NewTool("signoz_get_trace_details",
+	getTraceDetailsTool := mcp.NewTool("bylonis_get_trace_details",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -107,7 +107,7 @@ func (h *Handler) handleAggregateTraces(ctx context.Context, req mcp.CallToolReq
 		return mcp.NewToolResultError("failed to marshal query payload: " + err.Error()), nil
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_aggregate_traces",
+	h.logger.DebugContext(ctx, "Tool called: bylonis_aggregate_traces",
 		slog.String("aggregation", reqData.AggregationExpr),
 		slog.String("filter", reqData.FilterExpression))
 
@@ -143,7 +143,7 @@ func (h *Handler) handleSearchTraces(ctx context.Context, req mcp.CallToolReques
 		return mcp.NewToolResultError("failed to marshal query payload: " + err.Error()), nil
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_search_traces",
+	h.logger.DebugContext(ctx, "Tool called: bylonis_search_traces",
 		slog.String("filter", reqData.FilterExpression))
 
 	client, err := h.GetClient(ctx)
@@ -182,7 +182,7 @@ func (h *Handler) handleGetTraceDetails(ctx context.Context, req mcp.CallToolReq
 		return mcp.NewToolResultError(fmt.Sprintf(`Internal error: Invalid "end" timestamp format: %s. Use "timeRange" parameter instead (e.g., "1h", "24h")`, end)), nil
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_get_trace_details", slog.String("traceId", traceID), slog.Bool("includeSpans", includeSpans), slog.String("start", start), slog.String("end", end))
+	h.logger.DebugContext(ctx, "Tool called: bylonis_get_trace_details", slog.String("traceId", traceID), slog.Bool("includeSpans", includeSpans), slog.String("start", start), slog.String("end", end))
 	client, err := h.GetClient(ctx)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil

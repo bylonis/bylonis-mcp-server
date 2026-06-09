@@ -18,7 +18,7 @@ func TestHandleSearchTraces_BasicQuery(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_search_traces", map[string]any{
+	req := makeToolRequest("bylonis_search_traces", map[string]any{
 		"service":   "checkout-svc",
 		"timeRange": "1h",
 	})
@@ -48,7 +48,7 @@ func TestHandleSearchTraces_ErrorAndDurationFilters(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_search_traces", map[string]any{
+	req := makeToolRequest("bylonis_search_traces", map[string]any{
 		"error":       "true",
 		"minDuration": "500000000",
 		"maxDuration": "2000000000",
@@ -76,7 +76,7 @@ func TestHandleSearchTraces_OperationFilter(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_search_traces", map[string]any{
+	req := makeToolRequest("bylonis_search_traces", map[string]any{
 		"service":   "api-gw",
 		"operation": "GET /users",
 		"timeRange": "1h",
@@ -103,7 +103,7 @@ func TestHandleAggregateTraces_CountByService(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_aggregate_traces", map[string]any{
+	req := makeToolRequest("bylonis_aggregate_traces", map[string]any{
 		"aggregation": "count",
 		"groupBy":     "service.name",
 		"error":       "true",
@@ -131,7 +131,7 @@ func TestHandleAggregateTraces_P99Latency(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_aggregate_traces", map[string]any{
+	req := makeToolRequest("bylonis_aggregate_traces", map[string]any{
 		"aggregation": "p99",
 		"aggregateOn": "durationNano",
 		"service":     "checkout-svc",
@@ -153,7 +153,7 @@ func TestHandleAggregateTraces_P99Latency(t *testing.T) {
 func TestHandleAggregateTraces_MissingAggregation(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_aggregate_traces", map[string]any{
+	req := makeToolRequest("bylonis_aggregate_traces", map[string]any{
 		"timeRange": "1h",
 	})
 
@@ -169,7 +169,7 @@ func TestHandleAggregateTraces_MissingAggregation(t *testing.T) {
 func TestHandleAggregateTraces_InvalidAggregation(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_aggregate_traces", map[string]any{
+	req := makeToolRequest("bylonis_aggregate_traces", map[string]any{
 		"aggregation": "invalid_agg",
 		"timeRange":   "1h",
 	})
@@ -192,7 +192,7 @@ func TestHandleAggregateTraces_TimeSeries(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_aggregate_traces", map[string]any{
+	req := makeToolRequest("bylonis_aggregate_traces", map[string]any{
 		"aggregation": "count",
 		"requestType": "time_series",
 		"timeRange":   "24h",
@@ -221,7 +221,7 @@ func TestHandleGetTraceDetails(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_get_trace_details", map[string]any{
+	req := makeToolRequest("bylonis_get_trace_details", map[string]any{
 		"traceId":      "abc123",
 		"includeSpans": "true",
 		"timeRange":    "1h",
@@ -253,7 +253,7 @@ func TestHandleGetTraceDetails_ExplicitStartEndOverrideTimeRange(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_get_trace_details", map[string]any{
+	req := makeToolRequest("bylonis_get_trace_details", map[string]any{
 		"traceId":      "abc123",
 		"includeSpans": "true",
 		"timeRange":    "1h",
@@ -279,7 +279,7 @@ func TestHandleGetTraceDetails_ExplicitStartEndOverrideTimeRange(t *testing.T) {
 func TestHandleGetTraceDetails_EmptyTraceId(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_get_trace_details", map[string]any{
+	req := makeToolRequest("bylonis_get_trace_details", map[string]any{
 		"traceId": "",
 	})
 

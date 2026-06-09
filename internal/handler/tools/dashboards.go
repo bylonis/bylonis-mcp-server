@@ -21,7 +21,7 @@ import (
 	"github.com/SigNoz/signoz-mcp-server/pkg/types"
 )
 
-// Template fetch configuration for signoz_import_dashboard.
+// Template fetch configuration for bylonis_import_dashboard.
 // templateRepoBaseURLVar is a var (not const) so tests can point it at a
 // local httptest server. Templates are fetched from the SigNoz/dashboards
 // `main` branch — we deliberately do not pin a SHA, so new upstream
@@ -39,7 +39,7 @@ var (
 func (h *Handler) RegisterDashboardHandlers(s *server.MCPServer) {
 	h.logger.Debug("Registering dashboard handlers")
 
-	tool := mcp.NewTool("signoz_list_dashboards",
+	tool := mcp.NewTool("bylonis_list_dashboards",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -50,7 +50,7 @@ func (h *Handler) RegisterDashboardHandlers(s *server.MCPServer) {
 
 	addTool(s, tool, h.handleListDashboards)
 
-	getDashboardTool := mcp.NewTool("signoz_get_dashboard",
+	getDashboardTool := mcp.NewTool("bylonis_get_dashboard",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -61,7 +61,7 @@ func (h *Handler) RegisterDashboardHandlers(s *server.MCPServer) {
 	addTool(s, getDashboardTool, h.handleGetDashboard)
 
 	createDashboardTool := mcp.NewTool(
-		"signoz_create_dashboard",
+		"bylonis_create_dashboard",
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithDescription(
 			"Creates a new monitoring dashboard based on the provided title, layout, and widget configuration. "+
@@ -84,7 +84,7 @@ func (h *Handler) RegisterDashboardHandlers(s *server.MCPServer) {
 	addTool(s, createDashboardTool, h.handleCreateDashboard)
 
 	updateDashboardTool := mcp.NewTool(
-		"signoz_update_dashboard",
+		"bylonis_update_dashboard",
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithDescription(
 			"Update an existing dashboard by supplying its UUID along with a fully assembled dashboard JSON object.\n\n"+
@@ -108,25 +108,25 @@ func (h *Handler) RegisterDashboardHandlers(s *server.MCPServer) {
 
 	addTool(s, updateDashboardTool, h.handleUpdateDashboard)
 
-	deleteDashboardTool := mcp.NewTool("signoz_delete_dashboard",
+	deleteDashboardTool := mcp.NewTool("bylonis_delete_dashboard",
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
-		mcp.WithDescription("Delete a dashboard by its UUID. This action is irreversible. Use signoz_list_dashboards to find dashboard UUIDs."),
+		mcp.WithDescription("Delete a dashboard by its UUID. This action is irreversible. Use bylonis_list_dashboards to find dashboard UUIDs."),
 		mcp.WithString("uuid", mcp.Required(), mcp.Description("Dashboard UUID to delete")),
 	)
 
 	addTool(s, deleteDashboardTool, h.handleDeleteDashboard)
 
 	importDashboardTool := mcp.NewTool(
-		"signoz_import_dashboard",
+		"bylonis_import_dashboard",
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithDescription(
 			"Create a new SigNoz dashboard from a curated template hosted in the SigNoz/dashboards GitHub repo. "+
 				"Takes a single 'path' argument (e.g. 'hostmetrics/hostmetrics.json' or 'postgresql/postgresql.json') "+
 				"that points to a template file on the main branch. The server fetches the JSON, validates it, "+
 				"and creates the dashboard in one call — the client does not need to inline the template body. "+
-				"To discover the available paths, call signoz_list_dashboard_templates first and let the model pick the best match. "+
-				"For custom dashboards, use signoz_create_dashboard.",
+				"To discover the available paths, call bylonis_list_dashboard_templates first and let the model pick the best match. "+
+				"For custom dashboards, use bylonis_create_dashboard.",
 		),
 		mcp.WithString("path", mcp.Required(), mcp.Description("Template path within the SigNoz/dashboards repo, e.g. 'hostmetrics/hostmetrics.json'.")),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -135,13 +135,13 @@ func (h *Handler) RegisterDashboardHandlers(s *server.MCPServer) {
 	addTool(s, importDashboardTool, h.handleImportDashboard)
 
 	listTemplatesTool := mcp.NewTool(
-		"signoz_list_dashboard_templates",
+		"bylonis_list_dashboard_templates",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithDescription(
 			"List all curated SigNoz dashboard templates bundled with this server. "+
 				"Returns the full catalog as a JSON array — each entry includes 'id', 'title', 'path', 'description', 'category', and 'keywords'. "+
-				"Use this to discover which template fits the user's intent, then pass the chosen 'path' to signoz_import_dashboard. "+
+				"Use this to discover which template fits the user's intent, then pass the chosen 'path' to bylonis_import_dashboard. "+
 				"The catalog is small enough to read in full; let the model decide the best match rather than relying on keyword scoring.",
 		),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -154,7 +154,7 @@ func (h *Handler) RegisterDashboardHandlers(s *server.MCPServer) {
 }
 
 func (h *Handler) handleListDashboards(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	h.logger.DebugContext(ctx, "Tool called: signoz_list_dashboards")
+	h.logger.DebugContext(ctx, "Tool called: bylonis_list_dashboards")
 	limit, offset := paginate.ParseParams(req.Params.Arguments)
 
 	client, err := h.GetClient(ctx)
@@ -199,10 +199,10 @@ func (h *Handler) handleGetDashboard(ctx context.Context, req mcp.CallToolReques
 	}
 	if uuid == "" {
 		h.logger.WarnContext(ctx, "Empty uuid parameter")
-		return mcp.NewToolResultError(`Parameter validation failed: "uuid" cannot be empty. Provide a valid dashboard UUID. Use signoz_list_dashboards tool to see available dashboards.`), nil
+		return mcp.NewToolResultError(`Parameter validation failed: "uuid" cannot be empty. Provide a valid dashboard UUID. Use bylonis_list_dashboards tool to see available dashboards.`), nil
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_get_dashboard", slog.String("uuid", uuid))
+	h.logger.DebugContext(ctx, "Tool called: bylonis_get_dashboard", slog.String("uuid", uuid))
 	client, err := h.GetClient(ctx)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
@@ -231,7 +231,7 @@ func (h *Handler) handleCreateDashboard(ctx context.Context, req mcp.CallToolReq
 		return mcp.NewToolResultError(fmt.Sprintf("Dashboard validation error: %s", err.Error())), nil
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_create_dashboard")
+	h.logger.DebugContext(ctx, "Tool called: bylonis_create_dashboard")
 	client, err := h.GetClient(ctx)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
@@ -253,14 +253,14 @@ func (h *Handler) handleImportDashboard(ctx context.Context, req mcp.CallToolReq
 	}
 	path, ok := args["path"].(string)
 	if !ok || strings.TrimSpace(path) == "" {
-		return mcp.NewToolResultError(`Parameter validation failed: "path" must be a non-empty string, e.g. "hostmetrics/hostmetrics.json". Use signoz_list_dashboard_templates to discover available paths.`), nil
+		return mcp.NewToolResultError(`Parameter validation failed: "path" must be a non-empty string, e.g. "hostmetrics/hostmetrics.json". Use bylonis_list_dashboard_templates to discover available paths.`), nil
 	}
 	path = strings.TrimSpace(path)
 	if strings.Contains(path, "..") || strings.HasPrefix(path, "/") || strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
 		return mcp.NewToolResultError(`Parameter validation failed: "path" must be a relative template path within the SigNoz/dashboards repo (e.g. "hostmetrics/hostmetrics.json"), not an absolute path or URL.`), nil
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_import_dashboard", slog.String("path", path))
+	h.logger.DebugContext(ctx, "Tool called: bylonis_import_dashboard", slog.String("path", path))
 
 	body, err := fetchTemplate(ctx, path)
 	if err != nil {
@@ -328,7 +328,7 @@ func fetchTemplate(ctx context.Context, path string) ([]byte, error) {
 }
 
 func (h *Handler) handleListDashboardTemplates(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	h.logger.DebugContext(ctx, "Tool called: signoz_list_dashboard_templates")
+	h.logger.DebugContext(ctx, "Tool called: bylonis_list_dashboard_templates")
 
 	entries := listDashboardTemplates()
 	body, err := json.Marshal(entries)
@@ -366,7 +366,7 @@ func (h *Handler) handleUpdateDashboard(ctx context.Context, req mcp.CallToolReq
 		return mcp.NewToolResultError(fmt.Sprintf("Dashboard validation error: %s", err.Error())), nil
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_update_dashboard", slog.String("uuid", uuid))
+	h.logger.DebugContext(ctx, "Tool called: bylonis_update_dashboard", slog.String("uuid", uuid))
 	client, err := h.GetClient(ctx)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
@@ -389,10 +389,10 @@ func (h *Handler) handleDeleteDashboard(ctx context.Context, req mcp.CallToolReq
 	}
 	if uuid == "" {
 		h.logger.WarnContext(ctx, "Empty uuid parameter")
-		return mcp.NewToolResultError(`Parameter validation failed: "uuid" cannot be empty. Provide a valid dashboard UUID. Use signoz_list_dashboards tool to see available dashboards.`), nil
+		return mcp.NewToolResultError(`Parameter validation failed: "uuid" cannot be empty. Provide a valid dashboard UUID. Use bylonis_list_dashboards tool to see available dashboards.`), nil
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_delete_dashboard", slog.String("uuid", uuid))
+	h.logger.DebugContext(ctx, "Tool called: bylonis_delete_dashboard", slog.String("uuid", uuid))
 	client, err := h.GetClient(ctx)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil

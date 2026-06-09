@@ -296,7 +296,7 @@ func (m *MCPServer) Run(ctx context.Context) error {
 	// recovery converts it to an error that bubbles back to loggingMiddleware
 	// via the normal return path, so mcp.tool.calls{is_error=true} and the
 	// codes.Error span status actually get recorded.
-	s := server.NewMCPServer("SigNozMCP", version.Version,
+	s := server.NewMCPServer("BylonisMCP", version.Version,
 		server.WithLogging(),
 		server.WithToolCapabilities(false),
 		server.WithInstructions(instructions.ServerInstructions),
@@ -306,7 +306,7 @@ func (m *MCPServer) Run(ctx context.Context) error {
 	)
 
 	m.logger.InfoContext(ctx, "Starting SigNoz MCP Server",
-		slog.String("server_name", "SigNozMCPServer"),
+		slog.String("server_name", "BylonisMCPServer"),
 		slog.String("transport_mode", m.config.TransportMode))
 
 	// Short-circuit if shutdown already signaled. The async docs-index build

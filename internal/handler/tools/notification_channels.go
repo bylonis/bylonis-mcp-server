@@ -26,7 +26,7 @@ var validChannelTypes = map[string]bool{
 func (h *Handler) RegisterNotificationChannelHandlers(s *server.MCPServer) {
 	h.logger.Debug("Registering notification channel handlers")
 
-	listChannelsTool := mcp.NewTool("signoz_list_notification_channels",
+	listChannelsTool := mcp.NewTool("bylonis_list_notification_channels",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -44,7 +44,7 @@ func (h *Handler) RegisterNotificationChannelHandlers(s *server.MCPServer) {
 
 	addTool(s, listChannelsTool, h.handleListNotificationChannels)
 
-	createChannelTool := mcp.NewTool("signoz_create_notification_channel",
+	createChannelTool := mcp.NewTool("bylonis_create_notification_channel",
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
 		mcp.WithDescription(
@@ -99,7 +99,7 @@ func (h *Handler) RegisterNotificationChannelHandlers(s *server.MCPServer) {
 
 	addTool(s, createChannelTool, h.handleCreateNotificationChannel)
 
-	updateChannelTool := mcp.NewTool("signoz_update_notification_channel",
+	updateChannelTool := mcp.NewTool("bylonis_update_notification_channel",
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
 		mcp.WithDescription(
@@ -161,7 +161,7 @@ func (h *Handler) RegisterNotificationChannelHandlers(s *server.MCPServer) {
 
 	addTool(s, updateChannelTool, h.handleUpdateNotificationChannel)
 
-	getChannelTool := mcp.NewTool("signoz_get_notification_channel",
+	getChannelTool := mcp.NewTool("bylonis_get_notification_channel",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -170,7 +170,7 @@ func (h *Handler) RegisterNotificationChannelHandlers(s *server.MCPServer) {
 	)
 	addTool(s, getChannelTool, h.handleGetNotificationChannel)
 
-	deleteChannelTool := mcp.NewTool("signoz_delete_notification_channel",
+	deleteChannelTool := mcp.NewTool("bylonis_delete_notification_channel",
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
 		mcp.WithDescription("Delete a notification channel by ID (DELETE /api/v1/channels/{id}). Irreversible. Confirm with the user before calling, and warn if the channel is referenced by existing alert rules."),
@@ -186,7 +186,7 @@ func (h *Handler) handleGetNotificationChannel(ctx context.Context, req mcp.Call
 		return mcp.NewToolResultError(`Parameter validation failed: "id" is required.`), nil
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_get_notification_channel", slog.String("id", id))
+	h.logger.DebugContext(ctx, "Tool called: bylonis_get_notification_channel", slog.String("id", id))
 	client, err := h.GetClient(ctx)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
@@ -207,7 +207,7 @@ func (h *Handler) handleDeleteNotificationChannel(ctx context.Context, req mcp.C
 		return mcp.NewToolResultError(`Parameter validation failed: "id" is required.`), nil
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_delete_notification_channel", slog.String("id", id))
+	h.logger.DebugContext(ctx, "Tool called: bylonis_delete_notification_channel", slog.String("id", id))
 	client, err := h.GetClient(ctx)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
@@ -221,7 +221,7 @@ func (h *Handler) handleDeleteNotificationChannel(ctx context.Context, req mcp.C
 }
 
 func (h *Handler) handleListNotificationChannels(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	h.logger.DebugContext(ctx, "Tool called: signoz_list_notification_channels")
+	h.logger.DebugContext(ctx, "Tool called: bylonis_list_notification_channels")
 	limit, offset := paginate.ParseParams(req.Params.Arguments)
 
 	client, err := h.GetClient(ctx)
@@ -287,7 +287,7 @@ func (h *Handler) handleListNotificationChannels(ctx context.Context, req mcp.Ca
 }
 
 func (h *Handler) handleCreateNotificationChannel(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	h.logger.DebugContext(ctx, "Tool called: signoz_create_notification_channel")
+	h.logger.DebugContext(ctx, "Tool called: bylonis_create_notification_channel")
 
 	args := req.Params.Arguments.(map[string]any)
 
@@ -367,7 +367,7 @@ func (h *Handler) handleCreateNotificationChannel(ctx context.Context, req mcp.C
 }
 
 func (h *Handler) handleUpdateNotificationChannel(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	h.logger.DebugContext(ctx, "Tool called: signoz_update_notification_channel")
+	h.logger.DebugContext(ctx, "Tool called: bylonis_update_notification_channel")
 
 	args := req.Params.Arguments.(map[string]any)
 

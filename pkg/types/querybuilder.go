@@ -61,7 +61,7 @@ type ClickHouseSQLSpec struct {
 
 // UnmarshalJSON decodes Spec into the right concrete type based on Type, so
 // PromQL / ClickHouse SQL query strings survive the typed round-trip in
-// signoz_execute_builder_query instead of being silently dropped.
+// bylonis_execute_builder_query instead of being silently dropped.
 func (q *Query) UnmarshalJSON(data []byte) error {
 	var shadow struct {
 		Type string          `json:"type"`

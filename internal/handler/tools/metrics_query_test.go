@@ -17,7 +17,7 @@ func TestHandleQueryMetrics_ExplicitStartEndOverrideTimeRange(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_query_metrics", map[string]any{
+	req := makeToolRequest("bylonis_query_metrics", map[string]any{
 		"metricName":  "system.cpu.time",
 		"metricType":  "gauge",
 		"timeRange":   "1h",

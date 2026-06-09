@@ -13,9 +13,9 @@ Schemas supported:
 
 ## CRITICAL: Before Creating an Alert
 1. ALWAYS read signoz://alert/examples for complete working payloads (the canonical SigNoz PR #11023 examples plus a Cost Meter cumulative-budget example).
-2. Use signoz_get_alert on an existing alert to study the exact structure your SigNoz instance expects.
-3. Use signoz_get_field_keys to discover available attributes for filters and groupBy.
-4. NOTIFICATION CHANNELS: If the user explicitly names a channel, use it directly. Otherwise, do NOT guess channel names — call signoz_create_alert without channels first, it returns available channels. Present the list to the user, let them choose, then retry with their selection. If no suitable channel exists, use signoz_create_notification_channel to create one first.
+2. Use bylonis_get_alert on an existing alert to study the exact structure your SigNoz instance expects.
+3. Use bylonis_get_field_keys to discover available attributes for filters and groupBy.
+4. NOTIFICATION CHANNELS: If the user explicitly names a channel, use it directly. Otherwise, do NOT guess channel names — call bylonis_create_alert without channels first, it returns available channels. Present the list to the user, let them choose, then retry with their selection. If no suitable channel exists, use bylonis_create_notification_channel to create one first.
 
 ## Quick Workflow: From User Intent to Payload
 A repeatable mental model for going from a user request ("alert me when login p99 > 2s") to a valid payload:
@@ -196,7 +196,7 @@ condition.thresholds defines one or more routing tiers. Each tier can route to d
 - **recoveryTarget**: hysteresis value to avoid flapping (e.g. target=80%, recoveryTarget=75%). null uses the target itself as the recovery point.
 - **matchType**: canonical at_least_once, all_the_times, on_average, in_total, last. Aliases accepted: avg (=on_average), sum (=in_total).
 - **op**: canonical above, below, equal, not_equal, above_or_equal, below_or_equal, outside_bounds. Short forms accepted: eq, not_eq, above_or_eq, below_or_eq. Symbolic accepted: >, <, =, !=, >=, <=.
-- **channels**: notification channel names for this tier. Discover via signoz_list_notification_channels. Ignored when notificationSettings.usePolicy is true.
+- **channels**: notification channel names for this tier. Discover via bylonis_list_notification_channels. Ignored when notificationSettings.usePolicy is true.
 
 ### Choosing targetUnit
 - Set targetUnit when the threshold value is in a different unit from the query series. Example: the series emits nanoseconds (compositeQuery.unit="ns") but you want to threshold at "5 seconds" — set target=5, targetUnit="s". SigNoz converts during evaluation.
@@ -1012,8 +1012,8 @@ Fires when today's total log ingestion exceeds 10 GiB. The query targets Cost Me
 ## Key Notes
 1. Metrics signal → object aggregation shape ({metricName, timeAggregation, spaceAggregation}). Logs/traces → expression shape ({expression: "count()"}).
 2. selectedQueryName should reference the query or formula that determines the alert.
-3. Use signoz_get_alert to inspect existing alerts for the exact format your SigNoz version expects.
-4. Channel names in thresholds.spec[].channels must match exactly the names from signoz_list_notification_channels.
+3. Use bylonis_get_alert to inspect existing alerts for the exact format your SigNoz version expects.
+4. Channel names in thresholds.spec[].channels must match exactly the names from bylonis_list_notification_channels.
 5. For threshold_rule/promql_rule, schemaVersion/evaluation/notificationSettings are auto-generated if omitted. For anomaly_rule, supply evalWindow/frequency at the top level and op/matchType/target/algorithm/seasonality under condition — no thresholds block, no auto-generated evaluation.
 6. absentFor is in minutes (= consecutive evaluation cycles when frequency is 1m).
 `

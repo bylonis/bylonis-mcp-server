@@ -8,7 +8,7 @@ import (
 	"github.com/SigNoz/signoz-mcp-server/pkg/types"
 )
 
-// metricsQueryRequest holds parsed arguments for signoz_query_metrics.
+// metricsQueryRequest holds parsed arguments for bylonis_query_metrics.
 type metricsQueryRequest struct {
 	MetricName       string
 	MetricType       string
@@ -45,7 +45,7 @@ type formulaSubQuery struct {
 func parseMetricsQueryArgs(args map[string]any) (*metricsQueryRequest, error) {
 	metricName, _ := args["metricName"].(string)
 	if metricName == "" {
-		return nil, fmt.Errorf("\"metricName\" is required. Use signoz_list_metrics to find available metrics")
+		return nil, fmt.Errorf("\"metricName\" is required. Use bylonis_list_metrics to find available metrics")
 	}
 
 	req := &metricsQueryRequest{

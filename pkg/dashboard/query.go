@@ -790,7 +790,7 @@ Metrics-Specific Features:
 
   Cost Meter (usage/billing metrics):
     Set source: "meter" on a metrics builder query to chart Cost Meter metrics
-    (e.g. signoz.meter.log.size). Discover the current set via signoz_list_metrics
+    (e.g. signoz.meter.log.size). Discover the current set via bylonis_list_metrics
     with source=meter. Meter data is bucketed hourly.
 
 ================================================================================

@@ -6,7 +6,7 @@ const MetricsGuide = `# Metrics Aggregation Guide
 
 ## Pre-Query Checklist
 
-Before querying any metric, call **signoz_list_metrics** with the metric name to get:
+Before querying any metric, call **bylonis_list_metrics** with the metric name to get:
 - **type**: gauge, sum, histogram, exponential_histogram
 - **temporality**: cumulative, delta, unspecified
 - **isMonotonic**: true/false (only relevant for type=sum)
@@ -55,7 +55,7 @@ Valid reduceTo values: sum, count, avg, min, max, last, median
 1. **rate/increase on a gauge** → Invalid. Rate measures change over time, but gauges represent instantaneous values. Use avg, latest, or sum instead.
 2. **timeAggregation on histogram** → Ignored. Histogram time aggregation is handled automatically by the backend. Only set spaceAggregation (p50-p99).
 3. **sum/avg/min/max spaceAggregation on histogram** → Invalid. Histograms must use percentile aggregations (p50, p75, p90, p95, p99).
-4. **Missing temporality for counters** → Always pass temporality from signoz_list_metrics. Cumulative vs delta affects how rate is computed.
+4. **Missing temporality for counters** → Always pass temporality from bylonis_list_metrics. Cumulative vs delta affects how rate is computed.
 
 ---
 
@@ -227,7 +227,7 @@ future). They answer questions like "which services consume the most telemetry b
 are **not** visible in the default metrics store.
 
 To query them, set ` + "`source: \"meter\"`" + ` on the ` + "`builder_query`" + ` spec (a sibling of
-` + "`name`" + ` and ` + "`signal`" + `), or pass ` + "`source=\"meter\"`" + ` to **signoz_query_metrics**. Omit
+` + "`name`" + ` and ` + "`signal`" + `), or pass ` + "`source=\"meter\"`" + ` to **bylonis_query_metrics**. Omit
 ` + "`source`" + ` (or leave it empty) for ordinary metrics. Everything else — filters, groupBy,
 aggregations, formulas — works exactly as for normal metrics.
 
@@ -239,20 +239,20 @@ Even log and span volume are queried this way — as metrics with ` + "`signal: 
 Meter data is aggregated in 1-hour buckets, so always set ` + "`stepInterval: 3600`" + ` (as in the
 example below). A smaller step adds no resolution and a query window shorter than 1 hour yields at
 most the current, still-incomplete hour (the build tested returns it flagged ` + "`partial: true`" + `;
-some versions return no data). Use a window of at least a few hours. When **signoz_query_metrics**
+some versions return no data). Use a window of at least a few hours. When **bylonis_query_metrics**
 is called without ` + "`stepInterval`" + ` it sends none and the backend auto-derives roughly
 ` + "`max(60, window/300)`" + ` seconds — below 3600 for any window shorter than ~12.5 days — so pass
 ` + "`stepInterval: 3600`" + ` explicitly for meter queries.
 
 ### Discover the current meter metrics
 
-Don't assume a fixed list — the meter metric set evolves. Call **signoz_list_metrics** with
+Don't assume a fixed list — the meter metric set evolves. Call **bylonis_list_metrics** with
 ` + "`source=\"meter\"`" + ` for the authoritative, current set, with each metric's ` + "`type`" + `,
 ` + "`temporality`" + `, and ` + "`unit`" + `, then apply the normal per-type aggregation rules (see above).
 As of this writing the set is telemetry-ingestion counters (delta monotonic sums) — for
 example ` + "`signoz.meter.log.size`" + ` (bytes), ` + "`signoz.meter.span.count`" + `, and
 ` + "`signoz.meter.metric.datapoint.size`" + ` — for which ` + "`timeAggregation: rate`" + ` or ` + "`increase`" + `
-with ` + "`spaceAggregation: sum`" + ` is correct. Verify type/unit per metric via signoz_list_metrics
+with ` + "`spaceAggregation: sum`" + ` is correct. Verify type/unit per metric via bylonis_list_metrics
 rather than relying on this example list.
 
 ### Example: Log Bytes Ingested Over Time

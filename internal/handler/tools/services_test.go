@@ -19,7 +19,7 @@ func TestHandleListServices_ExplicitStartEndOverrideTimeRange(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_list_services", map[string]any{
+	req := makeToolRequest("bylonis_list_services", map[string]any{
 		"timeRange": "1h",
 		"start":     "1711123200000000000",
 		"end":       "1711130400000000000",

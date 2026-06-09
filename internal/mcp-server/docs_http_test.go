@@ -21,7 +21,7 @@ import (
 func TestDocsToolsRequireAuth(t *testing.T) {
 	handler, _ := newDocsHTTPHandler(t)
 
-	resp := serveJSONRPC(t, handler, "", `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"signoz_search_docs","arguments":{"query":"docker","limit":1}}}`)
+	resp := serveJSONRPC(t, handler, "", `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"bylonis_search_docs","arguments":{"query":"docker","limit":1}}}`)
 	require.Equal(t, http.StatusUnauthorized, resp.Code)
 	require.Contains(t, resp.Body.String(), "Authorization or SIGNOZ-API-KEY header required")
 }
@@ -58,7 +58,7 @@ func TestReadinessAndHealthEndpointsTrackDocsIndex(t *testing.T) {
 		})
 		h.SetDocsIndex(reg)
 		m := NewMCPServer(logger, h, cfg, nil, nil)
-		s := server.NewMCPServer("SigNozMCP", version.Version, server.WithToolCapabilities(false), server.WithRecovery())
+		s := server.NewMCPServer("BylonisMCP", version.Version, server.WithToolCapabilities(false), server.WithRecovery())
 		h.RegisterDocsHandlers(s)
 
 		handler := m.buildHTTP(s).Handler
@@ -92,7 +92,7 @@ func TestLivenessEndpointDoesNotRequireReadiness(t *testing.T) {
 	})
 	h.SetDocsIndex(reg)
 	m := NewMCPServer(logger, h, cfg, nil, nil)
-	s := server.NewMCPServer("SigNozMCP", version.Version, server.WithToolCapabilities(false), server.WithRecovery())
+	s := server.NewMCPServer("BylonisMCP", version.Version, server.WithToolCapabilities(false), server.WithRecovery())
 	h.RegisterDocsHandlers(s)
 	handler := m.buildHTTP(s).Handler
 
@@ -122,7 +122,7 @@ func newDocsHTTPHandler(t *testing.T) (http.Handler, *MCPServer) {
 	})
 	h.SetDocsIndex(reg)
 	m := NewMCPServer(logger, h, cfg, nil, nil)
-	s := server.NewMCPServer("SigNozMCP", version.Version, server.WithToolCapabilities(false), server.WithRecovery())
+	s := server.NewMCPServer("BylonisMCP", version.Version, server.WithToolCapabilities(false), server.WithRecovery())
 	h.RegisterDocsHandlers(s)
 	return m.buildHTTP(s).Handler, m
 }
@@ -182,7 +182,7 @@ func TestStatelessTransportIssuesNoSessionID(t *testing.T) {
 	})
 	h.SetDocsIndex(reg)
 	m := NewMCPServer(logger, h, cfg, nil, nil)
-	s := server.NewMCPServer("SigNozMCP", version.Version, server.WithToolCapabilities(false), server.WithRecovery())
+	s := server.NewMCPServer("BylonisMCP", version.Version, server.WithToolCapabilities(false), server.WithRecovery())
 	h.RegisterDocsHandlers(s)
 	handler := m.buildHTTP(s).Handler
 

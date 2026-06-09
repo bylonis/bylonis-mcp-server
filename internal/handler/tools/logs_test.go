@@ -18,7 +18,7 @@ func TestHandleSearchLogs_BasicQuery(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_search_logs", map[string]any{
+	req := makeToolRequest("bylonis_search_logs", map[string]any{
 		"query":     "status_code >= 400",
 		"timeRange": "1h",
 	})
@@ -44,7 +44,7 @@ func TestHandleSearchLogs_ServiceFilter(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_search_logs", map[string]any{
+	req := makeToolRequest("bylonis_search_logs", map[string]any{
 		"service":   "payment-svc",
 		"severity":  "ERROR",
 		"timeRange": "30m",
@@ -76,7 +76,7 @@ func TestHandleSearchLogs_SearchText(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_search_logs", map[string]any{
+	req := makeToolRequest("bylonis_search_logs", map[string]any{
 		"searchText": "timeout",
 		"timeRange":  "1h",
 	})
@@ -102,7 +102,7 @@ func TestHandleSearchLogs_ExplicitStartEndOverrideTimeRange(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_search_logs", map[string]any{
+	req := makeToolRequest("bylonis_search_logs", map[string]any{
 		"query":     "service.name = 'frontend'",
 		"timeRange": "1h",
 		"start":     "1711123200000",
@@ -135,7 +135,7 @@ func TestHandleSearchLogs_ExplicitStartEndOverrideTimeRange(t *testing.T) {
 func TestHandleSearchLogs_InvalidLimit(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_search_logs", map[string]any{
+	req := makeToolRequest("bylonis_search_logs", map[string]any{
 		"limit":     "not-a-number",
 		"timeRange": "1h",
 	})
@@ -158,7 +158,7 @@ func TestHandleAggregateLogs_Count(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_aggregate_logs", map[string]any{
+	req := makeToolRequest("bylonis_aggregate_logs", map[string]any{
 		"aggregation": "count",
 		"service":     "auth-svc",
 		"timeRange":   "1h",
@@ -179,7 +179,7 @@ func TestHandleAggregateLogs_Count(t *testing.T) {
 func TestHandleAggregateLogs_MissingAggregation(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_aggregate_logs", map[string]any{
+	req := makeToolRequest("bylonis_aggregate_logs", map[string]any{
 		"timeRange": "1h",
 	})
 
@@ -195,7 +195,7 @@ func TestHandleAggregateLogs_MissingAggregation(t *testing.T) {
 func TestHandleAggregateLogs_AvgRequiresAggregateOn(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_aggregate_logs", map[string]any{
+	req := makeToolRequest("bylonis_aggregate_logs", map[string]any{
 		"aggregation": "avg",
 		"timeRange":   "1h",
 	})
@@ -218,7 +218,7 @@ func TestHandleAggregateLogs_WithGroupBy(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_aggregate_logs", map[string]any{
+	req := makeToolRequest("bylonis_aggregate_logs", map[string]any{
 		"aggregation": "count",
 		"groupBy":     "service.name, severity_text",
 		"timeRange":   "1h",

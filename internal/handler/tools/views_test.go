@@ -23,7 +23,7 @@ func TestHandleListViews_Traces(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_list_views", map[string]any{
+	req := makeToolRequest("bylonis_list_views", map[string]any{
 		"sourcePage": "traces",
 		"name":       "ak",
 	})
@@ -42,7 +42,7 @@ func TestHandleListViews_Traces(t *testing.T) {
 
 func TestHandleListViews_MissingSourcePage(t *testing.T) {
 	h := newTestHandler(&client.MockClient{})
-	req := makeToolRequest("signoz_list_views", map[string]any{})
+	req := makeToolRequest("bylonis_list_views", map[string]any{})
 	result, _ := h.handleListViews(testCtx(), req)
 	if !result.IsError {
 		t.Fatalf("expected validation error, got success")
@@ -51,7 +51,7 @@ func TestHandleListViews_MissingSourcePage(t *testing.T) {
 
 func TestHandleListViews_InvalidSourcePage(t *testing.T) {
 	h := newTestHandler(&client.MockClient{})
-	req := makeToolRequest("signoz_list_views", map[string]any{
+	req := makeToolRequest("bylonis_list_views", map[string]any{
 		"sourcePage": "exceptions",
 	})
 	result, _ := h.handleListViews(testCtx(), req)
@@ -73,7 +73,7 @@ func TestHandleGetView_Success(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_get_view", map[string]any{"viewId": "v1"})
+	req := makeToolRequest("bylonis_get_view", map[string]any{"viewId": "v1"})
 	result, err := h.handleGetView(testCtx(), req)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -88,7 +88,7 @@ func TestHandleGetView_Success(t *testing.T) {
 
 func TestHandleGetView_MissingID(t *testing.T) {
 	h := newTestHandler(&client.MockClient{})
-	req := makeToolRequest("signoz_get_view", map[string]any{"viewId": ""})
+	req := makeToolRequest("bylonis_get_view", map[string]any{"viewId": ""})
 	result, _ := h.handleGetView(testCtx(), req)
 	if !result.IsError {
 		t.Fatalf("expected validation error, got success")
@@ -113,7 +113,7 @@ func TestHandleCreateView_Success(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_view", map[string]any{
+	req := makeToolRequest("bylonis_create_view", map[string]any{
 		"name":           "my view",
 		"sourcePage":     "traces",
 		"compositeQuery": map[string]any{"queryType": "builder"},
@@ -137,7 +137,7 @@ func TestHandleCreateView_Success(t *testing.T) {
 
 func TestHandleCreateView_MissingName(t *testing.T) {
 	h := newTestHandler(&client.MockClient{})
-	req := makeToolRequest("signoz_create_view", map[string]any{
+	req := makeToolRequest("bylonis_create_view", map[string]any{
 		"sourcePage":     "traces",
 		"compositeQuery": map[string]any{},
 	})
@@ -149,7 +149,7 @@ func TestHandleCreateView_MissingName(t *testing.T) {
 
 func TestHandleCreateView_InvalidSourcePage(t *testing.T) {
 	h := newTestHandler(&client.MockClient{})
-	req := makeToolRequest("signoz_create_view", map[string]any{
+	req := makeToolRequest("bylonis_create_view", map[string]any{
 		"name":           "x",
 		"sourcePage":     "bogus",
 		"compositeQuery": map[string]any{},
@@ -162,7 +162,7 @@ func TestHandleCreateView_InvalidSourcePage(t *testing.T) {
 
 func TestHandleCreateView_MissingCompositeQuery(t *testing.T) {
 	h := newTestHandler(&client.MockClient{})
-	req := makeToolRequest("signoz_create_view", map[string]any{
+	req := makeToolRequest("bylonis_create_view", map[string]any{
 		"name":       "x",
 		"sourcePage": "traces",
 	})
@@ -183,7 +183,7 @@ func TestHandleUpdateView_Success(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_update_view", map[string]any{
+	req := makeToolRequest("bylonis_update_view", map[string]any{
 		"viewId": "v1",
 		"view": map[string]any{
 			"name":           "renamed",
@@ -211,7 +211,7 @@ func TestHandleUpdateView_Success(t *testing.T) {
 
 func TestHandleUpdateView_MissingID(t *testing.T) {
 	h := newTestHandler(&client.MockClient{})
-	req := makeToolRequest("signoz_update_view", map[string]any{
+	req := makeToolRequest("bylonis_update_view", map[string]any{
 		"view": map[string]any{
 			"name":           "x",
 			"sourcePage":     "logs",
@@ -235,7 +235,7 @@ func TestHandleUpdateView_FlatFieldsBackCompat(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_update_view", map[string]any{
+	req := makeToolRequest("bylonis_update_view", map[string]any{
 		"viewId":         "v1",
 		"name":           "flat",
 		"sourcePage":     "traces",
@@ -262,7 +262,7 @@ func TestHandleDeleteView_Success(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_delete_view", map[string]any{"viewId": "v1"})
+	req := makeToolRequest("bylonis_delete_view", map[string]any{"viewId": "v1"})
 	result, err := h.handleDeleteView(testCtx(), req)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -277,7 +277,7 @@ func TestHandleDeleteView_Success(t *testing.T) {
 
 func TestHandleDeleteView_MissingID(t *testing.T) {
 	h := newTestHandler(&client.MockClient{})
-	req := makeToolRequest("signoz_delete_view", map[string]any{})
+	req := makeToolRequest("bylonis_delete_view", map[string]any{})
 	result, _ := h.handleDeleteView(testCtx(), req)
 	if !result.IsError {
 		t.Fatalf("expected validation error")
@@ -285,7 +285,7 @@ func TestHandleDeleteView_MissingID(t *testing.T) {
 }
 
 func TestHandleUpdateView_UnwrapsGetViewEnvelope(t *testing.T) {
-	// Caller pastes the entire signoz_get_view response under "view"
+	// Caller pastes the entire bylonis_get_view response under "view"
 	// ({status,data:{...}}). Handler must unwrap `data` before validating.
 	var gotBody []byte
 	mock := &client.MockClient{
@@ -295,7 +295,7 @@ func TestHandleUpdateView_UnwrapsGetViewEnvelope(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_update_view", map[string]any{
+	req := makeToolRequest("bylonis_update_view", map[string]any{
 		"viewId": "v1",
 		"view": map[string]any{
 			"status": "success",
@@ -334,7 +334,7 @@ func TestHandleCreateView_UnwrapsEnvelope(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_view", map[string]any{
+	req := makeToolRequest("bylonis_create_view", map[string]any{
 		"status": "success",
 		"data": map[string]any{
 			"name":           "my view",
@@ -366,7 +366,7 @@ func TestHandleUpdateView_NoUnwrapWhenViewIsValid(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_update_view", map[string]any{
+	req := makeToolRequest("bylonis_update_view", map[string]any{
 		"viewId": "v1",
 		"view": map[string]any{
 			"name":           "direct",
@@ -405,7 +405,7 @@ func TestHandleListViews_Pagination(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_list_views", map[string]any{
+	req := makeToolRequest("bylonis_list_views", map[string]any{
 		"sourcePage": "traces",
 		"limit":      "2",
 		"offset":     "2",
@@ -431,7 +431,7 @@ func TestHandleListViews_Pagination(t *testing.T) {
 }
 
 func TestHandleCreateView_StripsServerPopulatedFields(t *testing.T) {
-	// If an LLM copies a signoz_get_view response wholesale (including
+	// If an LLM copies a bylonis_get_view response wholesale (including
 	// server-populated id, createdAt/By, updatedAt/By), the create body
 	// sent upstream must omit them.
 	var gotBody []byte
@@ -442,7 +442,7 @@ func TestHandleCreateView_StripsServerPopulatedFields(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_view", map[string]any{
+	req := makeToolRequest("bylonis_create_view", map[string]any{
 		"id":             "019dade7-3edc-79f4-b885-f6fad49722f2",
 		"name":           "x",
 		"sourcePage":     "traces",
@@ -478,7 +478,7 @@ func TestHandleUpdateView_StripsServerPopulatedFields(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_update_view", map[string]any{
+	req := makeToolRequest("bylonis_update_view", map[string]any{
 		"viewId": "v1",
 		"view": map[string]any{
 			"id":             "v1",
@@ -515,7 +515,7 @@ func TestHandleListViews_EmptyResult(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_list_views", map[string]any{"sourcePage": "metrics"})
+	req := makeToolRequest("bylonis_list_views", map[string]any{"sourcePage": "metrics"})
 	result, err := h.handleListViews(testCtx(), req)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -539,7 +539,7 @@ func TestHandleListViews_MissingDataField(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_list_views", map[string]any{"sourcePage": "traces"})
+	req := makeToolRequest("bylonis_list_views", map[string]any{"sourcePage": "traces"})
 	result, err := h.handleListViews(testCtx(), req)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -566,7 +566,7 @@ func TestHandleListViews_NonArrayDataIsEmpty(t *testing.T) {
 				},
 			}
 			h := newTestHandler(mock)
-			req := makeToolRequest("signoz_list_views", map[string]any{"sourcePage": "metrics"})
+			req := makeToolRequest("bylonis_list_views", map[string]any{"sourcePage": "metrics"})
 			result, err := h.handleListViews(testCtx(), req)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
@@ -586,7 +586,7 @@ func TestHandleCreateView_RejectsSignalSourcePageMismatch(t *testing.T) {
 	// Documented rule: builder_query.spec.signal must equal sourcePage.
 	// Upstream doesn't enforce this; a mismatch silently saves a broken view.
 	h := newTestHandler(&client.MockClient{})
-	req := makeToolRequest("signoz_create_view", map[string]any{
+	req := makeToolRequest("bylonis_create_view", map[string]any{
 		"name":       "bad",
 		"sourcePage": "logs",
 		"compositeQuery": map[string]any{
@@ -612,7 +612,7 @@ func TestHandleCreateView_RejectsEmptyBuilderSignal(t *testing.T) {
 	// Upstream doesn't enforce signal presence on builder_query; an empty
 	// signal silently saves an unusable view. Reject at the MCP boundary.
 	h := newTestHandler(&client.MockClient{})
-	req := makeToolRequest("signoz_create_view", map[string]any{
+	req := makeToolRequest("bylonis_create_view", map[string]any{
 		"name":       "missing-signal",
 		"sourcePage": "logs",
 		"compositeQuery": map[string]any{
@@ -643,7 +643,7 @@ func TestHandleCreateView_AllowsMatchingSignal(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_view", map[string]any{
+	req := makeToolRequest("bylonis_create_view", map[string]any{
 		"name":       "ok",
 		"sourcePage": "traces",
 		"compositeQuery": map[string]any{
@@ -675,7 +675,7 @@ func TestHandleCreateView_IgnoresSignalOnNonBuilderQuery(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_view", map[string]any{
+	req := makeToolRequest("bylonis_create_view", map[string]any{
 		"name":       "p",
 		"sourcePage": "metrics",
 		"compositeQuery": map[string]any{
@@ -698,7 +698,7 @@ func TestHandleCreateView_IgnoresSignalOnNonBuilderQuery(t *testing.T) {
 
 func TestHandleUpdateView_RejectsSignalMismatch(t *testing.T) {
 	h := newTestHandler(&client.MockClient{})
-	req := makeToolRequest("signoz_update_view", map[string]any{
+	req := makeToolRequest("bylonis_update_view", map[string]any{
 		"viewId": "v1",
 		"view": map[string]any{
 			"name":       "x",
@@ -733,7 +733,7 @@ func TestHandleUpdateView_RejectsSourcePageChange(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_update_view", map[string]any{
+	req := makeToolRequest("bylonis_update_view", map[string]any{
 		"viewId": "v1",
 		"view": map[string]any{
 			"name":           "renamed",
@@ -766,7 +766,7 @@ func TestHandleUpdateView_AllowsSameSourcePage(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_update_view", map[string]any{
+	req := makeToolRequest("bylonis_update_view", map[string]any{
 		"viewId": "v1",
 		"view": map[string]any{
 			"name":           "renamed",
@@ -798,7 +798,7 @@ func TestHandleUpdateView_ProceedsWhenGetViewFails(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_update_view", map[string]any{
+	req := makeToolRequest("bylonis_update_view", map[string]any{
 		"viewId": "v1",
 		"view": map[string]any{
 			"name":           "x",

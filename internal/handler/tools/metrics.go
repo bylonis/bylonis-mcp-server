@@ -15,7 +15,7 @@ import (
 func (h *Handler) RegisterMetricsHandlers(s *server.MCPServer) {
 	h.logger.Debug("Registering metrics handlers")
 
-	listMetricsTool := mcp.NewTool("signoz_list_metrics",
+	listMetricsTool := mcp.NewTool("bylonis_list_metrics",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -29,20 +29,20 @@ func (h *Handler) RegisterMetricsHandlers(s *server.MCPServer) {
 
 	addTool(s, listMetricsTool, h.handleListMetrics)
 
-	// signoz_query_metrics — smart metrics query tool with aggregation validation and defaults
-	queryMetricsTool := mcp.NewTool("signoz_query_metrics",
+	// bylonis_query_metrics — smart metrics query tool with aggregation validation and defaults
+	queryMetricsTool := mcp.NewTool("bylonis_query_metrics",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
 		mcp.WithDescription(
 			"Query metrics from SigNoz with smart aggregation defaults and validation. "+
 				"Automatically applies the right timeAggregation and spaceAggregation based on metric type "+
-				"(gauge, counter, histogram). If metricType is not provided, it is auto-fetched via signoz_list_metrics. "+
+				"(gauge, counter, histogram). If metricType is not provided, it is auto-fetched via bylonis_list_metrics. "+
 				"Every response includes a [Decisions applied] block showing all defaults used. "+
 				"Read the signoz://metrics-aggregation-guide resource for full aggregation rules and examples. "+
-				"TIP: Call signoz_list_metrics first to get the metric's type, temporality, and isMonotonic."),
+				"TIP: Call bylonis_list_metrics first to get the metric's type, temporality, and isMonotonic."),
 		mcp.WithString("metricName", mcp.Required(), mcp.Description("Name of the metric to query. Example: 'container.cpu.utilization', 'http_requests_total'.")),
-		mcp.WithString("metricType", mcp.Description("Metric type: gauge, sum, histogram, or exponential_histogram. Auto-fetched from signoz_list_metrics if not provided.")),
+		mcp.WithString("metricType", mcp.Description("Metric type: gauge, sum, histogram, or exponential_histogram. Auto-fetched from bylonis_list_metrics if not provided.")),
 		mcp.WithString("isMonotonic", mcp.Description("Whether the metric is monotonically increasing (true/false). Only relevant for type=sum. Auto-fetched if not provided.")),
 		mcp.WithString("temporality", mcp.Description("Metric temporality: cumulative, delta, or unspecified. Auto-fetched if not provided.")),
 		mcp.WithString("timeAggregation", mcp.Description("Aggregation over time buckets. Auto-defaulted based on metricType. Valid: latest, sum, avg, min, max, count, count_distinct, rate, increase (type-dependent).")),
@@ -111,7 +111,7 @@ func (h *Handler) handleListMetrics(ctx context.Context, req mcp.CallToolRequest
 		}
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_list_metrics", slog.String("searchText", searchText))
+	h.logger.DebugContext(ctx, "Tool called: bylonis_list_metrics", slog.String("searchText", searchText))
 	client, err := h.GetClient(ctx)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil

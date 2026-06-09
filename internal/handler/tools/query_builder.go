@@ -17,7 +17,7 @@ func (h *Handler) RegisterQueryBuilderV5Handlers(s *server.MCPServer) {
 	h.logger.Debug("Registering query builder v5 handlers")
 
 	// SigNoz Query Builder v5 tool - LLM builds structured query JSON and executes it
-	executeQuery := mcp.NewTool("signoz_execute_builder_query",
+	executeQuery := mcp.NewTool("bylonis_execute_builder_query",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -55,7 +55,7 @@ func (h *Handler) RegisterQueryBuilderV5Handlers(s *server.MCPServer) {
 }
 
 func (h *Handler) handleExecuteBuilderQuery(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	h.logger.DebugContext(ctx, "Tool called: signoz_execute_builder_query")
+	h.logger.DebugContext(ctx, "Tool called: bylonis_execute_builder_query")
 
 	args, ok := req.Params.Arguments.(map[string]any)
 	if !ok {

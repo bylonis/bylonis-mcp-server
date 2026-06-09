@@ -19,7 +19,7 @@ import (
 func (h *Handler) RegisterDocsHandlers(s *server.MCPServer) {
 	h.logger.Debug("Registering docs handlers")
 
-	searchTool := mcp.NewTool("signoz_search_docs",
+	searchTool := mcp.NewTool("bylonis_search_docs",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -30,11 +30,11 @@ func (h *Handler) RegisterDocsHandlers(s *server.MCPServer) {
 	)
 	s.AddTool(searchTool, h.handleSearchDocs)
 
-	fetchTool := mcp.NewTool("signoz_fetch_doc",
+	fetchTool := mcp.NewTool("bylonis_fetch_doc",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
-		mcp.WithDescription("Fetch full markdown for one official SigNoz documentation page from the local docs index. Use after signoz_search_docs when a result needs detail, exact commands, prerequisites, or a specific section. Accepts only signoz.io/docs URLs or /docs/... paths."),
+		mcp.WithDescription("Fetch full markdown for one official SigNoz documentation page from the local docs index. Use after bylonis_search_docs when a result needs detail, exact commands, prerequisites, or a specific section. Accepts only signoz.io/docs URLs or /docs/... paths."),
 		mcp.WithString("url", mcp.Required(), mcp.Description("Full https://signoz.io/docs/... URL or /docs/... path.")),
 		mcp.WithString("heading", mcp.Description(`Optional heading anchor ID or heading text, for example "prerequisites" or "## Prerequisites".`)),
 	)
@@ -43,7 +43,7 @@ func (h *Handler) RegisterDocsHandlers(s *server.MCPServer) {
 	sitemap := mcp.NewResource(
 		docsindex.DocsSitemapURI,
 		"SigNoz Docs Sitemap",
-		mcp.WithResourceDescription("Indexed SigNoz docs sitemap used by signoz_search_docs and signoz_fetch_doc."),
+		mcp.WithResourceDescription("Indexed SigNoz docs sitemap used by bylonis_search_docs and bylonis_fetch_doc."),
 		mcp.WithMIMEType("text/markdown"),
 	)
 	s.AddResource(sitemap, h.handleDocsSitemap)
@@ -63,7 +63,7 @@ func (h *Handler) handleSearchDocs(ctx context.Context, req mcp.CallToolRequest)
 	}
 	sectionSlug, _ := args["section_slug"].(string)
 	limit := parseLimit(args["limit"], 10)
-	h.logger.DebugContext(ctx, "Tool called: signoz_search_docs",
+	h.logger.DebugContext(ctx, "Tool called: bylonis_search_docs",
 		slog.String("query", query),
 		slog.String("section_slug", sectionSlug),
 		slog.Int("limit", limit))
@@ -105,7 +105,7 @@ func (h *Handler) handleFetchDoc(ctx context.Context, req mcp.CallToolRequest) (
 		return mcp.NewToolResultError(`parameter validation failed: "url" is required`), nil
 	}
 	heading, _ := args["heading"].(string)
-	h.logger.DebugContext(ctx, "Tool called: signoz_fetch_doc",
+	h.logger.DebugContext(ctx, "Tool called: bylonis_fetch_doc",
 		slog.String("url", rawURL),
 		slog.String("heading", heading))
 

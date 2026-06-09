@@ -62,22 +62,22 @@ func TestWriteToolInputSchemasExposeSearchContext(t *testing.T) {
 	}{
 		{
 			name:       "create dashboard",
-			tool:       mcp.NewTool("signoz_create_dashboard", mcp.WithInputSchema[types.CreateDashboardInput]()),
+			tool:       mcp.NewTool("bylonis_create_dashboard", mcp.WithInputSchema[types.CreateDashboardInput]()),
 			wantFields: []string{"title", "layout", "widgets", "searchContext"},
 		},
 		{
 			name:       "update dashboard",
-			tool:       mcp.NewTool("signoz_update_dashboard", mcp.WithInputSchema[types.UpdateDashboardInput]()),
+			tool:       mcp.NewTool("bylonis_update_dashboard", mcp.WithInputSchema[types.UpdateDashboardInput]()),
 			wantFields: []string{"uuid", "dashboard", "searchContext"},
 		},
 		{
 			name:       "create alert",
-			tool:       mcp.NewTool("signoz_create_alert", mcp.WithInputSchema[types.CreateAlertInput]()),
+			tool:       mcp.NewTool("bylonis_create_alert", mcp.WithInputSchema[types.CreateAlertInput]()),
 			wantFields: []string{"alert", "alertType", "ruleType", "condition", "searchContext"},
 		},
 		{
 			name:       "update alert",
-			tool:       mcp.NewTool("signoz_update_alert", mcp.WithInputSchema[types.UpdateAlertInput]()),
+			tool:       mcp.NewTool("bylonis_update_alert", mcp.WithInputSchema[types.UpdateAlertInput]()),
 			wantFields: []string{"ruleId", "alert", "alertType", "ruleType", "condition", "searchContext"},
 		},
 	}

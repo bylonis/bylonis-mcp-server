@@ -68,14 +68,14 @@ func TestE2EDocsAgentFlow(t *testing.T) {
 	for _, tool := range toolsResp.Tools {
 		toolNames[tool.Name] = struct{}{}
 	}
-	require.Contains(t, toolNames, "signoz_search_docs")
-	require.Contains(t, toolNames, "signoz_fetch_doc")
+	require.Contains(t, toolNames, "bylonis_search_docs")
+	require.Contains(t, toolNames, "bylonis_fetch_doc")
 
-	// 2. signoz_search_docs happy path — the snapshot seeded by
+	// 2. bylonis_search_docs happy path — the snapshot seeded by
 	//    docsSnapshot() contains a "docker" page, so a body-term
 	//    query must return a non-empty result set.
 	searchReq := mcp.CallToolRequest{}
-	searchReq.Params.Name = "signoz_search_docs"
+	searchReq.Params.Name = "bylonis_search_docs"
 	searchReq.Params.Arguments = map[string]any{
 		"query": "docker",
 		"limit": 5,
@@ -86,11 +86,11 @@ func TestE2EDocsAgentFlow(t *testing.T) {
 	searchJSON := firstTextContent(t, searchRes.Content)
 	require.Contains(t, strings.ToLower(searchJSON), "docker")
 
-	// 3. signoz_fetch_doc happy path — plain URL with no heading returns
+	// 3. bylonis_fetch_doc happy path — plain URL with no heading returns
 	//    the full markdown + populated available_headings list and
 	//    truncation_reason "none".
 	fetchReq := mcp.CallToolRequest{}
-	fetchReq.Params.Name = "signoz_fetch_doc"
+	fetchReq.Params.Name = "bylonis_fetch_doc"
 	fetchReq.Params.Arguments = map[string]any{
 		"url": "https://signoz.io/docs/install/docker/",
 	}
@@ -109,11 +109,11 @@ func TestE2EDocsAgentFlow(t *testing.T) {
 	require.Contains(t, fetchPayload.Content, "Docker")
 	require.Equal(t, "none", fetchPayload.TruncationReason)
 
-	// 4. signoz_fetch_doc out-of-scope URL — plan error contract requires
+	// 4. bylonis_fetch_doc out-of-scope URL — plan error contract requires
 	//    CallToolResult{isError:true, structuredContent.code=OUT_OF_SCOPE_URL},
 	//    NOT a JSON-RPC protocol error.
 	outOfScopeReq := mcp.CallToolRequest{}
-	outOfScopeReq.Params.Name = "signoz_fetch_doc"
+	outOfScopeReq.Params.Name = "bylonis_fetch_doc"
 	outOfScopeReq.Params.Arguments = map[string]any{"url": "https://evil.example.com/docs/x/"}
 	outOfScopeRes, err := mcpClient.CallTool(ctx, outOfScopeReq)
 	require.NoError(t, err, "out-of-scope URL must surface as a tool-result error, not a JSON-RPC protocol error")
@@ -227,7 +227,7 @@ func newDocsHTTPHandlerWithLogger(t *testing.T, logger *slog.Logger) http.Handle
 	})
 	h.SetDocsIndex(reg)
 	m := NewMCPServer(logger, h, cfg, nil, nil)
-	s := server.NewMCPServer("SigNozMCP", version.Version, server.WithToolCapabilities(false), server.WithRecovery())
+	s := server.NewMCPServer("BylonisMCP", version.Version, server.WithToolCapabilities(false), server.WithRecovery())
 	h.RegisterDocsHandlers(s)
 	return m.buildHTTP(s).Handler
 }

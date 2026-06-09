@@ -31,7 +31,7 @@ func buildTestServer(t *testing.T) *server.MCPServer {
 	}
 	handler := tools.NewHandler(log, cfg)
 
-	s := server.NewMCPServer("SigNozMCP", version.Version,
+	s := server.NewMCPServer("BylonisMCP", version.Version,
 		server.WithLogging(),
 		server.WithToolCapabilities(false),
 		server.WithRecovery(),
@@ -76,8 +76,8 @@ func TestIntegration_InitializeAndListTools(t *testing.T) {
 		t.Fatalf("Initialize failed: %v", err)
 	}
 
-	if initResult.ServerInfo.Name != "SigNozMCP" {
-		t.Errorf("expected server name SigNozMCP, got %q", initResult.ServerInfo.Name)
+	if initResult.ServerInfo.Name != "BylonisMCP" {
+		t.Errorf("expected server name BylonisMCP, got %q", initResult.ServerInfo.Name)
 	}
 	if initResult.Capabilities.Tools == nil {
 		t.Error("expected tools capability to be present")
@@ -98,13 +98,13 @@ func TestIntegration_InitializeAndListTools(t *testing.T) {
 	}
 	foundAlertRulesTool := false
 	for _, tool := range toolsResult.Tools {
-		if tool.Name == "signoz_list_alert_rules" {
+		if tool.Name == "bylonis_list_alert_rules" {
 			foundAlertRulesTool = true
 			break
 		}
 	}
 	if !foundAlertRulesTool {
-		t.Error("expected signoz_list_alert_rules tool to be registered")
+		t.Error("expected bylonis_list_alert_rules tool to be registered")
 	}
 }
 

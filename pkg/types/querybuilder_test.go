@@ -68,7 +68,7 @@ func TestQueryPayloadValidate_LogsRawClearsStepInterval(t *testing.T) {
 
 // Regression test for #179: PromQL query strings must survive the
 // unmarshal → Validate → re-marshal round trip that the
-// signoz_execute_builder_query handler performs. We re-unmarshal the
+// bylonis_execute_builder_query handler performs. We re-unmarshal the
 // marshaled output and compare typed values rather than asserting on
 // substrings — otherwise the test could pass even if the query string
 // landed under the wrong path.
@@ -368,7 +368,7 @@ func TestQueryPayloadRoundTrip_MixedBuilderAndPromQL(t *testing.T) {
 // Regression test for issue #176: the `source` field (e.g. "meter" for Cost Meter
 // queries) is a sibling of "name" and "signal" inside the builder_query spec object,
 // NOT a top-level QueryPayload field. It must survive the unmarshal → Validate →
-// re-marshal round trip performed by signoz_execute_builder_query, and must be
+// re-marshal round trip performed by bylonis_execute_builder_query, and must be
 // absent from the marshaled output when empty (omitempty).
 func TestQueryPayloadRoundTrip_PreservesSource(t *testing.T) {
 	input := `{
@@ -413,8 +413,8 @@ func TestQueryPayloadRoundTrip_PreservesSource(t *testing.T) {
 		"empty source must be omitted from JSON; got: %s", string(outEmpty))
 }
 
-// TestBuildMetricsQueryPayloadJSON_AppliesSource covers the signoz_query_metrics
-// build path (distinct from the signoz_execute_builder_query round-trip above).
+// TestBuildMetricsQueryPayloadJSON_AppliesSource covers the bylonis_query_metrics
+// build path (distinct from the bylonis_execute_builder_query round-trip above).
 // It asserts the source argument lands on every builder_query spec, never on a
 // builder_formula spec, and is omitted entirely when empty (omitempty) so existing
 // payloads stay byte-for-byte unchanged.
@@ -519,7 +519,7 @@ func TestQueryPayloadValidate_LogsTimeSeriesRequiresAggregations(t *testing.T) {
 
 // TestBuildTracesQueryPayload_PropagatesOffset guards against a regression where
 // the traces payload hardcoded Offset:0 and ignored the caller's offset, making
-// signoz_search_traces pagination a silent no-op.
+// bylonis_search_traces pagination a silent no-op.
 func TestBuildTracesQueryPayload_PropagatesOffset(t *testing.T) {
 	payload := BuildTracesQueryPayload(1000, 2000, "service.name = 'x'", 50, 25)
 	spec, ok := payload.CompositeQuery.Queries[0].Spec.(QuerySpec)

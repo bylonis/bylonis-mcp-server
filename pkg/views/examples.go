@@ -2,12 +2,12 @@ package views
 
 // Examples is the body of signoz://view/examples. Three complete
 // SavedView payloads — one per sourcePage — that can be sent directly
-// to signoz_create_view. All use Query Builder v5 shape
+// to bylonis_create_view. All use Query Builder v5 shape
 // ({queryType, panelType, queries[{type, spec}]}).
 const Examples = `# Saved View Examples (Query Builder v5 shape)
 
 All payloads below were round-tripped against a live SigNoz instance.
-They work verbatim with signoz_create_view.
+They work verbatim with bylonis_create_view.
 
 ## Example 1 — Traces list view (panelType: list)
 

@@ -16,7 +16,7 @@ func (h *Handler) RegisterLogsHandlers(s *server.MCPServer) {
 	h.logger.Debug("Registering logs handlers")
 
 	// aggregate_logs: compute statistics over logs with GROUP BY
-	aggregateLogsTool := mcp.NewTool("signoz_aggregate_logs",
+	aggregateLogsTool := mcp.NewTool("bylonis_aggregate_logs",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -42,7 +42,7 @@ func (h *Handler) RegisterLogsHandlers(s *server.MCPServer) {
 
 	// search_logs: log search with optional filters
 	// ToDo: use this function for error logs or logs by service
-	searchLogsTool := mcp.NewTool("signoz_search_logs",
+	searchLogsTool := mcp.NewTool("bylonis_search_logs",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -87,7 +87,7 @@ func (h *Handler) handleAggregateLogs(ctx context.Context, req mcp.CallToolReque
 		return mcp.NewToolResultError("failed to marshal query payload: " + err.Error()), nil
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_aggregate_logs",
+	h.logger.DebugContext(ctx, "Tool called: bylonis_aggregate_logs",
 		slog.String("aggregation", reqData.AggregationExpr),
 		slog.String("filter", reqData.FilterExpression))
 
@@ -126,7 +126,7 @@ func (h *Handler) handleSearchLogs(ctx context.Context, req mcp.CallToolRequest)
 		return mcp.NewToolResultError("failed to marshal query payload: " + err.Error()), nil
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_search_logs",
+	h.logger.DebugContext(ctx, "Tool called: bylonis_search_logs",
 		slog.String("filter", reqData.FilterExpression))
 
 	client, err := h.GetClient(ctx)

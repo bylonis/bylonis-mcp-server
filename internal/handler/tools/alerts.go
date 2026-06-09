@@ -23,11 +23,11 @@ import (
 func (h *Handler) RegisterAlertsHandlers(s *server.MCPServer) {
 	h.logger.Debug("Registering alerts handlers")
 
-	alertsTool := mcp.NewTool("signoz_list_alerts",
+	alertsTool := mcp.NewTool("bylonis_list_alerts",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
-		mcp.WithDescription("Lists currently firing/silenced/inhibited alert *instances* from Alertmanager — not rule definitions. Use signoz_list_alert_rules for configured rules, signoz_get_alert with a ruleId for one full rule definition, or signoz_get_alert_history for the state timeline.\n\nReturns alert name, rule ID, severity, start time, end time, and state.\n\nFILTERING: Use server-side filters to narrow results BEFORE paginating.\n- To find a specific alert by name: filter='alertname=\"HighCPU\"'\n- To find alerts by severity: filter='severity=\"critical\"'\n- Combine matchers: filter='alertname=\"HighCPU\",severity=\"critical\"'\n- To see only firing alerts: active='true', silenced='false', inhibited='false'\n- To see only silenced alerts: silenced='true', active='false'\n- To filter by notification receiver: receiver='slack-.*'\nBy default all alert states (active, silenced, inhibited) are included.\n\nPAGINATION: Supports 'limit' and 'offset'. Response includes 'pagination' with 'total', 'hasMore', and 'nextOffset'. Prefer 'filter' to find specific alerts instead of paginating all pages. Default: limit=50, offset=0."),
+		mcp.WithDescription("Lists currently firing/silenced/inhibited alert *instances* from Alertmanager — not rule definitions. Use bylonis_list_alert_rules for configured rules, bylonis_get_alert with a ruleId for one full rule definition, or bylonis_get_alert_history for the state timeline.\n\nReturns alert name, rule ID, severity, start time, end time, and state.\n\nFILTERING: Use server-side filters to narrow results BEFORE paginating.\n- To find a specific alert by name: filter='alertname=\"HighCPU\"'\n- To find alerts by severity: filter='severity=\"critical\"'\n- Combine matchers: filter='alertname=\"HighCPU\",severity=\"critical\"'\n- To see only firing alerts: active='true', silenced='false', inhibited='false'\n- To see only silenced alerts: silenced='true', active='false'\n- To filter by notification receiver: receiver='slack-.*'\nBy default all alert states (active, silenced, inhibited) are included.\n\nPAGINATION: Supports 'limit' and 'offset'. Response includes 'pagination' with 'total', 'hasMore', and 'nextOffset'. Prefer 'filter' to find specific alerts instead of paginating all pages. Default: limit=50, offset=0."),
 		mcp.WithString("limit", mcp.Description("Maximum number of alerts to return per page. Default: 50.")),
 		mcp.WithString("offset", mcp.Description("Number of results to skip for pagination. Default: 0.")),
 		mcp.WithString("active", mcp.Description("Include active (firing) alerts. Values: 'true' or 'false'. Default: true.")),
@@ -38,17 +38,17 @@ func (h *Handler) RegisterAlertsHandlers(s *server.MCPServer) {
 	)
 	addTool(s, alertsTool, h.handleListAlerts)
 
-	alertRulesTool := mcp.NewTool("signoz_list_alert_rules",
+	alertRulesTool := mcp.NewTool("bylonis_list_alert_rules",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
-		mcp.WithDescription("Lists configured alert rules from GET /api/v2/rules, including inactive/OK and disabled rules. Use signoz_list_alerts for current Alertmanager alert instances.\n\nReturns ruleId, alert, alertType, ruleType, state, disabled, severity, labels, createdAt, and updatedAt. Use signoz_get_alert for the full rule definition.\n\nPAGINATION: Supports 'limit' and 'offset'. Response includes 'pagination' with 'total', 'hasMore', and 'nextOffset'. Default: limit=50, offset=0."),
+		mcp.WithDescription("Lists configured alert rules from GET /api/v2/rules, including inactive/OK and disabled rules. Use bylonis_list_alerts for current Alertmanager alert instances.\n\nReturns ruleId, alert, alertType, ruleType, state, disabled, severity, labels, createdAt, and updatedAt. Use bylonis_get_alert for the full rule definition.\n\nPAGINATION: Supports 'limit' and 'offset'. Response includes 'pagination' with 'total', 'hasMore', and 'nextOffset'. Default: limit=50, offset=0."),
 		mcp.WithString("limit", mcp.Description("Maximum number of alert rules to return per page. Default: 50.")),
 		mcp.WithString("offset", mcp.Description("Number of results to skip for pagination. Default: 0.")),
 	)
 	addTool(s, alertRulesTool, h.handleListAlertRules)
 
-	getAlertTool := mcp.NewTool("signoz_get_alert",
+	getAlertTool := mcp.NewTool("bylonis_get_alert",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -57,7 +57,7 @@ func (h *Handler) RegisterAlertsHandlers(s *server.MCPServer) {
 	)
 	addTool(s, getAlertTool, h.handleGetAlert)
 
-	alertHistoryTool := mcp.NewTool("signoz_get_alert_history",
+	alertHistoryTool := mcp.NewTool("bylonis_get_alert_history",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -74,7 +74,7 @@ func (h *Handler) RegisterAlertsHandlers(s *server.MCPServer) {
 	addTool(s, alertHistoryTool, h.handleGetAlertHistory)
 
 	createAlertTool := mcp.NewTool(
-		"signoz_create_alert",
+		"bylonis_create_alert",
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithDescription(
 			"Creates a new alert rule in SigNoz (POST /api/v2/rules).\n\n"+
@@ -85,12 +85,12 @@ func (h *Handler) RegisterAlertsHandlers(s *server.MCPServer) {
 				"1. signoz://alert/instructions — REQUIRED: Alert structure, field descriptions, valid values\n"+
 				"2. signoz://alert/examples — REQUIRED: canonical payloads covering metric/logs/traces threshold, PromQL, anomaly (v1), tiered thresholds, formula, full notificationSettings, and a Cost Meter cumulative-budget alert.\n"+
 				"3. signoz://promql/instructions — REQUIRED when ruleType=promql_rule: SigNoz needs the Prometheus 3.x UTF-8 quoted-selector form ({\"metric.name.with.dots\"}) for OTel metric names. Underscored / __name__ / bare-dotted forms return no data.\n\n"+
-				"RECOMMENDED: Use signoz_get_alert on an existing alert to study the exact structure.\n\n"+
+				"RECOMMENDED: Use bylonis_get_alert on an existing alert to study the exact structure.\n\n"+
 				"NOTIFICATION CHANNELS: At least one notification channel is required. "+
 				"If the user explicitly names a channel, use it directly. "+
 				"Otherwise, do NOT guess or assume channel names — call this tool WITHOUT channels to get the list of available channels, "+
 				"present that list to the user, let them choose, then call again with their selection. "+
-				"If no suitable channel exists, use signoz_create_notification_channel first.\n\n"+
+				"If no suitable channel exists, use bylonis_create_notification_channel first.\n\n"+
 				"Supports all alert types (metrics, logs, traces, exceptions) and rule types (threshold, promql, anomaly).\n"+
 				"Labels enable routing policies — always set labels.severity (critical, error, warning, or info) to match your highest threshold tier, and add team/service labels for routing.",
 		),
@@ -99,14 +99,14 @@ func (h *Handler) RegisterAlertsHandlers(s *server.MCPServer) {
 	addTool(s, createAlertTool, h.handleCreateAlert)
 
 	updateAlertTool := mcp.NewTool(
-		"signoz_update_alert",
+		"bylonis_update_alert",
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithDescription(
 			"Updates an existing alert rule in SigNoz (PUT /api/v2/rules/{ruleId}). Replaces the full rule configuration.\n\n"+
 				"CRITICAL: Read signoz://alert/instructions and signoz://alert/examples before generating the payload. "+
 				"When ruleType=promql_rule, also read signoz://promql/instructions — OTel dotted metric names require the Prometheus 3.x UTF-8 quoted-selector form. "+
-				"Always fetch the current rule with signoz_get_alert first and merge changes on top of it — PUT replaces the full rule.\n\n"+
-				"The rule payload is the same shape as signoz_create_alert. All the same validation rules apply, including "+
+				"Always fetch the current rule with bylonis_get_alert first and merge changes on top of it — PUT replaces the full rule.\n\n"+
+				"The rule payload is the same shape as bylonis_create_alert. All the same validation rules apply, including "+
 				"the notification-channel presence check.",
 		),
 		mcp.WithInputSchema[types.UpdateAlertInput](),
@@ -114,7 +114,7 @@ func (h *Handler) RegisterAlertsHandlers(s *server.MCPServer) {
 	addTool(s, updateAlertTool, h.handleUpdateAlert)
 
 	deleteAlertTool := mcp.NewTool(
-		"signoz_delete_alert",
+		"bylonis_delete_alert",
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
 		mcp.WithString("ruleId", mcp.Required(), mcp.Description("UUIDv7 of the alert rule to delete. The server validates the UUID format and returns invalid_input on bad values.")),
@@ -137,7 +137,7 @@ func parseBoolParam(args map[string]any, key string) *bool {
 }
 
 func (h *Handler) handleListAlerts(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	h.logger.DebugContext(ctx, "Tool called: signoz_list_alerts")
+	h.logger.DebugContext(ctx, "Tool called: bylonis_list_alerts")
 	args := req.Params.Arguments.(map[string]any)
 	limit, offset := paginate.ParseParams(args)
 
@@ -203,7 +203,7 @@ func (h *Handler) handleListAlerts(ctx context.Context, req mcp.CallToolRequest)
 }
 
 func (h *Handler) handleListAlertRules(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	h.logger.DebugContext(ctx, "Tool called: signoz_list_alert_rules")
+	h.logger.DebugContext(ctx, "Tool called: bylonis_list_alert_rules")
 	limit, offset := paginate.ParseParams(req.Params.Arguments)
 
 	client, err := h.GetClient(ctx)
@@ -275,7 +275,7 @@ func (h *Handler) handleGetAlert(ctx context.Context, req mcp.CallToolRequest) (
 		return mcp.NewToolResultError(`Parameter validation failed: "ruleId" cannot be empty. Provide a valid alert rule ID (UUID format)`), nil
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_get_alert", slog.String("ruleId", ruleID))
+	h.logger.DebugContext(ctx, "Tool called: bylonis_get_alert", slog.String("ruleId", ruleID))
 	client, err := h.GetClient(ctx)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
@@ -354,7 +354,7 @@ func (h *Handler) handleGetAlertHistory(ctx context.Context, req mcp.CallToolReq
 		},
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_get_alert_history",
+	h.logger.DebugContext(ctx, "Tool called: bylonis_get_alert_history",
 		slog.String("ruleId", ruleID),
 		slog.Int64("start", start),
 		slog.Int64("end", end),
@@ -389,7 +389,7 @@ func (h *Handler) handleCreateAlert(ctx context.Context, req mcp.CallToolRequest
 		return errResult, nil
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_create_alert")
+	h.logger.DebugContext(ctx, "Tool called: bylonis_create_alert")
 	client, err := h.GetClient(ctx)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
@@ -416,7 +416,7 @@ func (h *Handler) handleUpdateAlert(ctx context.Context, req mcp.CallToolRequest
 		return mcp.NewToolResultError(`Parameter validation failed: "ruleId" is required. Provide the UUIDv7 of the rule to update.`), nil
 	}
 	if !util.IsUUIDv7(ruleID) {
-		return mcp.NewToolResultError(fmt.Sprintf(`Invalid "ruleId": %q is not a UUIDv7. Obtain the rule ID from signoz_list_alert_rules or signoz_get_alert.`, ruleID)), nil
+		return mcp.NewToolResultError(fmt.Sprintf(`Invalid "ruleId": %q is not a UUIDv7. Obtain the rule ID from bylonis_list_alert_rules or bylonis_get_alert.`, ruleID)), nil
 	}
 	delete(rawConfig, "ruleId")
 
@@ -425,7 +425,7 @@ func (h *Handler) handleUpdateAlert(ctx context.Context, req mcp.CallToolRequest
 		return errResult, nil
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_update_alert", slog.String("ruleId", ruleID))
+	h.logger.DebugContext(ctx, "Tool called: bylonis_update_alert", slog.String("ruleId", ruleID))
 	client, err := h.GetClient(ctx)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
@@ -452,7 +452,7 @@ func (h *Handler) handleDeleteAlert(ctx context.Context, req mcp.CallToolRequest
 		return mcp.NewToolResultError(fmt.Sprintf(`Invalid "ruleId": %q is not a UUIDv7. The SigNoz API will reject this with invalid_input.`, ruleID)), nil
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_delete_alert", slog.String("ruleId", ruleID))
+	h.logger.DebugContext(ctx, "Tool called: bylonis_delete_alert", slog.String("ruleId", ruleID))
 	client, err := h.GetClient(ctx)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
@@ -607,7 +607,7 @@ func formatNoChannelsError(available []string) string {
 	} else {
 		sb.WriteString("No notification channels exist yet.\n")
 	}
-	sb.WriteString("To create a new channel, use the signoz_create_notification_channel tool first.")
+	sb.WriteString("To create a new channel, use the bylonis_create_notification_channel tool first.")
 	return sb.String()
 }
 
@@ -620,9 +620,9 @@ func formatInvalidChannelsError(invalid, available []string) string {
 		for _, name := range available {
 			sb.WriteString(fmt.Sprintf("  - %s\n", name))
 		}
-		sb.WriteString("\nPlease use one of the available channels, or create a new one with signoz_create_notification_channel.")
+		sb.WriteString("\nPlease use one of the available channels, or create a new one with bylonis_create_notification_channel.")
 	} else {
-		sb.WriteString("No notification channels exist yet. Create one with signoz_create_notification_channel first.")
+		sb.WriteString("No notification channels exist yet. Create one with bylonis_create_notification_channel first.")
 	}
 	return sb.String()
 }

@@ -18,7 +18,7 @@ func TestHandleListNotificationChannels_Success(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_list_notification_channels", map[string]any{})
+	req := makeToolRequest("bylonis_list_notification_channels", map[string]any{})
 
 	result, err := h.handleListNotificationChannels(testCtx(), req)
 	if err != nil {
@@ -74,7 +74,7 @@ func TestHandleListNotificationChannels_Empty(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_list_notification_channels", map[string]any{})
+	req := makeToolRequest("bylonis_list_notification_channels", map[string]any{})
 
 	result, err := h.handleListNotificationChannels(testCtx(), req)
 	if err != nil {
@@ -108,7 +108,7 @@ func TestHandleListNotificationChannels_APIError(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_list_notification_channels", map[string]any{})
+	req := makeToolRequest("bylonis_list_notification_channels", map[string]any{})
 
 	result, err := h.handleListNotificationChannels(testCtx(), req)
 	if err != nil {
@@ -130,7 +130,7 @@ func TestHandleListNotificationChannels_Pagination(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_list_notification_channels", map[string]any{
+	req := makeToolRequest("bylonis_list_notification_channels", map[string]any{
 		"limit":  "2",
 		"offset": "0",
 	})
@@ -178,7 +178,7 @@ func TestHandleCreateNotificationChannel_Slack(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_notification_channel", map[string]any{
+	req := makeToolRequest("bylonis_create_notification_channel", map[string]any{
 		"type":          "slack",
 		"name":          "my-slack",
 		"slack_api_url": "https://hooks.slack.com/services/T123/B456/xxx",
@@ -233,7 +233,7 @@ func TestHandleCreateNotificationChannel_Webhook(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_notification_channel", map[string]any{
+	req := makeToolRequest("bylonis_create_notification_channel", map[string]any{
 		"type":             "webhook",
 		"name":             "my-webhook",
 		"webhook_url":      "https://example.com/hook",
@@ -286,7 +286,7 @@ func TestHandleCreateNotificationChannel_PagerDuty(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_notification_channel", map[string]any{
+	req := makeToolRequest("bylonis_create_notification_channel", map[string]any{
 		"type":                  "pagerduty",
 		"name":                  "my-pd",
 		"pagerduty_routing_key": "key-123",
@@ -330,7 +330,7 @@ func TestHandleCreateNotificationChannel_Email(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_notification_channel", map[string]any{
+	req := makeToolRequest("bylonis_create_notification_channel", map[string]any{
 		"type":     "email",
 		"name":     "my-email",
 		"email_to": "oncall@example.com,backup@example.com",
@@ -370,7 +370,7 @@ func TestHandleCreateNotificationChannel_OpsGenie(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_notification_channel", map[string]any{
+	req := makeToolRequest("bylonis_create_notification_channel", map[string]any{
 		"type":                 "opsgenie",
 		"name":                 "my-og",
 		"opsgenie_api_key":     "og-key-abc",
@@ -416,7 +416,7 @@ func TestHandleCreateNotificationChannel_MSTeams(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_notification_channel", map[string]any{
+	req := makeToolRequest("bylonis_create_notification_channel", map[string]any{
 		"type":                "msteams",
 		"name":                "my-teams",
 		"msteams_webhook_url": "https://outlook.webhook.office.com/webhookb2/xxx",
@@ -448,7 +448,7 @@ func TestHandleCreateNotificationChannel_MSTeams(t *testing.T) {
 func TestHandleCreateNotificationChannel_MissingType(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_notification_channel", map[string]any{
+	req := makeToolRequest("bylonis_create_notification_channel", map[string]any{
 		"name": "test",
 	})
 
@@ -464,7 +464,7 @@ func TestHandleCreateNotificationChannel_MissingType(t *testing.T) {
 func TestHandleCreateNotificationChannel_InvalidType(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_notification_channel", map[string]any{
+	req := makeToolRequest("bylonis_create_notification_channel", map[string]any{
 		"type": "invalid",
 		"name": "test",
 	})
@@ -481,7 +481,7 @@ func TestHandleCreateNotificationChannel_InvalidType(t *testing.T) {
 func TestHandleCreateNotificationChannel_MissingName(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_notification_channel", map[string]any{
+	req := makeToolRequest("bylonis_create_notification_channel", map[string]any{
 		"type": "slack",
 	})
 
@@ -529,7 +529,7 @@ func TestHandleCreateNotificationChannel_MissingRequiredField(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mock := &client.MockClient{}
 			h := newTestHandler(mock)
-			req := makeToolRequest("signoz_create_notification_channel", tt.args)
+			req := makeToolRequest("bylonis_create_notification_channel", tt.args)
 
 			result, err := h.handleCreateNotificationChannel(testCtx(), req)
 			if err != nil {
@@ -549,7 +549,7 @@ func TestHandleCreateNotificationChannel_CreateError(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_notification_channel", map[string]any{
+	req := makeToolRequest("bylonis_create_notification_channel", map[string]any{
 		"type":          "slack",
 		"name":          "duplicate",
 		"slack_api_url": "https://hooks.slack.com/services/T/B/x",
@@ -574,7 +574,7 @@ func TestHandleCreateNotificationChannel_TestFails(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_notification_channel", map[string]any{
+	req := makeToolRequest("bylonis_create_notification_channel", map[string]any{
 		"type":          "slack",
 		"name":          "bad-slack",
 		"slack_api_url": "https://hooks.slack.com/services/invalid",
@@ -610,7 +610,7 @@ func TestHandleCreateNotificationChannel_SendResolvedFalse(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_notification_channel", map[string]any{
+	req := makeToolRequest("bylonis_create_notification_channel", map[string]any{
 		"type":          "slack",
 		"name":          "test-sr",
 		"slack_api_url": "https://hooks.slack.com/services/T/B/x",
@@ -639,7 +639,7 @@ func TestHandleCreateNotificationChannel_SendResolvedFalse(t *testing.T) {
 func TestHandleCreateNotificationChannel_InvalidSendResolved(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_notification_channel", map[string]any{
+	req := makeToolRequest("bylonis_create_notification_channel", map[string]any{
 		"type":          "slack",
 		"name":          "test",
 		"slack_api_url": "https://hooks.slack.com/services/T/B/x",
@@ -677,7 +677,7 @@ func TestHandleUpdateNotificationChannel_Slack(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_update_notification_channel", map[string]any{
+	req := makeToolRequest("bylonis_update_notification_channel", map[string]any{
 		"id":            channelID,
 		"type":          "slack",
 		"name":          "my-slack",
@@ -728,7 +728,7 @@ func TestHandleUpdateNotificationChannel_Slack(t *testing.T) {
 func TestHandleUpdateNotificationChannel_MissingID(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_update_notification_channel", map[string]any{
+	req := makeToolRequest("bylonis_update_notification_channel", map[string]any{
 		"type":          "slack",
 		"name":          "test",
 		"slack_api_url": "https://hooks.slack.com/services/T/B/x",
@@ -750,7 +750,7 @@ func TestHandleUpdateNotificationChannel_UpdateError(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_update_notification_channel", map[string]any{
+	req := makeToolRequest("bylonis_update_notification_channel", map[string]any{
 		"id":            "999",
 		"type":          "slack",
 		"name":          "missing",
@@ -779,7 +779,7 @@ func TestHandleUpdateNotificationChannel_TestFails(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_update_notification_channel", map[string]any{
+	req := makeToolRequest("bylonis_update_notification_channel", map[string]any{
 		"id":            "1",
 		"type":          "slack",
 		"name":          "bad-slack",
@@ -818,7 +818,7 @@ func TestHandleGetNotificationChannel(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_get_notification_channel", map[string]any{"id": channelID})
+	req := makeToolRequest("bylonis_get_notification_channel", map[string]any{"id": channelID})
 
 	result, err := h.handleGetNotificationChannel(testCtx(), req)
 	if err != nil {
@@ -835,7 +835,7 @@ func TestHandleGetNotificationChannel(t *testing.T) {
 func TestHandleGetNotificationChannel_MissingID(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_get_notification_channel", map[string]any{})
+	req := makeToolRequest("bylonis_get_notification_channel", map[string]any{})
 
 	result, err := h.handleGetNotificationChannel(testCtx(), req)
 	if err != nil {
@@ -856,7 +856,7 @@ func TestHandleDeleteNotificationChannel(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_delete_notification_channel", map[string]any{"id": channelID})
+	req := makeToolRequest("bylonis_delete_notification_channel", map[string]any{"id": channelID})
 
 	result, err := h.handleDeleteNotificationChannel(testCtx(), req)
 	if err != nil {
@@ -877,7 +877,7 @@ func TestHandleDeleteNotificationChannel_ClientError(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_delete_notification_channel", map[string]any{"id": "42"})
+	req := makeToolRequest("bylonis_delete_notification_channel", map[string]any{"id": "42"})
 
 	result, err := h.handleDeleteNotificationChannel(testCtx(), req)
 	if err != nil {
@@ -897,7 +897,7 @@ func TestHandleListNotificationChannels_TopLevelName(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_list_notification_channels", map[string]any{})
+	req := makeToolRequest("bylonis_list_notification_channels", map[string]any{})
 
 	result, err := h.handleListNotificationChannels(testCtx(), req)
 	if err != nil {

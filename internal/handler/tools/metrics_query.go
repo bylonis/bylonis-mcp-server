@@ -14,7 +14,7 @@ import (
 	"github.com/SigNoz/signoz-mcp-server/pkg/types"
 )
 
-// metricMetadata holds the parsed metadata from signoz_list_metrics response.
+// metricMetadata holds the parsed metadata from bylonis_list_metrics response.
 type metricMetadata struct {
 	MetricType  string
 	IsMonotonic bool
@@ -29,7 +29,7 @@ func (h *Handler) handleQueryMetrics(ctx context.Context, req mcp.CallToolReques
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_query_metrics",
+	h.logger.DebugContext(ctx, "Tool called: bylonis_query_metrics",
 		slog.String("metricName", mqr.MetricName),
 		slog.String("metricType", mqr.MetricType))
 
@@ -49,19 +49,19 @@ func (h *Handler) handleQueryMetrics(ctx context.Context, req mcp.CallToolReques
 			return mcp.NewToolResultError(fmt.Sprintf(
 				"Failed to auto-fetch metric metadata for %q: %s\n"+
 					"Please provide metricType, temporality, and isMonotonic manually "+
-					"(get them from signoz_list_metrics).",
+					"(get them from bylonis_list_metrics).",
 				mqr.MetricName, fetchErr.Error())), nil
 		}
 		if meta != nil {
 			mqr.MetricType = meta.MetricType
 			mqr.IsMonotonic = meta.IsMonotonic
 			mqr.Temporality = meta.Temporality
-			decisions = append(decisions, fmt.Sprintf("metricType: %s (auto-fetched via signoz_list_metrics)", mqr.MetricType))
+			decisions = append(decisions, fmt.Sprintf("metricType: %s (auto-fetched via bylonis_list_metrics)", mqr.MetricType))
 			decisions = append(decisions, fmt.Sprintf("temporality: %s (auto-fetched)", mqr.Temporality))
 			decisions = append(decisions, fmt.Sprintf("isMonotonic: %t (auto-fetched)", mqr.IsMonotonic))
 		} else {
 			return mcp.NewToolResultError(fmt.Sprintf(
-				"Metric %q not found via signoz_list_metrics. "+
+				"Metric %q not found via bylonis_list_metrics. "+
 					"Check the metric name or provide metricType manually.",
 				mqr.MetricName)), nil
 		}

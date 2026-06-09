@@ -1,7 +1,7 @@
 // Package views holds the MCP resource content served at
 // signoz://view/instructions and signoz://view/examples. The content
 // teaches an LLM how to construct SavedView payloads before calling
-// signoz_create_view / signoz_update_view.
+// bylonis_create_view / bylonis_update_view.
 package views
 
 // Instructions is the body of signoz://view/instructions.
@@ -71,15 +71,15 @@ The server rejects them with HTTP 400 "failed to validate request body".
 
 ## Update flow
 
-signoz_update_view **replaces** the view (upstream is HTTP PUT). To
+bylonis_update_view **replaces** the view (upstream is HTTP PUT). To
 rename or tweak one field:
 
-1. Call signoz_get_view with the view's id. It returns
+1. Call bylonis_get_view with the view's id. It returns
    {"status":"success","data":{...SavedView...}}.
 2. Take the **data** object from that response.
 3. Strip server-populated fields (id, createdAt, createdBy, updatedAt, updatedBy).
 4. Modify the field(s) you want to change.
-5. Call signoz_update_view with { "viewId": "<id>", "view": <modified data> }.
+5. Call bylonis_update_view with { "viewId": "<id>", "view": <modified data> }.
 
 (The MCP server strips server-populated fields for you if you forget, but
 omitting them up front is clearer.)

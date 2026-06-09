@@ -36,7 +36,7 @@ func TestHandleListAlerts(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_list_alerts", map[string]any{})
+	req := makeToolRequest("bylonis_list_alerts", map[string]any{})
 
 	result, err := h.handleListAlerts(testCtx(), req)
 	if err != nil {
@@ -61,7 +61,7 @@ func TestHandleListAlerts_WithPagination(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_list_alerts", map[string]any{
+	req := makeToolRequest("bylonis_list_alerts", map[string]any{
 		"limit":  "2",
 		"offset": "0",
 	})
@@ -82,7 +82,7 @@ func TestHandleListAlerts_ClientError(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_list_alerts", map[string]any{})
+	req := makeToolRequest("bylonis_list_alerts", map[string]any{})
 
 	result, err := h.handleListAlerts(testCtx(), req)
 	if err != nil {
@@ -134,7 +134,7 @@ func TestHandleListAlertRules(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_list_alert_rules", map[string]any{
+	req := makeToolRequest("bylonis_list_alert_rules", map[string]any{
 		"limit":  "2",
 		"offset": "1",
 	})
@@ -186,7 +186,7 @@ func TestHandleListAlertRules_NoArguments(t *testing.T) {
 	}
 	h := newTestHandler(mock)
 	req := mcp.CallToolRequest{
-		Params: mcp.CallToolParams{Name: "signoz_list_alert_rules"},
+		Params: mcp.CallToolParams{Name: "bylonis_list_alert_rules"},
 	}
 
 	result, err := h.handleListAlertRules(testCtx(), req)
@@ -205,7 +205,7 @@ func TestHandleListAlertRules_ClientError(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_list_alert_rules", map[string]any{})
+	req := makeToolRequest("bylonis_list_alert_rules", map[string]any{})
 
 	result, err := h.handleListAlertRules(testCtx(), req)
 	if err != nil {
@@ -225,7 +225,7 @@ func TestHandleGetAlert(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_get_alert", map[string]any{
+	req := makeToolRequest("bylonis_get_alert", map[string]any{
 		"ruleId": "rule-abc",
 	})
 
@@ -244,7 +244,7 @@ func TestHandleGetAlert(t *testing.T) {
 func TestHandleGetAlert_EmptyRuleId(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_get_alert", map[string]any{
+	req := makeToolRequest("bylonis_get_alert", map[string]any{
 		"ruleId": "",
 	})
 
@@ -260,7 +260,7 @@ func TestHandleGetAlert_EmptyRuleId(t *testing.T) {
 func TestHandleGetAlert_MissingRuleId(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_get_alert", map[string]any{})
+	req := makeToolRequest("bylonis_get_alert", map[string]any{})
 
 	result, err := h.handleGetAlert(testCtx(), req)
 	if err != nil {
@@ -278,7 +278,7 @@ func TestHandleGetAlert_ClientError(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_get_alert", map[string]any{
+	req := makeToolRequest("bylonis_get_alert", map[string]any{
 		"ruleId": "rule-xyz",
 	})
 
@@ -302,7 +302,7 @@ func TestHandleGetAlertHistory(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_get_alert_history", map[string]any{
+	req := makeToolRequest("bylonis_get_alert_history", map[string]any{
 		"ruleId":    "rule-hist",
 		"timeRange": "24h",
 		"limit":     "50",
@@ -336,7 +336,7 @@ func TestHandleGetAlertHistory_ExplicitStartEndOverrideTimeRange(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_get_alert_history", map[string]any{
+	req := makeToolRequest("bylonis_get_alert_history", map[string]any{
 		"ruleId":    "rule-hist",
 		"timeRange": "1h",
 		"start":     "1711123200000",
@@ -361,7 +361,7 @@ func TestHandleGetAlertHistory_ExplicitStartEndOverrideTimeRange(t *testing.T) {
 func TestHandleGetAlertHistory_EmptyRuleId(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_get_alert_history", map[string]any{
+	req := makeToolRequest("bylonis_get_alert_history", map[string]any{
 		"ruleId":    "",
 		"timeRange": "1h",
 	})
@@ -378,7 +378,7 @@ func TestHandleGetAlertHistory_EmptyRuleId(t *testing.T) {
 func TestHandleGetAlertHistory_InvalidOrder(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_get_alert_history", map[string]any{
+	req := makeToolRequest("bylonis_get_alert_history", map[string]any{
 		"ruleId":    "rule-1",
 		"timeRange": "1h",
 		"order":     "invalid",
@@ -402,7 +402,7 @@ func TestHandleGetAlertHistory_WithStateFilter(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_get_alert_history", map[string]any{
+	req := makeToolRequest("bylonis_get_alert_history", map[string]any{
 		"ruleId":    "rule-1",
 		"timeRange": "1h",
 		"state":     "firing",
@@ -423,7 +423,7 @@ func TestHandleGetAlertHistory_WithStateFilter(t *testing.T) {
 func TestHandleGetAlertHistory_InvalidState(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_get_alert_history", map[string]any{
+	req := makeToolRequest("bylonis_get_alert_history", map[string]any{
 		"ruleId":    "rule-1",
 		"timeRange": "1h",
 		"state":     "invalid",
@@ -447,7 +447,7 @@ func TestHandleGetAlertHistory_StateOmitted(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_get_alert_history", map[string]any{
+	req := makeToolRequest("bylonis_get_alert_history", map[string]any{
 		"ruleId":    "rule-1",
 		"timeRange": "1h",
 	})
@@ -473,7 +473,7 @@ func TestHandleListAlerts_WithFilterParams(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_list_alerts", map[string]any{
+	req := makeToolRequest("bylonis_list_alerts", map[string]any{
 		"active":   "false",
 		"silenced": "true",
 		"filter":   `alertname="HighCPU",severity="critical"`,
@@ -510,7 +510,7 @@ func TestHandleListAlerts_BoolParamNilWhenOmitted(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_list_alerts", map[string]any{})
+	req := makeToolRequest("bylonis_list_alerts", map[string]any{})
 
 	result, err := h.handleListAlerts(testCtx(), req)
 	if err != nil {
@@ -539,7 +539,7 @@ func TestHandleListAlerts_FilterSplitAndTrim(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_list_alerts", map[string]any{
+	req := makeToolRequest("bylonis_list_alerts", map[string]any{
 		"filter": ` alertname="A" , severity="critical" `,
 	})
 
@@ -573,7 +573,7 @@ func TestHandleCreateAlert(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_alert", map[string]any{
+	req := makeToolRequest("bylonis_create_alert", map[string]any{
 		"alert":     "Test Alert",
 		"alertType": "METRIC_BASED_ALERT",
 		"ruleType":  "threshold_rule",
@@ -646,7 +646,7 @@ func TestHandleCreateAlert_StripsSearchContext(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_alert", map[string]any{
+	req := makeToolRequest("bylonis_create_alert", map[string]any{
 		"searchContext": "user wants to create an alert for high CPU",
 		"alert":         "CPU Alert",
 		"alertType":     "METRIC_BASED_ALERT",
@@ -701,7 +701,7 @@ func TestHandleCreateAlert_StripsSearchContext(t *testing.T) {
 func TestHandleCreateAlert_EmptyArgs(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_alert", map[string]any{})
+	req := makeToolRequest("bylonis_create_alert", map[string]any{})
 
 	result, err := h.handleCreateAlert(testCtx(), req)
 	if err != nil {
@@ -716,7 +716,7 @@ func TestHandleCreateAlert_ValidationError(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
 	// Missing required fields
-	req := makeToolRequest("signoz_create_alert", map[string]any{
+	req := makeToolRequest("bylonis_create_alert", map[string]any{
 		"alert": "Test Alert",
 		// missing alertType, ruleType, condition
 	})
@@ -740,7 +740,7 @@ func TestHandleCreateAlert_ClientError(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_alert", map[string]any{
+	req := makeToolRequest("bylonis_create_alert", map[string]any{
 		"alert":     "Test Alert",
 		"alertType": "METRIC_BASED_ALERT",
 		"ruleType":  "threshold_rule",
@@ -792,7 +792,7 @@ func TestHandleCreateAlert_NoChannelsReturnsAvailable(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_alert", map[string]any{
+	req := makeToolRequest("bylonis_create_alert", map[string]any{
 		"alert":     "Test Alert",
 		"alertType": "METRIC_BASED_ALERT",
 		"ruleType":  "threshold_rule",
@@ -841,8 +841,8 @@ func TestHandleCreateAlert_NoChannelsReturnsAvailable(t *testing.T) {
 	if !strings.Contains(text, "pagerduty-oncall") {
 		t.Error("expected error to list available channel 'pagerduty-oncall'")
 	}
-	if !strings.Contains(text, "signoz_create_notification_channel") {
-		t.Error("expected error to mention signoz_create_notification_channel")
+	if !strings.Contains(text, "bylonis_create_notification_channel") {
+		t.Error("expected error to mention bylonis_create_notification_channel")
 	}
 }
 
@@ -853,7 +853,7 @@ func TestHandleCreateAlert_InvalidChannelReturnsError(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_alert", map[string]any{
+	req := makeToolRequest("bylonis_create_alert", map[string]any{
 		"alert":     "Test Alert",
 		"alertType": "METRIC_BASED_ALERT",
 		"ruleType":  "threshold_rule",
@@ -915,7 +915,7 @@ func TestHandleCreateAlert_PreferredChannelsValidated(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_alert", map[string]any{
+	req := makeToolRequest("bylonis_create_alert", map[string]any{
 		"alert":             "Test Alert",
 		"alertType":         "METRIC_BASED_ALERT",
 		"ruleType":          "threshold_rule",
@@ -967,7 +967,7 @@ func TestHandleCreateAlert_NoChannelsExist(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_create_alert", map[string]any{
+	req := makeToolRequest("bylonis_create_alert", map[string]any{
 		"alert":     "Test Alert",
 		"alertType": "METRIC_BASED_ALERT",
 		"ruleType":  "threshold_rule",
@@ -1013,7 +1013,7 @@ func TestHandleCreateAlert_NoChannelsExist(t *testing.T) {
 	if !strings.Contains(text, "No notification channels exist yet") {
 		t.Error("expected error to indicate no channels exist")
 	}
-	if !strings.Contains(text, "signoz_create_notification_channel") {
+	if !strings.Contains(text, "bylonis_create_notification_channel") {
 		t.Error("expected error to suggest creating a new channel")
 	}
 }
@@ -1036,7 +1036,7 @@ func TestHandleUpdateAlert(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_update_alert", map[string]any{
+	req := makeToolRequest("bylonis_update_alert", map[string]any{
 		"ruleId":    validRuleUUIDv7,
 		"alert":     "Updated Alert",
 		"alertType": "METRIC_BASED_ALERT",
@@ -1096,7 +1096,7 @@ func TestHandleUpdateAlert(t *testing.T) {
 func TestHandleUpdateAlert_RejectsNonUUIDv7(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_update_alert", map[string]any{
+	req := makeToolRequest("bylonis_update_alert", map[string]any{
 		"ruleId": "not-a-uuid",
 		"alert":  "x",
 	})
@@ -1116,7 +1116,7 @@ func TestHandleUpdateAlert_RejectsNonUUIDv7(t *testing.T) {
 func TestHandleUpdateAlert_MissingRuleID(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_update_alert", map[string]any{
+	req := makeToolRequest("bylonis_update_alert", map[string]any{
 		"alert": "x",
 	})
 
@@ -1140,7 +1140,7 @@ func TestHandleDeleteAlert(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_delete_alert", map[string]any{
+	req := makeToolRequest("bylonis_delete_alert", map[string]any{
 		"ruleId": validRuleUUIDv7,
 	})
 
@@ -1159,7 +1159,7 @@ func TestHandleDeleteAlert(t *testing.T) {
 func TestHandleDeleteAlert_RejectsNonUUIDv7(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_delete_alert", map[string]any{
+	req := makeToolRequest("bylonis_delete_alert", map[string]any{
 		"ruleId": "abc123",
 	})
 
@@ -1179,7 +1179,7 @@ func TestHandleDeleteAlert_ClientError(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	req := makeToolRequest("signoz_delete_alert", map[string]any{
+	req := makeToolRequest("bylonis_delete_alert", map[string]any{
 		"ruleId": validRuleUUIDv7,
 	})
 

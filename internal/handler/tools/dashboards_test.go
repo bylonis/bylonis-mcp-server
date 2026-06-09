@@ -39,7 +39,7 @@ func TestHandleDeleteDashboard_Success(t *testing.T) {
 	h := newTestHandler(mock)
 
 	// Step 1: create a dashboard
-	createResult, err := h.handleCreateDashboard(testCtx(), makeToolRequest("signoz_create_dashboard", map[string]any{
+	createResult, err := h.handleCreateDashboard(testCtx(), makeToolRequest("bylonis_create_dashboard", map[string]any{
 		"title":   "Temp Dashboard",
 		"widgets": []any{},
 		"layout":  []any{},
@@ -55,7 +55,7 @@ func TestHandleDeleteDashboard_Success(t *testing.T) {
 	}
 
 	// Step 2: delete the dashboard we just created
-	deleteResult, err := h.handleDeleteDashboard(testCtx(), makeToolRequest("signoz_delete_dashboard", map[string]any{
+	deleteResult, err := h.handleDeleteDashboard(testCtx(), makeToolRequest("bylonis_delete_dashboard", map[string]any{
 		"uuid": createdUUID,
 	}))
 	if err != nil {
@@ -79,7 +79,7 @@ func TestHandleCreateDashboard_StripsSearchContext(t *testing.T) {
 	}
 
 	h := newTestHandler(mock)
-	result, err := h.handleCreateDashboard(testCtx(), makeToolRequest("signoz_create_dashboard", map[string]any{
+	result, err := h.handleCreateDashboard(testCtx(), makeToolRequest("bylonis_create_dashboard", map[string]any{
 		"searchContext": "create a dashboard for service latency",
 		"title":         "Latency Dashboard",
 		"widgets":       []any{},
@@ -109,7 +109,7 @@ func TestHandleCreateDashboard_StripsSearchContext(t *testing.T) {
 
 func TestHandleDeleteDashboard_EmptyUUID(t *testing.T) {
 	h := newTestHandler(&client.MockClient{})
-	result, err := h.handleDeleteDashboard(testCtx(), makeToolRequest("signoz_delete_dashboard", map[string]any{
+	result, err := h.handleDeleteDashboard(testCtx(), makeToolRequest("bylonis_delete_dashboard", map[string]any{
 		"uuid": "",
 	}))
 	if err != nil {
@@ -122,7 +122,7 @@ func TestHandleDeleteDashboard_EmptyUUID(t *testing.T) {
 
 func TestHandleDeleteDashboard_MissingUUID(t *testing.T) {
 	h := newTestHandler(&client.MockClient{})
-	result, err := h.handleDeleteDashboard(testCtx(), makeToolRequest("signoz_delete_dashboard", map[string]any{}))
+	result, err := h.handleDeleteDashboard(testCtx(), makeToolRequest("bylonis_delete_dashboard", map[string]any{}))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -138,7 +138,7 @@ func TestHandleDeleteDashboard_ClientError(t *testing.T) {
 		},
 	}
 	h := newTestHandler(mock)
-	result, err := h.handleDeleteDashboard(testCtx(), makeToolRequest("signoz_delete_dashboard", map[string]any{
+	result, err := h.handleDeleteDashboard(testCtx(), makeToolRequest("bylonis_delete_dashboard", map[string]any{
 		"uuid": "nonexistent-uuid",
 	}))
 	if err != nil {
@@ -186,7 +186,7 @@ func TestHandleImportDashboard_Success(t *testing.T) {
 
 	h := newTestHandler(mock)
 	result, err := h.handleImportDashboard(testCtx(), makeToolRequest(
-		"signoz_import_dashboard",
+		"bylonis_import_dashboard",
 		map[string]any{"path": "hostmetrics/hostmetrics.json"},
 	))
 	if err != nil {
@@ -213,7 +213,7 @@ func TestHandleImportDashboard_Success(t *testing.T) {
 func TestHandleImportDashboard_MissingPath(t *testing.T) {
 	h := newTestHandler(&client.MockClient{})
 	result, err := h.handleImportDashboard(testCtx(), makeToolRequest(
-		"signoz_import_dashboard",
+		"bylonis_import_dashboard",
 		map[string]any{},
 	))
 	if err != nil {
@@ -228,7 +228,7 @@ func TestHandleImportDashboard_RejectsAbsoluteAndURL(t *testing.T) {
 	h := newTestHandler(&client.MockClient{})
 	for _, bad := range []string{"/etc/passwd", "https://example.com/x.json", "..\\windows", "../escape.json"} {
 		result, err := h.handleImportDashboard(testCtx(), makeToolRequest(
-			"signoz_import_dashboard",
+			"bylonis_import_dashboard",
 			map[string]any{"path": bad},
 		))
 		if err != nil {
@@ -243,7 +243,7 @@ func TestHandleImportDashboard_RejectsAbsoluteAndURL(t *testing.T) {
 func TestHandleListDashboardTemplates_FullCatalog(t *testing.T) {
 	h := newTestHandler(&client.MockClient{})
 	result, err := h.handleListDashboardTemplates(testCtx(), makeToolRequest(
-		"signoz_list_dashboard_templates",
+		"bylonis_list_dashboard_templates",
 		map[string]any{},
 	))
 	if err != nil {
@@ -294,7 +294,7 @@ func TestHandleImportDashboard_NotFound(t *testing.T) {
 
 	h := newTestHandler(&client.MockClient{})
 	result, err := h.handleImportDashboard(testCtx(), makeToolRequest(
-		"signoz_import_dashboard",
+		"bylonis_import_dashboard",
 		map[string]any{"path": "no/such/template.json"},
 	))
 	if err != nil {

@@ -17,7 +17,7 @@ func TestDocsHandlers(t *testing.T) {
 
 	t.Run("index not ready", func(t *testing.T) {
 		h := newTestHandler(nil)
-		result, err := h.handleSearchDocs(ctx, makeToolRequest("signoz_search_docs", map[string]any{"query": "docker"}))
+		result, err := h.handleSearchDocs(ctx, makeToolRequest("bylonis_search_docs", map[string]any{"query": "docker"}))
 		require.NoError(t, err)
 		require.True(t, result.IsError)
 		require.Equal(t, docsindex.CodeIndexNotReady, result.StructuredContent.(map[string]any)["code"])
@@ -27,7 +27,7 @@ func TestDocsHandlers(t *testing.T) {
 	defer cleanup()
 
 	t.Run("search section filter and snippet", func(t *testing.T) {
-		result, err := h.handleSearchDocs(ctx, makeToolRequest("signoz_search_docs", map[string]any{
+		result, err := h.handleSearchDocs(ctx, makeToolRequest("bylonis_search_docs", map[string]any{
 			"query":        "docker collector logs",
 			"section_slug": "logs-management",
 			"limit":        5,
@@ -41,29 +41,29 @@ func TestDocsHandlers(t *testing.T) {
 	})
 
 	t.Run("fetch errors", func(t *testing.T) {
-		result, err := h.handleFetchDoc(ctx, makeToolRequest("signoz_fetch_doc", map[string]any{"url": "https://example.com/docs/logs/"}))
+		result, err := h.handleFetchDoc(ctx, makeToolRequest("bylonis_fetch_doc", map[string]any{"url": "https://example.com/docs/logs/"}))
 		require.NoError(t, err)
 		require.Equal(t, docsindex.CodeOutOfScopeURL, result.StructuredContent.(map[string]any)["code"])
 
-		result, err = h.handleFetchDoc(ctx, makeToolRequest("signoz_fetch_doc", map[string]any{"url": "https://signoz.io/docs/missing/"}))
+		result, err = h.handleFetchDoc(ctx, makeToolRequest("bylonis_fetch_doc", map[string]any{"url": "https://signoz.io/docs/missing/"}))
 		require.NoError(t, err)
 		require.Equal(t, docsindex.CodeDocNotFound, result.StructuredContent.(map[string]any)["code"])
 
-		result, err = h.handleFetchDoc(ctx, makeToolRequest("signoz_fetch_doc", map[string]any{"url": "/docs/logs-management/send-logs-to-signoz/", "heading": "missing-heading"}))
+		result, err = h.handleFetchDoc(ctx, makeToolRequest("bylonis_fetch_doc", map[string]any{"url": "/docs/logs-management/send-logs-to-signoz/", "heading": "missing-heading"}))
 		require.NoError(t, err)
 		require.Equal(t, docsindex.CodeHeadingMissing, result.StructuredContent.(map[string]any)["code"])
 		require.NotEmpty(t, result.StructuredContent.(map[string]any)["available_headings"])
 	})
 
 	t.Run("fetch truncation and duplicate heading disambiguation", func(t *testing.T) {
-		result, err := h.handleFetchDoc(ctx, makeToolRequest("signoz_fetch_doc", map[string]any{"url": "/docs/large/"}))
+		result, err := h.handleFetchDoc(ctx, makeToolRequest("bylonis_fetch_doc", map[string]any{"url": "/docs/large/"}))
 		require.NoError(t, err)
 		require.False(t, result.IsError)
 		fetched := result.StructuredContent.(docsindex.FetchResult)
 		require.Equal(t, "size", fetched.TruncationReason)
 		require.LessOrEqual(t, len(fetched.Content), 256*1024)
 
-		result, err = h.handleFetchDoc(ctx, makeToolRequest("signoz_fetch_doc", map[string]any{"url": "/docs/duplicate-headings/", "heading": "setup-2"}))
+		result, err = h.handleFetchDoc(ctx, makeToolRequest("bylonis_fetch_doc", map[string]any{"url": "/docs/duplicate-headings/", "heading": "setup-2"}))
 		require.NoError(t, err)
 		fetched = result.StructuredContent.(docsindex.FetchResult)
 		require.Equal(t, "setup-2", fetched.Heading)

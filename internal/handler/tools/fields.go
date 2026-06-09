@@ -13,7 +13,7 @@ import (
 func (h *Handler) RegisterFieldsHandlers(s *server.MCPServer) {
 	h.logger.Debug("Registering fields handlers")
 
-	getFieldKeysTool := mcp.NewTool("signoz_get_field_keys",
+	getFieldKeysTool := mcp.NewTool("bylonis_get_field_keys",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -28,7 +28,7 @@ func (h *Handler) RegisterFieldsHandlers(s *server.MCPServer) {
 
 	addTool(s, getFieldKeysTool, h.handleGetFieldKeys)
 
-	getFieldValuesTool := mcp.NewTool("signoz_get_field_values",
+	getFieldValuesTool := mcp.NewTool("bylonis_get_field_values",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -63,7 +63,7 @@ func (h *Handler) handleGetFieldKeys(ctx context.Context, req mcp.CallToolReques
 	fieldDataType, _ := args["fieldDataType"].(string)
 	source, _ := args["source"].(string)
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_get_field_keys", slog.String("signal", signal), slog.String("searchText", searchText))
+	h.logger.DebugContext(ctx, "Tool called: bylonis_get_field_keys", slog.String("signal", signal), slog.String("searchText", searchText))
 	client, err := h.GetClient(ctx)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
@@ -99,7 +99,7 @@ func (h *Handler) handleGetFieldValues(ctx context.Context, req mcp.CallToolRequ
 	metricName, _ := args["metricName"].(string)
 	source, _ := args["source"].(string)
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_get_field_values", slog.String("signal", signal), slog.String("name", name))
+	h.logger.DebugContext(ctx, "Tool called: bylonis_get_field_values", slog.String("signal", signal), slog.String("name", name))
 	client, err := h.GetClient(ctx)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil

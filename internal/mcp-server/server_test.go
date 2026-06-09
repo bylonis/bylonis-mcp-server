@@ -1075,7 +1075,7 @@ func TestUserScopedAnalyticsUseJWTIdentity(t *testing.T) {
 		return &mcp.CallToolResult{}, nil
 	})(ctx, mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
-			Name: "signoz_list_services",
+			Name: "bylonis_list_services",
 			Arguments: map[string]any{
 				"searchContext": "list services",
 			},
@@ -1124,8 +1124,8 @@ func TestUserScopedAnalyticsUseJWTIdentity(t *testing.T) {
 	if toolCall.event != analytics.EventToolCalled || toolCall.groupID != "org-123" || toolCall.userID != "user-123" {
 		t.Fatalf("tool track call = (%q, %q, %q), want (%q, %q, %q)", toolCall.groupID, toolCall.userID, toolCall.event, "org-123", "user-123", analytics.EventToolCalled)
 	}
-	if toolCall.attrs[analytics.AttrToolName] != "signoz_list_services" {
-		t.Fatalf("tool name attr = %v, want %q", toolCall.attrs[analytics.AttrToolName], "signoz_list_services")
+	if toolCall.attrs[analytics.AttrToolName] != "bylonis_list_services" {
+		t.Fatalf("tool name attr = %v, want %q", toolCall.attrs[analytics.AttrToolName], "bylonis_list_services")
 	}
 	if toolCall.attrs[analytics.AttrToolIsError] != false {
 		t.Fatalf("tool error attr = %v, want false", toolCall.attrs[analytics.AttrToolIsError])
@@ -1188,7 +1188,7 @@ func TestAnalyticsDisabledSkipsIdentityLookup(t *testing.T) {
 		return &mcp.CallToolResult{}, nil
 	})(ctx, mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
-			Name: "signoz_list_services",
+			Name: "bylonis_list_services",
 			Arguments: map[string]any{
 				"searchContext": "list services",
 			},
@@ -1252,7 +1252,7 @@ func TestToolCallReturnsBeforeAsyncAnalyticsCompletes(t *testing.T) {
 		return &mcp.CallToolResult{}, nil
 	})(ctx, mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
-			Name: "signoz_list_services",
+			Name: "bylonis_list_services",
 			Arguments: map[string]any{
 				"searchContext": "list services",
 			},
@@ -1331,7 +1331,7 @@ func TestClientInfoAttachesToSessionRegisteredEvent(t *testing.T) {
 	_, err := middleware(func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return &mcp.CallToolResult{}, nil
 	})(ctx, mcp.CallToolRequest{
-		Params: mcp.CallToolParams{Name: "signoz_list_services"},
+		Params: mcp.CallToolParams{Name: "bylonis_list_services"},
 	})
 	if err != nil {
 		t.Fatalf("middleware error = %v", err)
@@ -2593,7 +2593,7 @@ func TestLoggingMiddleware_MetricCardinalityInvariants(t *testing.T) {
 	}
 	chain := mcpServer.loggingMiddleware()(noopTool)
 	if _, err := chain(ctx, mcp.CallToolRequest{
-		Params: mcp.CallToolParams{Name: "signoz_list_services"},
+		Params: mcp.CallToolParams{Name: "bylonis_list_services"},
 	}); err != nil {
 		t.Fatalf("middleware error = %v", err)
 	}
@@ -2855,7 +2855,7 @@ func TestToolCallEventHasErrorType(t *testing.T) {
 			Content: []mcp.Content{mcp.TextContent{Type: "text", Text: "unexpected status 502 from upstream"}},
 		}, nil
 	})(ctx, mcp.CallToolRequest{
-		Params: mcp.CallToolParams{Name: "signoz_list_services"},
+		Params: mcp.CallToolParams{Name: "bylonis_list_services"},
 	})
 	if err != nil {
 		t.Fatalf("middleware error = %v", err)
@@ -2904,7 +2904,7 @@ func TestToolCallSpanHasResultBytes(t *testing.T) {
 			Content: []mcp.Content{mcp.TextContent{Type: "text", Text: body}},
 		}, nil
 	})(context.Background(), mcp.CallToolRequest{
-		Params: mcp.CallToolParams{Name: "signoz_list_services"},
+		Params: mcp.CallToolParams{Name: "bylonis_list_services"},
 	})
 	if err != nil {
 		t.Fatalf("middleware error = %v", err)
@@ -2948,7 +2948,7 @@ func TestToolCallSpanEmitsZeroResultBytes(t *testing.T) {
 	_, err := middleware(func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return &mcp.CallToolResult{}, nil
 	})(context.Background(), mcp.CallToolRequest{
-		Params: mcp.CallToolParams{Name: "signoz_list_services"},
+		Params: mcp.CallToolParams{Name: "bylonis_list_services"},
 	})
 	if err != nil {
 		t.Fatalf("middleware error = %v", err)

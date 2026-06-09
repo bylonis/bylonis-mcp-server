@@ -16,7 +16,7 @@ import (
 func (h *Handler) RegisterServiceHandlers(s *server.MCPServer) {
 	h.logger.Debug("Registering service handlers")
 
-	listTool := mcp.NewTool("signoz_list_services",
+	listTool := mcp.NewTool("bylonis_list_services",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -30,7 +30,7 @@ func (h *Handler) RegisterServiceHandlers(s *server.MCPServer) {
 
 	addTool(s, listTool, h.handleListServices)
 
-	getOpsTool := mcp.NewTool("signoz_get_service_top_operations",
+	getOpsTool := mcp.NewTool("bylonis_get_service_top_operations",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
@@ -51,7 +51,7 @@ func (h *Handler) handleListServices(ctx context.Context, req mcp.CallToolReques
 	start, end := timeutil.GetTimestampsWithDefaults(args, "ns")
 	limit, offset := paginate.ParseParams(req.Params.Arguments)
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_list_services", slog.String("start", start), slog.String("end", end), slog.Int("limit", limit), slog.Int("offset", offset))
+	h.logger.DebugContext(ctx, "Tool called: bylonis_list_services", slog.String("start", start), slog.String("end", end), slog.Int("limit", limit), slog.Int("offset", offset))
 	client, err := h.GetClient(ctx)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
@@ -90,7 +90,7 @@ func (h *Handler) handleGetServiceTopOperations(ctx context.Context, req mcp.Cal
 	}
 	if service == "" {
 		h.logger.WarnContext(ctx, "Empty service parameter")
-		return mcp.NewToolResultError(`Parameter validation failed: "service" cannot be empty. Provide a valid service name. Use signoz_list_services tool to see available services.`), nil
+		return mcp.NewToolResultError(`Parameter validation failed: "service" cannot be empty. Provide a valid service name. Use bylonis_list_services tool to see available services.`), nil
 	}
 
 	start, end := timeutil.GetTimestampsWithDefaults(args, "ns")
@@ -102,7 +102,7 @@ func (h *Handler) handleGetServiceTopOperations(ctx context.Context, req mcp.Cal
 		tags = json.RawMessage("[]")
 	}
 
-	h.logger.DebugContext(ctx, "Tool called: signoz_get_service_top_operations",
+	h.logger.DebugContext(ctx, "Tool called: bylonis_get_service_top_operations",
 		slog.String("start", start),
 		slog.String("end", end),
 		slog.String("service", service))

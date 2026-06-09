@@ -337,57 +337,57 @@ HTTP mode exposes unauthenticated probe endpoints. New Kubernetes deployments sh
 
 | Tool | Description |
 |------|-------------|
-| `signoz_list_metrics` | Search and list available metrics |
-| `signoz_query_metrics` | Query metrics with smart aggregation defaults |
-| `signoz_get_field_keys` | Discover available field keys for metrics, traces, or logs |
-| `signoz_get_field_values` | Get possible values for a field key |
-| `signoz_list_alerts` | List firing/silenced/inhibited Alertmanager alert *instances* (not rule definitions) |
-| `signoz_list_alert_rules` | List configured alert rules, including inactive/OK and disabled rules |
-| `signoz_get_alert` | Get an alert rule definition by ID via GET /api/v2/rules/{ruleId} |
-| `signoz_get_alert_history` | Get alert state history timeline for a rule |
-| `signoz_create_alert` | Create an alert rule via POST /api/v2/rules; v2alpha1 for threshold/promql, v1 for anomaly |
-| `signoz_update_alert` | Update an alert rule by UUIDv7 via PUT /api/v2/rules/{ruleId} |
-| `signoz_delete_alert` | Delete an alert rule by UUIDv7 via DELETE /api/v2/rules/{ruleId} |
-| `signoz_list_dashboards` | List all dashboards with summaries |
-| `signoz_get_dashboard` | Get full dashboard configuration |
-| `signoz_create_dashboard` | Create a new dashboard |
-| `signoz_update_dashboard` | Update an existing dashboard |
-| `signoz_delete_dashboard` | Delete a dashboard by UUID |
-| `signoz_import_dashboard` | Create a dashboard from a curated SigNoz/dashboards template by path |
-| `signoz_list_dashboard_templates` | List the bundled curated SigNoz dashboard template catalog so the model can pick a template |
-| `signoz_list_services` | List services within a time range |
-| `signoz_get_service_top_operations` | Get top operations for a service |
-| `signoz_list_views` | List saved Explorer views for a sourcePage (traces/logs/metrics) |
-| `signoz_get_view` | Get a saved view by UUID |
-| `signoz_search_docs` | Search official SigNoz docs for product, setup, instrumentation, config, API, deployment, or troubleshooting questions |
-| `signoz_fetch_doc` | Fetch full markdown for one official SigNoz docs page or heading |
-| `signoz_create_view` | Create a new saved Explorer view |
-| `signoz_update_view` | Replace an existing saved view (full-body PUT) |
-| `signoz_delete_view` | Delete a saved view by UUID |
-| `signoz_aggregate_logs` | Aggregate logs (count, avg, p99, etc.) with grouping |
-| `signoz_search_logs` | Search logs with flexible filtering |
-| `signoz_aggregate_traces` | Aggregate trace statistics with grouping |
-| `signoz_search_traces` | Search traces with flexible filtering |
-| `signoz_get_trace_details` | Get full trace with all spans |
-| `signoz_execute_builder_query` | Execute a raw Query Builder v5 query |
-| `signoz_list_notification_channels` | List notification channels |
-| `signoz_get_notification_channel` | Get a single notification channel by ID |
-| `signoz_create_notification_channel` | Create a notification channel and send a test notification |
-| `signoz_update_notification_channel` | Update a notification channel and send a test notification |
-| `signoz_delete_notification_channel` | Delete a notification channel by ID |
+| `bylonis_list_metrics` | Search and list available metrics |
+| `bylonis_query_metrics` | Query metrics with smart aggregation defaults |
+| `bylonis_get_field_keys` | Discover available field keys for metrics, traces, or logs |
+| `bylonis_get_field_values` | Get possible values for a field key |
+| `bylonis_list_alerts` | List firing/silenced/inhibited Alertmanager alert *instances* (not rule definitions) |
+| `bylonis_list_alert_rules` | List configured alert rules, including inactive/OK and disabled rules |
+| `bylonis_get_alert` | Get an alert rule definition by ID via GET /api/v2/rules/{ruleId} |
+| `bylonis_get_alert_history` | Get alert state history timeline for a rule |
+| `bylonis_create_alert` | Create an alert rule via POST /api/v2/rules; v2alpha1 for threshold/promql, v1 for anomaly |
+| `bylonis_update_alert` | Update an alert rule by UUIDv7 via PUT /api/v2/rules/{ruleId} |
+| `bylonis_delete_alert` | Delete an alert rule by UUIDv7 via DELETE /api/v2/rules/{ruleId} |
+| `bylonis_list_dashboards` | List all dashboards with summaries |
+| `bylonis_get_dashboard` | Get full dashboard configuration |
+| `bylonis_create_dashboard` | Create a new dashboard |
+| `bylonis_update_dashboard` | Update an existing dashboard |
+| `bylonis_delete_dashboard` | Delete a dashboard by UUID |
+| `bylonis_import_dashboard` | Create a dashboard from a curated SigNoz/dashboards template by path |
+| `bylonis_list_dashboard_templates` | List the bundled curated SigNoz dashboard template catalog so the model can pick a template |
+| `bylonis_list_services` | List services within a time range |
+| `bylonis_get_service_top_operations` | Get top operations for a service |
+| `bylonis_list_views` | List saved Explorer views for a sourcePage (traces/logs/metrics) |
+| `bylonis_get_view` | Get a saved view by UUID |
+| `bylonis_search_docs` | Search official SigNoz docs for product, setup, instrumentation, config, API, deployment, or troubleshooting questions |
+| `bylonis_fetch_doc` | Fetch full markdown for one official SigNoz docs page or heading |
+| `bylonis_create_view` | Create a new saved Explorer view |
+| `bylonis_update_view` | Replace an existing saved view (full-body PUT) |
+| `bylonis_delete_view` | Delete a saved view by UUID |
+| `bylonis_aggregate_logs` | Aggregate logs (count, avg, p99, etc.) with grouping |
+| `bylonis_search_logs` | Search logs with flexible filtering |
+| `bylonis_aggregate_traces` | Aggregate trace statistics with grouping |
+| `bylonis_search_traces` | Search traces with flexible filtering |
+| `bylonis_get_trace_details` | Get full trace with all spans |
+| `bylonis_execute_builder_query` | Execute a raw Query Builder v5 query |
+| `bylonis_list_notification_channels` | List notification channels |
+| `bylonis_get_notification_channel` | Get a single notification channel by ID |
+| `bylonis_create_notification_channel` | Create a notification channel and send a test notification |
+| `bylonis_update_notification_channel` | Update a notification channel and send a test notification |
+| `bylonis_delete_notification_channel` | Delete a notification channel by ID |
 
 For detailed usage and examples, see the [full documentation](https://signoz.io/docs/ai/signoz-mcp-server/).
 
 ### Agent Routing Guidance
 
-Use `signoz_search_docs` for any SigNoz product question: how-to, feature usage, setup, configuration, API behavior, deployment, instrumentation, OpenTelemetry integration with SigNoz, and troubleshooting. Use live data tools for actual telemetry, alert state, dashboard contents, saved views, and tenant-specific resources. When a docs search result needs exact commands or a specific section, call `signoz_fetch_doc`.
+Use `bylonis_search_docs` for any SigNoz product question: how-to, feature usage, setup, configuration, API behavior, deployment, instrumentation, OpenTelemetry integration with SigNoz, and troubleshooting. Use live data tools for actual telemetry, alert state, dashboard contents, saved views, and tenant-specific resources. When a docs search result needs exact commands or a specific section, call `bylonis_fetch_doc`.
 
 Docs tools use the same authentication path as other MCP tools.
 
 <details>
 <summary><strong>Parameter Reference</strong></summary>
 
-#### `signoz_list_metrics`
+#### `bylonis_list_metrics`
 
 Search and list available metrics from SigNoz. Supports filtering by name substring, time range, and source.
 
@@ -398,7 +398,7 @@ Search and list available metrics from SigNoz. Supports filtering by name substr
   - `end` (optional) - End time in unix milliseconds
   - `source` (optional) - Data-source filter. Use `"meter"` to list Cost Meter metrics — the usage/billing metrics SigNoz meters on (currently telemetry ingestion volume); omit for the default metrics store
 
-#### `signoz_query_metrics`
+#### `bylonis_query_metrics`
 
 Query metrics with smart aggregation defaults and validation. Automatically applies the right timeAggregation and spaceAggregation based on metric type (gauge, counter, histogram). Auto-fetches metric metadata if not provided.
 
@@ -420,11 +420,11 @@ Query metrics with smart aggregation defaults and validation. Automatically appl
   - `formulaQueries` (optional) - JSON array of additional named metric queries for formula
   - `source` (optional) - Data-source filter. Use `"meter"` to query Cost Meter data; omit for the default metrics store
 
-#### `signoz_list_alerts`
+#### `bylonis_list_alerts`
 
-Lists currently firing/silenced/inhibited alert *instances* from Alertmanager — **not** rule definitions. Use `signoz_list_alert_rules` for configured rules, `signoz_get_alert` with a `ruleId` for one full rule definition, or `signoz_get_alert_history` for the state timeline.
+Lists currently firing/silenced/inhibited alert *instances* from Alertmanager — **not** rule definitions. Use `bylonis_list_alert_rules` for configured rules, `bylonis_get_alert` with a `ruleId` for one full rule definition, or `bylonis_get_alert_history` for the state timeline.
 
-#### `signoz_list_alert_rules`
+#### `bylonis_list_alert_rules`
 
 Lists configured alert rules from `GET /api/v2/rules`, including inactive/OK and disabled rules. Returns compact summaries with `ruleId`, `alert`, `alertType`, `ruleType`, `state`, `disabled`, `severity`, `labels`, `createdAt`, and `updatedAt`.
 
@@ -432,24 +432,24 @@ Lists configured alert rules from `GET /api/v2/rules`, including inactive/OK and
   - `limit` (optional) - Maximum number of rules to return (default: 50)
   - `offset` (optional) - Number of rules to skip for pagination (default: 0)
 
-#### `signoz_get_alert`
+#### `bylonis_get_alert`
 
 Gets the rule definition for an alert (`GET /api/v2/rules/{ruleId}`).
 
 - **Parameters**: `ruleId` (required) - Alert rule ID (UUIDv7 on v2-capable servers).
 - **Note**: Response shape depends on the SigNoz server version. Post-#10997 servers return the canonical `Rule` type with `createdAt/updatedAt/createdBy/updatedBy`; older servers return `GettableRule` with `createAt/updateAt/createBy/updateBy` (no 'd').
 
-#### `signoz_list_dashboards`
+#### `bylonis_list_dashboards`
 
 Lists all dashboards with summaries (name, UUID, description, tags).
 
-#### `signoz_get_dashboard`
+#### `bylonis_get_dashboard`
 
 Gets complete dashboard configuration.
 
 - **Parameters**: `uuid` (required) - Dashboard UUID
 
-#### `signoz_create_dashboard`
+#### `bylonis_create_dashboard`
 
 Creates a dashboard.
 
@@ -461,22 +461,22 @@ Creates a dashboard.
   - `variables` (optional) – Map of variables available for use in queries
   - `widgets` (required) – List of widgets added to the dashboard
 
-#### `signoz_import_dashboard`
+#### `bylonis_import_dashboard`
 
 Creates a dashboard from a curated template hosted in the [SigNoz/dashboards](https://github.com/SigNoz/dashboards) repo (`main` branch). The server fetches the template JSON, validates it, and creates the dashboard in one call.
 
-To discover available paths, call `signoz_list_dashboard_templates` first and let the model pick the best match.
+To discover available paths, call `bylonis_list_dashboard_templates` first and let the model pick the best match.
 
 - **Parameters:**
   - `path` (required) – Template path within the SigNoz/dashboards repo, e.g. `hostmetrics/hostmetrics.json`
 
-#### `signoz_list_dashboard_templates`
+#### `bylonis_list_dashboard_templates`
 
-Returns the full bundled catalog of curated SigNoz dashboard templates (id, title, path, description, category, keywords) as a JSON array. Pair with `signoz_import_dashboard`: have the model read the catalog, choose the entry that best matches the user's intent, then import it by its `path`.
+Returns the full bundled catalog of curated SigNoz dashboard templates (id, title, path, description, category, keywords) as a JSON array. Pair with `bylonis_import_dashboard`: have the model read the catalog, choose the entry that best matches the user's intent, then import it by its `path`.
 
 - **Parameters:** none
 
-#### `signoz_update_dashboard`
+#### `bylonis_update_dashboard`
 
 Updates an existing dashboard.
 
@@ -490,7 +490,7 @@ Updates an existing dashboard.
     - `variables` (optional) – Map of variables available for use in queries
     - `widgets` (required) – Complete set of widgets defining the updated dashboard
 
-#### `signoz_list_services`
+#### `bylonis_list_services`
 
 Lists all services within a time range.
 
@@ -499,7 +499,7 @@ Lists all services within a time range.
   - `start` (optional) - Start time in nanoseconds (defaults to 6 hours ago)
   - `end` (optional) - End time in nanoseconds (defaults to now)
 
-#### `signoz_get_service_top_operations`
+#### `bylonis_get_service_top_operations`
 
 Gets top operations for a specific service.
 
@@ -510,7 +510,7 @@ Gets top operations for a specific service.
   - `end` (optional) - End time in nanoseconds (defaults to now)
   - `tags` (optional) - JSON array of tags
 
-#### `signoz_get_alert_history`
+#### `bylonis_get_alert_history`
 
 Gets alert history timeline for a specific rule.
 
@@ -523,7 +523,7 @@ Gets alert history timeline for a specific rule.
   - `limit` (optional) - Limit number of results (default: 20)
   - `order` (optional) - Sort order: 'asc' or 'desc' (default: 'asc')
 
-#### `signoz_list_views`
+#### `bylonis_list_views`
 
 List SigNoz saved Explorer views for a given sourcePage. Supports pagination; response includes a `pagination` block with `total`, `hasMore`, and `nextOffset`.
 
@@ -534,13 +534,13 @@ List SigNoz saved Explorer views for a given sourcePage. Supports pagination; re
   - `limit` (optional) - Page size (default: 50)
   - `offset` (optional) - Number of results to skip (default: 0)
 
-#### `signoz_get_view`
+#### `bylonis_get_view`
 
 Get a single saved view by UUID.
 
 - **Parameters**: `viewId` (required) - Saved view UUID
 
-#### `signoz_search_docs`
+#### `bylonis_search_docs`
 
 Search official SigNoz documentation with BM25 over indexed markdown content.
 
@@ -550,7 +550,7 @@ Search official SigNoz documentation with BM25 over indexed markdown content.
   - `section_slug` (optional) - Exact top-level docs section filter, such as `setup`, `logs-management`, `apm-distributed-tracing`, `metrics`, `alerts`, `dashboards`, `signoz-apis`, `querying`, or `collection-agents`
   - `searchContext` - User's original question
 
-#### `signoz_fetch_doc`
+#### `bylonis_fetch_doc`
 
 Fetch full markdown for one official SigNoz docs page from the local index. Accepts only `https://signoz.io/docs/...` URLs or `/docs/...` paths.
 
@@ -563,23 +563,23 @@ Fetch full markdown for one official SigNoz docs page from the local index. Acce
 
 Read-only MCP resource containing the indexed docs sitemap used by the docs search and fetch tools.
 
-#### `signoz_create_view`
+#### `bylonis_create_view`
 
 Create a new saved Explorer view.
 
 - **Parameters**: JSON payload matching the `SavedView` schema.
 - **Tip**: Read MCP resources `signoz://view/instructions` and `signoz://view/examples` before composing payloads.
 
-#### `signoz_update_view`
+#### `bylonis_update_view`
 
 Replace an existing saved view (full-body PUT).
 
 - **Parameters**:
   - `viewId` (required) - UUID of the view to replace
   - `view` (required) - Full `SavedView` object (`name`, `sourcePage`, `compositeQuery`, plus any of `category`, `tags`, `extraData`)
-- **Tip**: Read MCP resources `signoz://view/instructions` and `signoz://view/examples` before composing payloads. Call `signoz_get_view` first, pass its `data` object under `view` with whichever fields changed. Partial bodies wipe unspecified fields.
+- **Tip**: Read MCP resources `signoz://view/instructions` and `signoz://view/examples` before composing payloads. Call `bylonis_get_view` first, pass its `data` object under `view` with whichever fields changed. Partial bodies wipe unspecified fields.
 
-#### `signoz_delete_view`
+#### `bylonis_delete_view`
 
 Delete a saved view by UUID.
 
@@ -587,7 +587,7 @@ Delete a saved view by UUID.
 
 
 
-#### `signoz_aggregate_logs`
+#### `bylonis_aggregate_logs`
 
 Aggregate logs with count, average, sum, min, max, or percentiles, optionally grouped by fields.
 
@@ -603,7 +603,7 @@ Aggregate logs with count, average, sum, min, max, or percentiles, optionally gr
   - `timeRange` (optional) - Time range like '30m', '1h', '6h', '24h' (default: '1h'; ignored when both `start` and `end` are provided)
   - `start` / `end` (optional) - Start/end time in milliseconds. When both are provided, they override `timeRange`
 
-#### `signoz_search_logs`
+#### `bylonis_search_logs`
 
 Search logs with flexible filtering across all services.
 
@@ -617,7 +617,7 @@ Search logs with flexible filtering across all services.
   - `limit` (optional) - Maximum number of logs to return (default: 100, max: 10000; higher values are clamped — paginate with `offset`)
   - `offset` (optional) - Offset for pagination (default: 0)
 
-#### `signoz_get_field_keys`
+#### `bylonis_get_field_keys`
 
 Get available field keys for a given signal (metrics, traces, or logs).
 
@@ -629,7 +629,7 @@ Get available field keys for a given signal (metrics, traces, or logs).
   - `fieldDataType` (optional) - Filter by data type (e.g., `string`, `int64`)
   - `source` (optional) - Filter by source
 
-#### `signoz_get_field_values`
+#### `bylonis_get_field_values`
 
 Get possible values for a specific field key for a given signal.
 
@@ -641,7 +641,7 @@ Get possible values for a specific field key for a given signal.
   - `source` (optional) - Filter by source
 
 
-#### `signoz_search_traces`
+#### `bylonis_search_traces`
 
 Search traces/spans with flexible filtering.
 
@@ -656,7 +656,7 @@ Search traces/spans with flexible filtering.
   - `limit` (optional) - Maximum number of traces to return (default: 100, max: 10000; higher values are clamped — paginate with `offset`)
   - `offset` (optional) - Offset for pagination (default: 0)
 
-#### `signoz_aggregate_traces`
+#### `bylonis_aggregate_traces`
 
 Aggregate trace statistics like count, average, sum, min, max, or percentiles over spans, optionally grouped by fields.
 
@@ -673,7 +673,7 @@ Aggregate trace statistics like count, average, sum, min, max, or percentiles ov
   - `timeRange` (optional) - Time range like '30m', '1h', '6h', '24h' (default: '1h'; ignored when both `start` and `end` are provided)
   - `start` / `end` (optional) - Start/end time in milliseconds. When both are provided, they override `timeRange`
 
-#### `signoz_get_trace_details`
+#### `bylonis_get_trace_details`
 
 Gets trace information including all spans and metadata.
 
@@ -686,7 +686,7 @@ Gets trace information including all spans and metadata.
 
 
 
-#### `signoz_create_alert`
+#### `bylonis_create_alert`
 
 Create a new alert rule in SigNoz via `POST /api/v2/rules`.
 
@@ -696,28 +696,28 @@ Create a new alert rule in SigNoz via `POST /api/v2/rules`.
   - `anomaly_rule` → **v1** schema: top-level `evalWindow` and `frequency`; `condition.op`/`matchType`/`target`/`algorithm`/`seasonality`; anomaly function inside `compositeQuery.queries[].spec.functions`. Omit `thresholds`, `evaluation`, `schemaVersion`.
 - **Tip**: Read MCP resources `signoz://alert/instructions` and `signoz://alert/examples` (the ten canonical SigNoz PR #11023 payloads plus a Cost Meter cumulative-budget example) before composing payloads. For `promql_rule`, also read `signoz://promql/instructions` — OTel dotted metric names require the Prometheus 3.x UTF-8 quoted-selector form.
 
-#### `signoz_update_alert`
+#### `bylonis_update_alert`
 
-Update an existing alert rule via `PUT /api/v2/rules/{ruleId}`. Replaces the full rule configuration — fetch the current rule with `signoz_get_alert` first and merge changes on top of it.
+Update an existing alert rule via `PUT /api/v2/rules/{ruleId}`. Replaces the full rule configuration — fetch the current rule with `bylonis_get_alert` first and merge changes on top of it.
 
 - **Parameters**:
-  - `ruleId` (required) - UUIDv7 of the rule to update (obtain from `signoz_list_alert_rules` / `signoz_get_alert`).
-  - Plus all fields of the alert rule schema (same shape as `signoz_create_alert`).
+  - `ruleId` (required) - UUIDv7 of the rule to update (obtain from `bylonis_list_alert_rules` / `bylonis_get_alert`).
+  - Plus all fields of the alert rule schema (same shape as `bylonis_create_alert`).
 
-#### `signoz_delete_alert`
+#### `bylonis_delete_alert`
 
 Delete an alert rule via `DELETE /api/v2/rules/{ruleId}`. Irreversible — confirm with the user first.
 
 - **Parameters**:
   - `ruleId` (required) - UUIDv7 of the rule to delete. The server rejects non-UUIDv7 values with `invalid_input`.
 
-#### `signoz_delete_dashboard`
+#### `bylonis_delete_dashboard`
 
 Delete a dashboard by UUID.
 
 - **Parameters**: `uuid` (required) - Dashboard UUID to delete
 
-#### `signoz_list_notification_channels`
+#### `bylonis_list_notification_channels`
 
 List notification channels configured in SigNoz.
 
@@ -725,7 +725,7 @@ List notification channels configured in SigNoz.
   - `limit` (optional) - Maximum number of channels to return (default: 50)
   - `offset` (optional) - Offset for pagination (default: 0)
 
-#### `signoz_create_notification_channel`
+#### `bylonis_create_notification_channel`
 
 Create a notification channel and send a test notification.
 
@@ -734,7 +734,7 @@ Create a notification channel and send a test notification.
   - `name` (required) - Channel name
   - Type-specific fields (required by channel type), such as `slack_api_url`, `webhook_url`, `pagerduty_routing_key`, `email_to`, `opsgenie_api_key`, or `msteams_webhook_url`
 
-#### `signoz_update_notification_channel`
+#### `bylonis_update_notification_channel`
 
 Update an existing notification channel and send a test notification.
 
@@ -744,21 +744,21 @@ Update an existing notification channel and send a test notification.
   - `name` (required) - Channel name
   - Full channel configuration fields for the selected channel type
 
-#### `signoz_get_notification_channel`
+#### `bylonis_get_notification_channel`
 
 Get a single notification channel by ID (`GET /api/v1/channels/{id}`).
 
 - **Parameters**:
   - `id` (required) - Notification channel UUID
 
-#### `signoz_delete_notification_channel`
+#### `bylonis_delete_notification_channel`
 
 Delete a notification channel by ID (`DELETE /api/v1/channels/{id}`). Irreversible — warn if alert rules still reference this channel.
 
 - **Parameters**:
   - `id` (required) - Notification channel UUID
 
-#### `signoz_execute_builder_query`
+#### `bylonis_execute_builder_query`
 
 Executes a SigNoz Query Builder v5 query.
 

@@ -25,7 +25,7 @@ type CreateAlertInput struct {
 }
 
 type UpdateAlertInput struct {
-	RuleID string `json:"ruleId" jsonschema:"required" jsonschema_extras:"description=UUIDv7 of the alert rule to update. Obtain it from signoz_list_alert_rules or signoz_get_alert."`
+	RuleID string `json:"ruleId" jsonschema:"required" jsonschema_extras:"description=UUIDv7 of the alert rule to update. Obtain it from bylonis_list_alert_rules or bylonis_get_alert."`
 	AlertRule
 	SearchContext string `json:"searchContext,omitempty" jsonschema_extras:"description=The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results."`
 }
@@ -45,7 +45,7 @@ type AlertRule struct {
 	Annotations       map[string]string `json:"annotations,omitempty" jsonschema_extras:"description=Annotations like description and summary. Supports template variables: {{$value}} for current metric value and {{$threshold}} for the threshold and {{$labels.key}} for label values."`
 	Disabled          bool              `json:"disabled,omitempty" jsonschema_extras:"description=Whether the alert rule is disabled. Defaults to false (enabled)."`
 	Source            string            `json:"source,omitempty" jsonschema_extras:"description=Source URL for the alert. Set automatically."`
-	PreferredChannels []string          `json:"preferredChannels,omitempty" jsonschema_extras:"description=Notification channel names to send alerts to. Use signoz_list_notification_channels to discover available channel names."`
+	PreferredChannels []string          `json:"preferredChannels,omitempty" jsonschema_extras:"description=Notification channel names to send alerts to. Use bylonis_list_notification_channels to discover available channel names."`
 	Version           string            `json:"version,omitempty" jsonschema_extras:"description=API version. Always v5. Set automatically if omitted."`
 
 	// v1-schema fields (used only when ruleType=anomaly_rule).
@@ -186,7 +186,7 @@ type BasicThreshold struct {
 	RecoveryTarget *float64 `json:"recoveryTarget" jsonschema_extras:"description=Hysteresis - value at which a firing alert is considered resolved. Useful to avoid flapping near the threshold (e.g. target=80 percent, recoveryTarget=75 percent). Use null to use the threshold target itself as the recovery point."`
 	MatchType      string   `json:"matchType" jsonschema:"required" jsonschema_extras:"description=How to evaluate the threshold. Canonical: at_least_once, all_the_times, on_average, in_total, last. Aliases accepted: avg (=on_average), sum (=in_total). Numeric 1-5 also accepted but discouraged."`
 	CompareOp      string   `json:"op" jsonschema:"required" jsonschema_extras:"description=Comparison operator. Canonical literals: above, below, equal, not_equal, above_or_equal, below_or_equal, outside_bounds. Short forms accepted: eq, not_eq, above_or_eq, below_or_eq. Symbolic accepted: >, <, =, !=, >=, <=. Numeric 1-7 also accepted but discouraged."`
-	Channels       []string `json:"channels,omitempty" jsonschema_extras:"description=Notification channel names for this threshold tier. Use signoz_list_notification_channels to discover available names. Ignored when notificationSettings.usePolicy is true."`
+	Channels       []string `json:"channels,omitempty" jsonschema_extras:"description=Notification channel names for this threshold tier. Use bylonis_list_notification_channels to discover available names. Ignored when notificationSettings.usePolicy is true."`
 }
 
 // AlertEvaluation holds the evaluation schedule for v2 schema alerts.
