@@ -323,7 +323,7 @@ func (h *Handler) HandleAuthorizeSubmit(w http.ResponseWriter, r *http.Request) 
 
 func (h *Handler) validateSigNozCredentials(ctx context.Context, signozURL, apiKey string) error {
 	// Only forward custom headers when the user-supplied URL matches the
-	// configured SIGNOZ_URL to prevent leaking proxy-auth credentials to
+	// configured BYLONIS_URL to prevent leaking proxy-auth credentials to
 	// attacker-controlled hosts.
 	var headers map[string]string
 	configNormalized, _ := util.NormalizeSigNozURL(h.config.URL)

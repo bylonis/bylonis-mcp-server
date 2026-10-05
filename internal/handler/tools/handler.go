@@ -85,7 +85,7 @@ func (h *Handler) GetClient(ctx context.Context) (signozclient.Client, error) {
 	}
 
 	// Only attach custom headers when the tenant URL matches the configured
-	// SIGNOZ_URL to prevent leaking proxy-auth credentials (e.g. Cloudflare
+	// BYLONIS_URL to prevent leaking proxy-auth credentials (e.g. Cloudflare
 	// Access tokens) to arbitrary third-party hosts.
 	var headers map[string]string
 	if strings.EqualFold(signozURL, h.configURL) {

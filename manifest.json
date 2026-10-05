@@ -18,8 +18,8 @@
       "command": "${__dirname}/server/signoz-mcp-server",
       "args": [],
       "env": {
-        "SIGNOZ_URL": "${user_config.signoz_url}",
-        "SIGNOZ_API_KEY": "${user_config.signoz_api_key}",
+        "BYLONIS_URL": "${user_config.signoz_url}",
+        "BYLONIS_API_KEY": "${user_config.signoz_api_key}",
         "LOG_LEVEL": "${user_config.log_level}"
       }
     }
