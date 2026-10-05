@@ -62,7 +62,7 @@ The envelope type must match compositeQuery.queryType:
 ### Builder query spec (builder_query)
 - name: query identifier (A, B, C, …)
 - signal: "metrics" | "logs" | "traces" (must match alertType)
-- source (metrics only): "meter" to alert on Cost Meter usage/billing metrics (e.g. signoz.meter.log.size); omit otherwise. Works with either evaluation kind — cumulative for daily/monthly spend budgets, rolling for rate/over-time meter alerts.
+- source (metrics only): "meter" to alert on Cost Meter usage/billing metrics (e.g. bylonis.meter.log.size); omit otherwise. Works with either evaluation kind — cumulative for daily/monthly spend budgets, rolling for rate/over-time meter alerts.
 - stepInterval: interval in seconds (60 for most alerts)
 - aggregations: see "Aggregation shapes" below
 - filter: {expression: "service.name = 'frontend' AND http.status_code >= 500"}
@@ -988,7 +988,7 @@ Fires when today's total log ingestion exceeds 10 GiB. The query targets Cost Me
             "source": "meter",
             "stepInterval": 3600,
             "aggregations": [
-              {"metricName": "signoz.meter.log.size", "timeAggregation": "increase", "spaceAggregation": "sum"}
+              {"metricName": "bylonis.meter.log.size", "timeAggregation": "increase", "spaceAggregation": "sum"}
             ]
           }
         }

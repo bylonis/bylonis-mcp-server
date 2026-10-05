@@ -9,23 +9,23 @@ BASIC QUERIES
 ================================================================================
 Fingerprints and Labels:
   SELECT DISTINCT fingerprint, labels
-  FROM signoz_metrics.distributed_time_series_v4
-  WHERE metric_name = 'signoz_calls_total'
+  FROM bylonis_metrics.distributed_time_series_v4
+  WHERE metric_name = 'bylonis_calls_total'
     AND temporality = 'Cumulative'
   LIMIT 10
 
 Extract Label Value:
   SELECT DISTINCT fingerprint,
          JSONExtractString(labels, 'service_name') AS service_name
-  FROM signoz_metrics.distributed_time_series_v4_1day
-  WHERE metric_name = 'signoz_calls_total'
+  FROM bylonis_metrics.distributed_time_series_v4_1day
+  WHERE metric_name = 'bylonis_calls_total'
     AND temporality = 'Cumulative'
   LIMIT 10
 
 Raw Samples:
   SELECT timestamp_ms, value
-  FROM signoz_metrics.distributed_samples_v4
-  WHERE metric_name = 'signoz_calls_total'
+  FROM bylonis_metrics.distributed_samples_v4
+  WHERE metric_name = 'bylonis_calls_total'
   LIMIT 10
 
 ================================================================================
@@ -43,17 +43,17 @@ Request Rate (Counter Metric):
           SELECT fingerprint,
                  toStartOfInterval(toDateTime(intDiv(unix_milli, 1000)), toIntervalSecond(60)) AS ts,
                  max(value) AS per_series_value
-          FROM signoz_metrics.distributed_samples_v4
+          FROM bylonis_metrics.distributed_samples_v4
           INNER JOIN (
               SELECT DISTINCT fingerprint
-              FROM signoz_metrics.time_series_v4_1day
-              WHERE metric_name = 'signoz_calls_total'
+              FROM bylonis_metrics.time_series_v4_1day
+              WHERE metric_name = 'bylonis_calls_total'
                 AND temporality = 'Cumulative'
                 AND unix_milli >= intDiv({{.start_timestamp_ms}}, 86400000) * 86400000
                 AND unix_milli < {{.end_timestamp_ms}}
                 AND JSONExtractString(labels, 'service_name') = 'frontend'
           ) AS filtered_time_series USING (fingerprint)
-          WHERE metric_name = 'signoz_calls_total'
+          WHERE metric_name = 'bylonis_calls_total'
             AND unix_milli >= {{.start_timestamp_ms}}
             AND unix_milli < {{.end_timestamp_ms}}
           GROUP BY fingerprint, ts
@@ -87,18 +87,18 @@ ERROR RATE (RATIO OF TWO METRICS)
               SELECT fingerprint,
                      toStartOfInterval(toDateTime(intDiv(unix_milli, 1000)), toIntervalSecond(60)) AS ts,
                      max(value) AS value
-              FROM signoz_metrics.distributed_samples_v4
+              FROM bylonis_metrics.distributed_samples_v4
               INNER JOIN (
                   SELECT DISTINCT fingerprint
-                  FROM signoz_metrics.time_series_v4_1day
-                  WHERE metric_name = 'signoz_calls_total'
+                  FROM bylonis_metrics.time_series_v4_1day
+                  WHERE metric_name = 'bylonis_calls_total'
                     AND temporality = 'Cumulative'
                     AND unix_milli >= intDiv({{.start_timestamp_ms}}, 86400000) * 86400000
                     AND unix_milli < {{.end_timestamp_ms}}
                     AND JSONExtractString(labels, 'service_name') = 'redis'
                     AND JSONExtractString(labels, 'status_code') IN ['STATUS_CODE_ERROR']
               ) AS filtered_time_series USING (fingerprint)
-              WHERE metric_name = 'signoz_calls_total'
+              WHERE metric_name = 'bylonis_calls_total'
                 AND unix_milli >= {{.start_timestamp_ms}}
                 AND unix_milli <= {{.end_timestamp_ms}}
               GROUP BY fingerprint, ts
@@ -121,17 +121,17 @@ ERROR RATE (RATIO OF TWO METRICS)
               SELECT fingerprint,
                      toStartOfInterval(toDateTime(intDiv(unix_milli, 1000)), toIntervalSecond(60)) AS ts,
                      max(value) AS value
-              FROM signoz_metrics.distributed_samples_v4
+              FROM bylonis_metrics.distributed_samples_v4
               INNER JOIN (
                   SELECT DISTINCT fingerprint
-                  FROM signoz_metrics.time_series_v4_1day
-                  WHERE metric_name = 'signoz_calls_total'
+                  FROM bylonis_metrics.time_series_v4_1day
+                  WHERE metric_name = 'bylonis_calls_total'
                     AND temporality = 'Cumulative'
                     AND unix_milli >= intDiv({{.start_timestamp_ms}}, 86400000) * 86400000
                     AND unix_milli < {{.end_timestamp_ms}}
                     AND JSONExtractString(labels, 'service_name') = 'redis'
               ) AS filtered_time_series USING (fingerprint)
-              WHERE metric_name = 'signoz_calls_total'
+              WHERE metric_name = 'bylonis_calls_total'
                 AND unix_milli >= {{.start_timestamp_ms}}
                 AND unix_milli <= {{.end_timestamp_ms}}
               GROUP BY fingerprint, ts
@@ -164,17 +164,17 @@ HISTOGRAM QUANTILE (LATENCY PERCENTILES)
               SELECT fingerprint, le,
                      toStartOfInterval(toDateTime(intDiv(unix_milli, 1000)), toIntervalSecond(60)) AS ts,
                      max(value) AS value
-              FROM signoz_metrics.distributed_samples_v4
+              FROM bylonis_metrics.distributed_samples_v4
               INNER JOIN (
                   SELECT DISTINCT JSONExtractString(labels, 'le') AS le, fingerprint
-                  FROM signoz_metrics.time_series_v4_1day
-                  WHERE metric_name = 'signoz_latency_bucket'
+                  FROM bylonis_metrics.time_series_v4_1day
+                  WHERE metric_name = 'bylonis_latency_bucket'
                     AND temporality = 'Cumulative'
                     AND unix_milli >= intDiv({{.start_timestamp_ms}}, 86400000) * 86400000
                     AND unix_milli < {{.end_timestamp_ms}}
                     AND JSONExtractString(labels, 'service_name') = 'frontend'
               ) AS filtered_time_series USING (fingerprint)
-              WHERE metric_name = 'signoz_latency_bucket'
+              WHERE metric_name = 'bylonis_latency_bucket'
                 AND unix_milli >= {{.start_timestamp_ms}}
                 AND unix_milli <= {{.end_timestamp_ms}}
               GROUP BY fingerprint, le, ts
@@ -245,8 +245,8 @@ Using Variables:
   JSONExtractString(labels, 'service_name') = {{.service_name}}
 
 Common Metric Types:
-  - Counter (cumulative):  signoz_calls_total, use rate calculation
-  - Histogram (buckets):   signoz_latency_bucket, use histogramQuantile()
+  - Counter (cumulative):  bylonis_calls_total, use rate calculation
+  - Histogram (buckets):   bylonis_latency_bucket, use histogramQuantile()
   - Gauge (point-in-time): Direct aggregation (avg, max, min)
 
 Performance Tips:
@@ -272,12 +272,12 @@ ESSENTIAL PATTERNS
 Resource Filter Template (CTE):
   WITH __resource_filter AS (
       SELECT fingerprint
-      FROM signoz_logs.distributed_logs_v2_resource
+      FROM bylonis_logs.distributed_logs_v2_resource
       WHERE (simpleJSONExtractString(labels, 'service.name') = 'myservice')
         AND seen_at_ts_bucket_start BETWEEN $start_timestamp - 1800 AND $end_timestamp
   )
   SELECT ...
-  FROM signoz_logs.distributed_logs_v2
+  FROM bylonis_logs.distributed_logs_v2
   WHERE resource_fingerprint GLOBAL IN __resource_filter
     AND timestamp >= $start_timestamp_nano
     AND timestamp <= $end_timestamp_nano
@@ -294,7 +294,7 @@ Basic Count Per Minute:
   WITH __resource_filter AS (...)
   SELECT toStartOfInterval(fromUnixTimestamp64Nano(timestamp), INTERVAL 1 MINUTE) AS ts,
          toFloat64(count()) AS value
-  FROM signoz_logs.distributed_logs_v2
+  FROM bylonis_logs.distributed_logs_v2
   WHERE resource_fingerprint GLOBAL IN __resource_filter
     AND timestamp >= $start_timestamp_nano
     AND timestamp <= $end_timestamp_nano
@@ -306,7 +306,7 @@ Group By Standard Attribute:
   SELECT toStartOfInterval(fromUnixTimestamp64Nano(timestamp), INTERVAL 1 MINUTE) AS ts,
          attributes_string['container_name'] as container_name,
          toFloat64(count()) AS value
-  FROM signoz_logs.distributed_logs_v2
+  FROM bylonis_logs.distributed_logs_v2
   WHERE resource_fingerprint GLOBAL IN __resource_filter
     AND timestamp >= $start_timestamp_nano
     AND timestamp <= $end_timestamp_nano
@@ -318,13 +318,13 @@ Group By Standard Attribute:
 Multiple Filters (Severity + Attribute + Resource):
   WITH __resource_filter AS (
       SELECT fingerprint
-      FROM signoz_logs.distributed_logs_v2_resource
+      FROM bylonis_logs.distributed_logs_v2_resource
       WHERE (simpleJSONExtractString(labels, 'service.name') = 'demo')
         AND seen_at_ts_bucket_start BETWEEN $start_timestamp - 1800 AND $end_timestamp
   )
   SELECT toStartOfInterval(fromUnixTimestamp64Nano(timestamp), INTERVAL 1 MINUTE) AS ts,
          toFloat64(count()) AS value
-  FROM signoz_logs.distributed_logs_v2
+  FROM bylonis_logs.distributed_logs_v2
   WHERE resource_fingerprint GLOBAL IN __resource_filter
     AND timestamp >= $start_timestamp_nano
     AND timestamp <= $end_timestamp_nano
@@ -350,7 +350,7 @@ Average from Timeseries:
   FROM (
       SELECT toStartOfInterval(fromUnixTimestamp64Nano(timestamp), INTERVAL 1 MINUTE) AS ts,
              toFloat64(count()) AS value
-      FROM signoz_logs.distributed_logs_v2
+      FROM bylonis_logs.distributed_logs_v2
       WHERE resource_fingerprint GLOBAL IN __resource_filter
         AND timestamp >= $start_timestamp_nano
         AND timestamp <= $end_timestamp_nano
@@ -367,7 +367,7 @@ Logs by Kubernetes Cluster:
   SELECT toStartOfInterval(fromUnixTimestamp64Nano(timestamp), INTERVAL 1 MINUTE) AS ts,
          resource.k8s.cluster.name::String as k8s_cluster_name,
          toFloat64(count()) AS value
-  FROM signoz_logs.distributed_logs_v2
+  FROM bylonis_logs.distributed_logs_v2
   WHERE resource_fingerprint GLOBAL IN __resource_filter
     AND timestamp >= $start_timestamp_nano
     AND timestamp <= $end_timestamp_nano
@@ -464,12 +464,12 @@ ESSENTIAL PATTERNS
 Resource Filter Template (CTE):
   WITH __resource_filter AS (
       SELECT fingerprint
-      FROM signoz_traces.distributed_traces_v3_resource
+      FROM bylonis_traces.distributed_traces_v3_resource
       WHERE (simpleJSONExtractString(labels, 'service.name') = 'myservice')
         AND seen_at_ts_bucket_start BETWEEN $start_timestamp - 1800 AND $end_timestamp
   )
   SELECT ...
-  FROM signoz_traces.distributed_signoz_index_v3
+  FROM bylonis_traces.distributed_signoz_index_v3
   WHERE resource_fingerprint GLOBAL IN __resource_filter
     AND timestamp BETWEEN {{.start_datetime}} AND {{.end_datetime}}
     AND ts_bucket_start BETWEEN $start_timestamp - 1800 AND $end_timestamp
@@ -485,7 +485,7 @@ Basic Count Per Minute:
   WITH __resource_filter AS (...)
   SELECT toStartOfInterval(timestamp, INTERVAL 1 MINUTE) AS ts,
          toFloat64(count()) AS value
-  FROM signoz_traces.distributed_signoz_index_v3
+  FROM bylonis_traces.distributed_signoz_index_v3
   WHERE resource_fingerprint GLOBAL IN __resource_filter
     AND timestamp BETWEEN {{.start_datetime}} AND {{.end_datetime}}
     AND ts_bucket_start BETWEEN $start_timestamp - 1800 AND $end_timestamp
@@ -495,7 +495,7 @@ Basic Count Per Minute:
 Custom Interval (100ms):
   SELECT fromUnixTimestamp64Milli(intDiv(toUnixTimestamp64Milli(timestamp), 100) * 100) AS interval,
          toFloat64(count()) AS count
-  FROM signoz_traces.distributed_signoz_index_v3
+  FROM bylonis_traces.distributed_signoz_index_v3
   WHERE resource_string_service$$name='frontend'
     AND duration_nano >= 50*exp10(6)  -- 50ms
     AND timestamp BETWEEN {{.start_datetime}} AND {{.end_datetime}}
@@ -507,7 +507,7 @@ Group By Standard Attribute:
   SELECT toStartOfInterval(timestamp, INTERVAL 1 MINUTE) AS interval,
          attributes_string['http.method'] AS method,
          toFloat64(avg(durationNano)) AS value
-  FROM signoz_traces.distributed_signoz_index_v3
+  FROM bylonis_traces.distributed_signoz_index_v3
   WHERE attributes_string['http.method'] != ''
     AND timestamp > now() - INTERVAL 30 MINUTE
     AND ts_bucket_start >= toUInt64(toUnixTimestamp(now() - toIntervalMinute(30))) - 1800
@@ -522,7 +522,7 @@ Average from Timeseries:
   FROM (
       SELECT toStartOfInterval(timestamp, INTERVAL 1 MINUTE) AS ts,
              toFloat64(avg(duration_nano)) AS value
-      FROM signoz_traces.distributed_signoz_index_v3
+      FROM bylonis_traces.distributed_signoz_index_v3
       WHERE resource_fingerprint GLOBAL IN __resource_filter
         AND timestamp BETWEEN {{.start_datetime}} AND {{.end_datetime}}
         AND ts_bucket_start BETWEEN $start_timestamp - 1800 AND $end_timestamp
@@ -538,7 +538,7 @@ Group By with Table Format:
   SELECT now() as ts,
          http_method,
          toFloat64(avg(duration_nano)) AS avg_duration_nano
-  FROM signoz_traces.distributed_signoz_index_v3
+  FROM bylonis_traces.distributed_signoz_index_v3
   WHERE resource_fingerprint GLOBAL IN __resource_filter
     AND timestamp BETWEEN {{.start_datetime}} AND {{.end_datetime}}
     AND ts_bucket_start BETWEEN $start_timestamp - 1800 AND $end_timestamp
@@ -556,7 +556,7 @@ Extract Span Event Attributes:
          toFloat64(count()) AS count,
          arrayJoin(arrayMap(x -> JSONExtractString(JSONExtractString(x, 'attributeMap'), 'customer_id'),
                             filteredEvents)) AS customer_id
-  FROM signoz_traces.distributed_signoz_index_v3
+  FROM bylonis_traces.distributed_signoz_index_v3
   WHERE not empty(filteredEvents)
     AND timestamp > toUnixTimestamp(now() - INTERVAL 30 MINUTE)
     AND ts_bucket_start >= toUInt64(toUnixTimestamp(now() - toIntervalMinute(30))) - 1800
@@ -575,7 +575,7 @@ Latency Between Spans in Trace:
                  traceID,
                  minIf(timestamp, resource_string_service$$name='driver' AND name='/driver.DriverService/FindNearest') AS startTime1,
                  minIf(timestamp, resource_string_service$$name='route' AND name='HTTP GET /route') AS startTime2
-          FROM signoz_traces.distributed_signoz_index_v3
+          FROM bylonis_traces.distributed_signoz_index_v3
           WHERE timestamp BETWEEN {{.start_datetime}} AND {{.end_datetime}}
             AND ts_bucket_start BETWEEN {{.start_timestamp}} - 1800 AND {{.end_timestamp}}
             AND resource_string_service$$name IN ('driver', 'route')
@@ -589,7 +589,7 @@ Latency Between Spans in Trace:
 Cross-Signal Query (Logs):
   SELECT toStartOfInterval(fromUnixTimestamp64Nano(timestamp), INTERVAL 1 MINUTE) AS interval,
          toFloat64(count()) AS value
-  FROM signoz_logs.distributed_logs_v2
+  FROM bylonis_logs.distributed_logs_v2
   WHERE timestamp > toUnixTimestamp64Nano(now64() - INTERVAL 30 MINUTE)
     AND ts_bucket_start >= toUInt64(toUnixTimestamp(now() - toIntervalMinute(30))) - 1800
   GROUP BY interval
@@ -665,16 +665,16 @@ CRITICAL RULE: OpenTelemetry histogram and summary metrics use DOT NOTATION for 
 Correct Format (with dots):
   - otelcol_connector_received_items.sum
   - otelcol_processor_batch_batch_send_size.sum
-  - signoz_latency.sum
-  - signoz_latency.count
-  - signoz_latency.bucket
+  - bylonis_latency.sum
+  - bylonis_latency.count
+  - bylonis_latency.bucket
   - http_request_duration_seconds.sum
   - http_request_duration_seconds.count
 
 WRONG Format (with underscores - DO NOT USE):
   - otelcol_connector_received_items_sum        ❌ WRONG
   - otelcol_connector_received_items_count      ❌ WRONG
-  - signoz_latency_sum                          ❌ WRONG
+  - bylonis_latency_sum                          ❌ WRONG
   - http_request_duration_seconds_count         ❌ WRONG
 
 Common Metric Suffixes (use dots):
@@ -688,7 +688,7 @@ Examples by Metric Type:
 
   Counter Metrics (no suffix needed):
     - http_requests_total
-    - signoz_calls_total
+    - bylonis_calls_total
     - otelcol_receiver_accepted_spans
 
   Gauge Metrics (no suffix needed):
@@ -696,9 +696,9 @@ Examples by Metric Type:
     - process_cpu_seconds_total
 
   Histogram Metrics (use .sum, .count, .bucket):
-    - signoz_latency.sum          (total latency)
-    - signoz_latency.count        (number of requests)
-    - signoz_latency.bucket       (for percentiles)
+    - bylonis_latency.sum          (total latency)
+    - bylonis_latency.count        (number of requests)
+    - bylonis_latency.bucket       (for percentiles)
     - http_request_duration.sum
     - http_request_duration.count
 
@@ -722,10 +722,10 @@ Common OpenTelemetry Collector Metrics:
   - otelcol_connector_produced_items.sum
 
 Common SigNoz Metrics:
-  - signoz_latency.sum
-  - signoz_latency.count
-  - signoz_latency.bucket
-  - signoz_calls_total
+  - bylonis_latency.sum
+  - bylonis_latency.count
+  - bylonis_latency.bucket
+  - bylonis_calls_total
 
 ================================================================================
 QUERY BUILDER CORE FEATURES
@@ -790,7 +790,7 @@ Metrics-Specific Features:
 
   Cost Meter (usage/billing metrics):
     Set source: "meter" on a metrics builder query to chart Cost Meter metrics
-    (e.g. signoz.meter.log.size). Discover the current set via bylonis_list_metrics
+    (e.g. bylonis.meter.log.size). Discover the current set via bylonis_list_metrics
     with source=meter. Meter data is bucketed hourly.
 
 ================================================================================

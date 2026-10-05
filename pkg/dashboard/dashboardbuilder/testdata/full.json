@@ -32,7 +32,7 @@
       "name": "query_var",
       "description": "Query variable",
       "type": "QUERY",
-      "queryValue": "SELECT DISTINCT service_name FROM signoz_traces.signoz_index_v3",
+      "queryValue": "SELECT DISTINCT service_name FROM bylonis_traces.signoz_index_v3",
       "sort": "ASC",
       "multiSelect": false,
       "showALLOption": false,
@@ -142,7 +142,7 @@
         "clickhouse_sql": [
           {
             "name": "A",
-            "query": "SELECT * FROM signoz_traces.top_level_operations LIMIT 10",
+            "query": "SELECT * FROM bylonis_traces.top_level_operations LIMIT 10",
             "legend": "",
             "disabled": false
           }

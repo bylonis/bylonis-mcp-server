@@ -38,7 +38,7 @@ func InitClickhouseSchema() {
 }
 
 var essentialTables = map[string][]string{
-	"signoz_logs": {
+	"bylonis_logs": {
 		"logs_v2",
 		"distributed_logs_v2",
 		"logs_v2_resource",
@@ -46,7 +46,7 @@ var essentialTables = map[string][]string{
 		"tag_attributes_v2",
 		"distributed_tag_attributes_v2",
 	},
-	"signoz_metrics": {
+	"bylonis_metrics": {
 		"samples_v4",
 		"distributed_samples_v4",
 		"time_series_v4",
@@ -58,7 +58,7 @@ var essentialTables = map[string][]string{
 		"exp_hist",
 		"distributed_exp_hist",
 	},
-	"signoz_traces": {
+	"bylonis_traces": {
 		"signoz_index_v3",
 		"distributed_signoz_index_v3",
 		"signoz_spans",
@@ -95,13 +95,13 @@ func GetClickHouseSchema(signal string) string {
 	switch signal {
 	case "logs":
 		buf.WriteString("\n=== LOGS SCHEMA ===\n")
-		exportSchema(&buf, "signoz_logs", getLogsMigrations())
+		exportSchema(&buf, "bylonis_logs", getLogsMigrations())
 	case "metrics":
 		buf.WriteString("\n=== METRICS SCHEMA ===\n")
-		exportSchema(&buf, "signoz_metrics", getMetricsMigrations())
+		exportSchema(&buf, "bylonis_metrics", getMetricsMigrations())
 	case "traces":
 		buf.WriteString("\n=== TRACES SCHEMA ===\n")
-		exportSchema(&buf, "signoz_traces", getTracesMigrations())
+		exportSchema(&buf, "bylonis_traces", getTracesMigrations())
 	default:
 		buf.WriteString(fmt.Sprintf("Error: unknown signal type '%s'. Use 'logs', 'metrics', or 'traces'\n", signal))
 	}

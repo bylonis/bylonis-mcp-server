@@ -250,8 +250,8 @@ Don't assume a fixed list — the meter metric set evolves. Call **bylonis_list_
 ` + "`source=\"meter\"`" + ` for the authoritative, current set, with each metric's ` + "`type`" + `,
 ` + "`temporality`" + `, and ` + "`unit`" + `, then apply the normal per-type aggregation rules (see above).
 As of this writing the set is telemetry-ingestion counters (delta monotonic sums) — for
-example ` + "`signoz.meter.log.size`" + ` (bytes), ` + "`signoz.meter.span.count`" + `, and
-` + "`signoz.meter.metric.datapoint.size`" + ` — for which ` + "`timeAggregation: rate`" + ` or ` + "`increase`" + `
+example ` + "`bylonis.meter.log.size`" + ` (bytes), ` + "`bylonis.meter.span.count`" + `, and
+` + "`bylonis.meter.metric.datapoint.size`" + ` — for which ` + "`timeAggregation: rate`" + ` or ` + "`increase`" + `
 with ` + "`spaceAggregation: sum`" + ` is correct. Verify type/unit per metric via bylonis_list_metrics
 rather than relying on this example list.
 
@@ -271,7 +271,7 @@ dimension, just like any other metric.
         "name": "A",
         "stepInterval": 3600,
         "aggregations": [{
-          "metricName": "signoz.meter.log.size",
+          "metricName": "bylonis.meter.log.size",
           "temporality": "delta",
           "timeAggregation": "increase",
           "spaceAggregation": "sum"

@@ -147,7 +147,7 @@ func TestQueryPayloadRoundTrip_PreservesPromQLWithStepString(t *testing.T) {
 }
 
 func TestQueryPayloadRoundTrip_PreservesClickHouseSQL(t *testing.T) {
-	const sql = `SELECT count() FROM signoz_traces.signoz_index_v3 WHERE service.name = 'frontend'`
+	const sql = `SELECT count() FROM bylonis_traces.signoz_index_v3 WHERE service.name = 'frontend'`
 	input := `{
 		"schemaVersion":"v1",
 		"start":1700000000,
@@ -425,7 +425,7 @@ func TestBuildMetricsQueryPayloadJSON_AppliesSource(t *testing.T) {
 		{
 			Name: "A",
 			Aggregation: MetricAggregation{
-				MetricName:       "signoz.meter.log.size",
+				MetricName:       "bylonis.meter.log.size",
 				Temporality:      "delta",
 				TimeAggregation:  "increase",
 				SpaceAggregation: "sum",
@@ -434,7 +434,7 @@ func TestBuildMetricsQueryPayloadJSON_AppliesSource(t *testing.T) {
 		{
 			Name: "B",
 			Aggregation: MetricAggregation{
-				MetricName:       "signoz.meter.span.size",
+				MetricName:       "bylonis.meter.span.size",
 				Temporality:      "delta",
 				TimeAggregation:  "increase",
 				SpaceAggregation: "sum",
