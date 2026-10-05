@@ -2,6 +2,7 @@ package config
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -66,11 +67,11 @@ func TestLoadConfig_CustomHeaders(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv("SIGNOZ_URL", "http://localhost:8080")
-			t.Setenv("SIGNOZ_API_KEY", "test-key")
+			t.Setenv("BYLONIS_URL", "http://localhost:8080")
+			t.Setenv("BYLONIS_API_KEY", "test-key")
 
 			if tt.envValue != "" {
-				t.Setenv("SIGNOZ_CUSTOM_HEADERS", tt.envValue)
+				t.Setenv("BYLONIS_CUSTOM_HEADERS", tt.envValue)
 			}
 
 			cfg, err := LoadConfig()
@@ -94,5 +95,43 @@ func TestValidateConfig_StdioRequiresConfiguredCredentials(t *testing.T) {
 		TransportMode: "stdio",
 	}
 
-	require.ErrorContains(t, cfg.ValidateConfig(), "SIGNOZ_API_KEY is required")
+	require.ErrorContains(t, cfg.ValidateConfig(), "BYLONIS_API_KEY is required")
+}
+
+func TestLoadConfigLegacySignozEnv(t *testing.T) {
+	t.Setenv("SIGNOZ_URL", "http://legacy:8080/")
+	t.Setenv("SIGNOZ_API_KEY", "legacy-key")
+	t.Setenv("SIGNOZ_DOCS_REFRESH_INTERVAL", "2h")
+
+	cfg, err := LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	if cfg.URL != "http://legacy:8080" || cfg.APIKey != "legacy-key" || cfg.DocsRefreshInterval != 2*time.Hour {
+		t.Fatalf("legacy SIGNOZ_ vars not read: url=%q key=%q docs=%s", cfg.URL, cfg.APIKey, cfg.DocsRefreshInterval)
+	}
+}
+
+func TestLoadConfigBylonisWinsOverSignoz(t *testing.T) {
+	t.Setenv("SIGNOZ_URL", "http://legacy:8080")
+	t.Setenv("BYLONIS_URL", "http://bylonis:8080")
+	t.Setenv("SIGNOZ_API_KEY", "legacy-key")
+
+	cfg, err := LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	if cfg.URL != "http://bylonis:8080" {
+		t.Fatalf("BYLONIS_URL must win, got %q", cfg.URL)
+	}
+	if cfg.APIKey != "legacy-key" {
+		t.Fatalf("SIGNOZ_API_KEY fallback when BYLONIS_API_KEY is unset, got %q", cfg.APIKey)
+	}
+}
+
+func TestLookupEnvOnlyBylonisKeysFallBack(t *testing.T) {
+	t.Setenv("SIGNOZ_LOG_LEVEL", "debug")
+	if got := lookupEnv("LOG_LEVEL"); got != "" {
+		t.Fatalf("non-BYLONIS_ keys must not fall back, got %q", got)
+	}
 }

@@ -4,8 +4,8 @@
       "command": "/path/to/your/signoz-mcp-server",
       "args": [],
       "env": {
-        "SIGNOZ_API_KEY": "<your-api-key>",
-        "SIGNOZ_URL": "<signoz-url>"
+        "BYLONIS_API_KEY": "<your-api-key>",
+        "BYLONIS_URL": "<signoz-url>"
       }
     }
   }

@@ -1142,7 +1142,7 @@ const (
 )
 
 // enforceInstanceURLAllowlist rejects a client-supplied SigNoz URL not in
-// SIGNOZ_INSTANCE_URL_ALLOWLIST, returning false after writing the 403 + auth
+// BYLONIS_INSTANCE_URL_ALLOWLIST, returning false after writing the 403 + auth
 // failure. signozURL must already be on ctx so the failure carries mcp.tenant_url.
 func (m *MCPServer) enforceInstanceURLAllowlist(ctx context.Context, w http.ResponseWriter, r *http.Request, signozURL, authMode string) bool {
 	if m.config.InstanceURLAllowlist.AllowsURL(signozURL) {

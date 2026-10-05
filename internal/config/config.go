@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/SigNoz/signoz-mcp-server/pkg/util"
@@ -47,14 +48,14 @@ type Config struct {
 }
 
 const (
-	SignozURL     = "SIGNOZ_URL"
-	SignozApiKey  = "SIGNOZ_API_KEY"
+	SignozURL     = "BYLONIS_URL"
+	SignozApiKey  = "BYLONIS_API_KEY"
 	LogLevel      = "LOG_LEVEL"
 	TransportMode = "TRANSPORT_MODE"
 	MCPPort       = "MCP_SERVER_PORT"
 
-	SignozCustomHeaders     = "SIGNOZ_CUSTOM_HEADERS"
-	InstanceURLAllowlistEnv = "SIGNOZ_INSTANCE_URL_ALLOWLIST"
+	SignozCustomHeaders     = "BYLONIS_CUSTOM_HEADERS"
+	InstanceURLAllowlistEnv = "BYLONIS_INSTANCE_URL_ALLOWLIST"
 	ClientCacheSize         = "CLIENT_CACHE_SIZE"
 	ClientCacheTTL          = "CLIENT_CACHE_TTL_MINUTES"
 
@@ -68,10 +69,15 @@ const (
 	OAuthRefreshTTLMinutes  = "OAUTH_REFRESH_TOKEN_TTL_MINUTES"
 	OAuthAuthCodeTTLSeconds = "OAUTH_AUTH_CODE_TTL_SECONDS"
 
-	DocsRefreshIntervalEnv     = "SIGNOZ_DOCS_REFRESH_INTERVAL"
-	DocsFullRefreshIntervalEnv = "SIGNOZ_DOCS_FULL_REFRESH_INTERVAL"
+	DocsRefreshIntervalEnv     = "BYLONIS_DOCS_REFRESH_INTERVAL"
+	DocsFullRefreshIntervalEnv = "BYLONIS_DOCS_FULL_REFRESH_INTERVAL"
 
 	MaxRequestBytesEnv = "MCP_MAX_REQUEST_BYTES"
+
+	// envPrefix is the prefix of the ByLonis env vars above; legacyEnvPrefix,
+	// the upstream one, is still read (with a warning) until v1.1.
+	envPrefix       = "BYLONIS_"
+	legacyEnvPrefix = "SIGNOZ_"
 
 	defaultClientCacheSize       = 256
 	defaultClientCacheTTLMinutes = 30
@@ -103,7 +109,7 @@ func LoadConfig() (*Config, error) {
 		docsFullRefreshInterval = defaultDocsFullRefreshPeriod
 	}
 
-	// Parse custom headers from SIGNOZ_CUSTOM_HEADERS env var (format: "Key1:Value1,Key2:Value2")
+	// Parse custom headers from BYLONIS_CUSTOM_HEADERS env var (format: "Key1:Value1,Key2:Value2")
 	customHeaders := make(map[string]string)
 	if headersStr := getEnv(SignozCustomHeaders, ""); headersStr != "" {
 		for _, pair := range strings.Split(headersStr, ",") {
@@ -147,15 +153,39 @@ func LoadConfig() (*Config, error) {
 	}, nil
 }
 
-func getEnv(key, defaultValue string) string {
+// warnedLegacy records the legacy env vars already warned about.
+var warnedLegacy sync.Map
+
+// lookupEnv returns the value of key. For a BYLONIS_ key that is unset or
+// empty it falls back to the SIGNOZ_ name, warning once per variable; the
+// BYLONIS_ name wins when both are set.
+func lookupEnv(key string) string {
 	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	rest, ok := strings.CutPrefix(key, envPrefix)
+	if !ok {
+		return ""
+	}
+	legacy := legacyEnvPrefix + rest
+	value := os.Getenv(legacy)
+	if value != "" {
+		if _, loaded := warnedLegacy.LoadOrStore(legacy, true); !loaded {
+			log.Printf("WARN: env %s is deprecated and will be removed in v1.1; use %s instead", legacy, key)
+		}
+	}
+	return value
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := lookupEnv(key); value != "" {
 		return value
 	}
 	return defaultValue
 }
 
 func getEnvInt(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
+	if value := lookupEnv(key); value != "" {
 		if parsed, err := strconv.Atoi(value); err == nil && parsed > 0 {
 			return parsed
 		}
@@ -164,7 +194,7 @@ func getEnvInt(key string, defaultValue int) int {
 }
 
 func getEnvBool(key string, defaultValue bool) bool {
-	if value := os.Getenv(key); value != "" {
+	if value := lookupEnv(key); value != "" {
 		if parsed, err := strconv.ParseBool(value); err == nil {
 			return parsed
 		}
@@ -173,7 +203,7 @@ func getEnvBool(key string, defaultValue bool) bool {
 }
 
 func getEnvDuration(key string, defaultValue time.Duration) time.Duration {
-	if value := os.Getenv(key); value != "" {
+	if value := lookupEnv(key); value != "" {
 		if parsed, err := time.ParseDuration(value); err == nil && parsed > 0 {
 			return parsed
 		}
@@ -186,11 +216,11 @@ func (c *Config) ValidateConfig() error {
 	// In HTTP mode, API key can come from Authorization header, so it's optional.
 	// In stdio mode, API key must be provided via environment variable.
 	if c.TransportMode == "stdio" && c.APIKey == "" {
-		return fmt.Errorf("SIGNOZ_API_KEY is required for stdio mode")
+		return fmt.Errorf("BYLONIS_API_KEY is required for stdio mode")
 	}
 
 	if c.TransportMode == "stdio" && c.URL == "" {
-		return fmt.Errorf("SIGNOZ_URL is required for stdio mode")
+		return fmt.Errorf("BYLONIS_URL is required for stdio mode")
 	}
 
 	if c.TransportMode == "http" {
