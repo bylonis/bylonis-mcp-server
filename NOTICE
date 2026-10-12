@@ -1,0 +1,12 @@
+ByLonis MCP Server
+Copyright (c) 2026-present ByLonis, Inc.
+
+This product is a fork of SigNoz MCP Server (https://github.com/SigNoz/signoz-mcp-server),
+Copyright SigNoz Inc., licensed under the Apache License, Version 2.0 (see LICENSE).
+
+ByLonis has modified the original work since June 2026: among other changes, the tools were
+renamed (signoz_* -> bylonis_*), the configuration variables moved to BYLONIS_* (accepting the
+former names during a transition) and the guides and examples follow the ByLonis metric and
+database names. The full list of changes is in the git history of this repository.
+
+Third-party components keep the licenses provided by their owners (see go.mod).
