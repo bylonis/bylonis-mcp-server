@@ -6,9 +6,9 @@ import (
 
 	segment "github.com/segmentio/analytics-go/v3"
 
-	"github.com/SigNoz/signoz-mcp-server/pkg/analytics"
-	logpkg "github.com/SigNoz/signoz-mcp-server/pkg/log"
-	"github.com/SigNoz/signoz-mcp-server/pkg/types/analyticstypes"
+	"github.com/bylonis/bylonis-mcp-server/pkg/analytics"
+	logpkg "github.com/bylonis/bylonis-mcp-server/pkg/log"
+	"github.com/bylonis/bylonis-mcp-server/pkg/types/analyticstypes"
 )
 
 type provider struct {

@@ -8,8 +8,8 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 
-	logpkg "github.com/SigNoz/signoz-mcp-server/pkg/log"
-	"github.com/SigNoz/signoz-mcp-server/pkg/types"
+	logpkg "github.com/bylonis/bylonis-mcp-server/pkg/log"
+	"github.com/bylonis/bylonis-mcp-server/pkg/types"
 )
 
 func (h *Handler) RegisterLogsHandlers(s *server.MCPServer) {

@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/SigNoz/signoz-mcp-server/pkg/util"
+	"github.com/bylonis/bylonis-mcp-server/pkg/util"
 )
 
 type Config struct {

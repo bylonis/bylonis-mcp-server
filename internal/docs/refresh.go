@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	otelpkg "github.com/SigNoz/signoz-mcp-server/pkg/otel"
+	otelpkg "github.com/bylonis/bylonis-mcp-server/pkg/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"golang.org/x/sync/errgroup"

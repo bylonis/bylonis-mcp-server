@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	logpkg "github.com/SigNoz/signoz-mcp-server/pkg/log"
+	logpkg "github.com/bylonis/bylonis-mcp-server/pkg/log"
 	"github.com/mark3labs/mcp-go/mcp"
 	mcpgoserver "github.com/mark3labs/mcp-go/server"
 	"go.opentelemetry.io/otel"
@@ -28,15 +28,15 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/SigNoz/signoz-mcp-server/internal/config"
-	"github.com/SigNoz/signoz-mcp-server/internal/handler/tools"
-	"github.com/SigNoz/signoz-mcp-server/internal/oauth"
-	"github.com/SigNoz/signoz-mcp-server/internal/testutil/oteltest"
-	"github.com/SigNoz/signoz-mcp-server/pkg/analytics"
-	"github.com/SigNoz/signoz-mcp-server/pkg/analytics/noopanalytics"
-	otelpkg "github.com/SigNoz/signoz-mcp-server/pkg/otel"
-	"github.com/SigNoz/signoz-mcp-server/pkg/types/analyticstypes"
-	"github.com/SigNoz/signoz-mcp-server/pkg/util"
+	"github.com/bylonis/bylonis-mcp-server/internal/config"
+	"github.com/bylonis/bylonis-mcp-server/internal/handler/tools"
+	"github.com/bylonis/bylonis-mcp-server/internal/oauth"
+	"github.com/bylonis/bylonis-mcp-server/internal/testutil/oteltest"
+	"github.com/bylonis/bylonis-mcp-server/pkg/analytics"
+	"github.com/bylonis/bylonis-mcp-server/pkg/analytics/noopanalytics"
+	otelpkg "github.com/bylonis/bylonis-mcp-server/pkg/otel"
+	"github.com/bylonis/bylonis-mcp-server/pkg/types/analyticstypes"
+	"github.com/bylonis/bylonis-mcp-server/pkg/util"
 )
 
 type analyticsCall struct {

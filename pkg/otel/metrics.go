@@ -29,7 +29,7 @@ type Meters struct {
 }
 
 func NewMeters(mp metric.MeterProvider) (*Meters, error) {
-	meter := mp.Meter("github.com/SigNoz/signoz-mcp-server")
+	meter := mp.Meter("github.com/bylonis/bylonis-mcp-server")
 
 	toolCalls, err := meter.Int64Counter(
 		"mcp.tool.calls",

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/SigNoz/signoz-mcp-server/pkg/types"
+	"github.com/bylonis/bylonis-mcp-server/pkg/types"
 )
 
 // metricsQueryRequest holds parsed arguments for bylonis_query_metrics.

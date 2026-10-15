@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/SigNoz/signoz-mcp-server/pkg/util"
+	"github.com/bylonis/bylonis-mcp-server/pkg/util"
 )
 
 // HTTPRequestAttrs returns stable request metadata for logs. It intentionally

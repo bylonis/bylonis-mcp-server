@@ -14,11 +14,11 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 
-	"github.com/SigNoz/signoz-mcp-server/pkg/dashboard"
-	logpkg "github.com/SigNoz/signoz-mcp-server/pkg/log"
-	"github.com/SigNoz/signoz-mcp-server/pkg/paginate"
-	"github.com/SigNoz/signoz-mcp-server/pkg/promql"
-	"github.com/SigNoz/signoz-mcp-server/pkg/types"
+	"github.com/bylonis/bylonis-mcp-server/pkg/dashboard"
+	logpkg "github.com/bylonis/bylonis-mcp-server/pkg/log"
+	"github.com/bylonis/bylonis-mcp-server/pkg/paginate"
+	"github.com/bylonis/bylonis-mcp-server/pkg/promql"
+	"github.com/bylonis/bylonis-mcp-server/pkg/types"
 )
 
 // Template fetch configuration for bylonis_import_dashboard.

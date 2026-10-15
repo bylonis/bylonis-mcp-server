@@ -9,9 +9,9 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 
-	logpkg "github.com/SigNoz/signoz-mcp-server/pkg/log"
-	"github.com/SigNoz/signoz-mcp-server/pkg/metricsrules"
-	"github.com/SigNoz/signoz-mcp-server/pkg/types"
+	logpkg "github.com/bylonis/bylonis-mcp-server/pkg/log"
+	"github.com/bylonis/bylonis-mcp-server/pkg/metricsrules"
+	"github.com/bylonis/bylonis-mcp-server/pkg/types"
 )
 
 // metricMetadata holds the parsed metadata from bylonis_list_metrics response.

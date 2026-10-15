@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/SigNoz/signoz-mcp-server/pkg/types"
+	"github.com/bylonis/bylonis-mcp-server/pkg/types"
 	"github.com/mark3labs/mcp-go/mcp"
 )
 

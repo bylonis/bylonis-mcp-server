@@ -16,9 +16,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SigNoz/signoz-mcp-server/internal/config"
-	"github.com/SigNoz/signoz-mcp-server/internal/testutil/oteltest"
-	otelpkg "github.com/SigNoz/signoz-mcp-server/pkg/otel"
+	"github.com/bylonis/bylonis-mcp-server/internal/config"
+	"github.com/bylonis/bylonis-mcp-server/internal/testutil/oteltest"
+	otelpkg "github.com/bylonis/bylonis-mcp-server/pkg/otel"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"

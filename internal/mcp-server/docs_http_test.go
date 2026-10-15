@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SigNoz/signoz-mcp-server/internal/config"
-	docsindex "github.com/SigNoz/signoz-mcp-server/internal/docs"
-	"github.com/SigNoz/signoz-mcp-server/internal/handler/tools"
-	logpkg "github.com/SigNoz/signoz-mcp-server/pkg/log"
-	"github.com/SigNoz/signoz-mcp-server/pkg/version"
+	"github.com/bylonis/bylonis-mcp-server/internal/config"
+	docsindex "github.com/bylonis/bylonis-mcp-server/internal/docs"
+	"github.com/bylonis/bylonis-mcp-server/internal/handler/tools"
+	logpkg "github.com/bylonis/bylonis-mcp-server/pkg/log"
+	"github.com/bylonis/bylonis-mcp-server/pkg/version"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/stretchr/testify/require"
 )

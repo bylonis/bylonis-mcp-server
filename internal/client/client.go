@@ -18,10 +18,10 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
-	logpkg "github.com/SigNoz/signoz-mcp-server/pkg/log"
-	otelpkg "github.com/SigNoz/signoz-mcp-server/pkg/otel"
-	"github.com/SigNoz/signoz-mcp-server/pkg/types"
-	"github.com/SigNoz/signoz-mcp-server/pkg/util"
+	logpkg "github.com/bylonis/bylonis-mcp-server/pkg/log"
+	otelpkg "github.com/bylonis/bylonis-mcp-server/pkg/otel"
+	"github.com/bylonis/bylonis-mcp-server/pkg/types"
+	"github.com/bylonis/bylonis-mcp-server/pkg/util"
 )
 
 const (

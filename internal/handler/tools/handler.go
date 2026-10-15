@@ -8,11 +8,11 @@ import (
 
 	expirable "github.com/hashicorp/golang-lru/v2/expirable"
 
-	signozclient "github.com/SigNoz/signoz-mcp-server/internal/client"
-	"github.com/SigNoz/signoz-mcp-server/internal/config"
-	docsindex "github.com/SigNoz/signoz-mcp-server/internal/docs"
-	otelpkg "github.com/SigNoz/signoz-mcp-server/pkg/otel"
-	"github.com/SigNoz/signoz-mcp-server/pkg/util"
+	signozclient "github.com/bylonis/bylonis-mcp-server/internal/client"
+	"github.com/bylonis/bylonis-mcp-server/internal/config"
+	docsindex "github.com/bylonis/bylonis-mcp-server/internal/docs"
+	otelpkg "github.com/bylonis/bylonis-mcp-server/pkg/otel"
+	"github.com/bylonis/bylonis-mcp-server/pkg/util"
 )
 
 type Handler struct {

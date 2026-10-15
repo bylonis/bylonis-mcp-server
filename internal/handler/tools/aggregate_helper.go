@@ -8,8 +8,8 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 
-	"github.com/SigNoz/signoz-mcp-server/pkg/timeutil"
-	"github.com/SigNoz/signoz-mcp-server/pkg/types"
+	"github.com/bylonis/bylonis-mcp-server/pkg/timeutil"
+	"github.com/bylonis/bylonis-mcp-server/pkg/types"
 )
 
 var validAggregations = map[string]bool{

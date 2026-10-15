@@ -3,7 +3,7 @@ package analytics
 import (
 	"context"
 
-	"github.com/SigNoz/signoz-mcp-server/pkg/types/analyticstypes"
+	"github.com/bylonis/bylonis-mcp-server/pkg/types/analyticstypes"
 )
 
 type Analytics interface {

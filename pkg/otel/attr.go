@@ -3,7 +3,7 @@ package otel
 import (
 	"context"
 
-	"github.com/SigNoz/signoz-mcp-server/pkg/util"
+	"github.com/bylonis/bylonis-mcp-server/pkg/util"
 	"go.opentelemetry.io/otel/attribute"
 )
 

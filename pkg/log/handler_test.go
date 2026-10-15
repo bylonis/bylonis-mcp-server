@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/SigNoz/signoz-mcp-server/pkg/util"
+	"github.com/bylonis/bylonis-mcp-server/pkg/util"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/SigNoz/signoz-mcp-server/pkg/types"
+	"github.com/bylonis/bylonis-mcp-server/pkg/types"
 )
 
 // MockClient implements Client for use in unit tests.
