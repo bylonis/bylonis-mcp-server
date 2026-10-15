@@ -413,7 +413,7 @@ func TestAuthMiddlewareRejectsInstanceURLNotInAllowlist(t *testing.T) {
 
 	server := &MCPServer{logger: logpkg.New("error"), config: cfg, analytics: noopanalytics.New()}
 	req := httptest.NewRequest(http.MethodPost, "/mcp", nil)
-	req.Header.Set("SIGNOZ-API-KEY", "pat-token")
+	req.Header.Set("BYLONIS-API-KEY", "pat-token")
 	req.Header.Set("X-SigNoz-URL", "https://1.1.1.1")
 
 	rr := httptest.NewRecorder()
@@ -438,7 +438,7 @@ func TestAuthMiddlewareAllowsInstanceURLInAllowlist(t *testing.T) {
 
 	server := &MCPServer{logger: logpkg.New("error"), config: cfg, analytics: noopanalytics.New()}
 	req := httptest.NewRequest(http.MethodPost, "/mcp", nil)
-	req.Header.Set("SIGNOZ-API-KEY", "pat-token")
+	req.Header.Set("BYLONIS-API-KEY", "pat-token")
 	req.Header.Set("X-SigNoz-URL", "https://demo.us.signoz.cloud")
 
 	rr := httptest.NewRecorder()
@@ -453,6 +453,48 @@ func TestAuthMiddlewareAllowsInstanceURLInAllowlist(t *testing.T) {
 	}
 	if got := rr.Header().Get("X-SigNoz-URL"); got != "https://demo.us.signoz.cloud" {
 		t.Fatalf("signoz URL = %q, want %q", got, "https://demo.us.signoz.cloud")
+	}
+}
+
+func TestAuthMiddlewareAPIKeyHeaders(t *testing.T) {
+	tests := []struct {
+		name    string
+		headers map[string]string
+		wantKey string
+	}{
+		{name: "bylonis header", headers: map[string]string{"BYLONIS-API-KEY": "new-key"}, wantKey: "new-key"},
+		{name: "deprecated header", headers: map[string]string{"SIGNOZ-API-KEY": "old-key"}, wantKey: "old-key"},
+		{name: "both prefers bylonis", headers: map[string]string{"BYLONIS-API-KEY": "new-key", "SIGNOZ-API-KEY": "old-key"}, wantKey: "new-key"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &config.Config{URL: "https://tenant.example.com"}
+			server := &MCPServer{logger: logpkg.New("error"), config: cfg, analytics: noopanalytics.New()}
+			req := httptest.NewRequest(http.MethodPost, "/mcp", nil)
+			for k, v := range tt.headers {
+				req.Header.Set(k, v)
+			}
+
+			rr := httptest.NewRecorder()
+			var gotKey, gotHeader string
+			server.authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotKey, _ = util.GetAPIKey(r.Context())
+				gotHeader, _ = util.GetAuthHeader(r.Context())
+				w.WriteHeader(http.StatusOK)
+			})).ServeHTTP(rr, req)
+
+			if rr.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d", rr.Code, http.StatusOK)
+			}
+			if gotKey != tt.wantKey {
+				t.Fatalf("api key = %q, want %q", gotKey, tt.wantKey)
+			}
+			// The backend always gets the ByLonis header, whatever the client sent.
+			if gotHeader != "BYLONIS-API-KEY" {
+				t.Fatalf("auth header = %q, want %q", gotHeader, "BYLONIS-API-KEY")
+			}
+		})
 	}
 }
 
@@ -527,7 +569,7 @@ func TestAuthMiddlewarePropagatesAssistantCorrelationHeaders(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/mcp", nil)
-			req.Header.Set("SIGNOZ-API-KEY", "test-key")
+			req.Header.Set("BYLONIS-API-KEY", "test-key")
 			req.Header.Set("X-SigNoz-URL", "https://tenant.example.com")
 			if tc.clientSource != "" {
 				req.Header.Set("X-SigNoz-Client-Source", tc.clientSource)
@@ -758,11 +800,11 @@ func TestAuthMiddlewareAuthFailureTelemetryBranches(t *testing.T) {
 		{
 			name: "missing SigNoz URL",
 			setup: func(req *http.Request) {
-				req.Header.Set("SIGNOZ-API-KEY", "api-key")
+				req.Header.Set("BYLONIS-API-KEY", "api-key")
 			},
 			wantStatus: http.StatusBadRequest,
 			wantReason: authFailureMissingSignozURL,
-			wantMode:   authModeSignozAPIKeyHeader,
+			wantMode:   authModeAPIKeyHeader,
 		},
 	}
 
@@ -981,8 +1023,8 @@ func TestBuildHooks_APIKeyAnalyticsUseServiceAccountIdentity(t *testing.T) {
 		if r.URL.Path != "/api/v1/service_accounts/me" {
 			t.Fatalf("path = %q, want %q", r.URL.Path, "/api/v1/service_accounts/me")
 		}
-		if r.Header.Get("SIGNOZ-API-KEY") != "test-api-key" {
-			t.Fatalf("SIGNOZ-API-KEY = %q, want %q", r.Header.Get("SIGNOZ-API-KEY"), "test-api-key")
+		if r.Header.Get("BYLONIS-API-KEY") != "test-api-key" {
+			t.Fatalf("BYLONIS-API-KEY = %q, want %q", r.Header.Get("BYLONIS-API-KEY"), "test-api-key")
 		}
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"status":"success","data":{"id":"sa-123","name":"ingest-bot","email":"service@example.com","orgId":"org-456"}}`))
@@ -1002,7 +1044,7 @@ func TestBuildHooks_APIKeyAnalyticsUseServiceAccountIdentity(t *testing.T) {
 
 	ctx := context.Background()
 	ctx = util.SetAPIKey(ctx, "test-api-key")
-	ctx = util.SetAuthHeader(ctx, "SIGNOZ-API-KEY")
+	ctx = util.SetAuthHeader(ctx, "BYLONIS-API-KEY")
 	ctx = util.SetSigNozURL(ctx, sigNoz.URL)
 
 	session := fakeSession{id: "sess-api", ch: make(chan mcp.JSONRPCNotification, 1)}
@@ -1177,7 +1219,7 @@ func TestAnalyticsDisabledSkipsIdentityLookup(t *testing.T) {
 
 	ctx := context.Background()
 	ctx = util.SetAPIKey(ctx, "test-api-key")
-	ctx = util.SetAuthHeader(ctx, "SIGNOZ-API-KEY")
+	ctx = util.SetAuthHeader(ctx, "BYLONIS-API-KEY")
 	ctx = util.SetSigNozURL(ctx, sigNoz.URL)
 	ctx = newAnalyticsTestContext(ctx, "sess-disabled")
 
@@ -1317,7 +1359,7 @@ func TestClientInfoAttachesToSessionRegisteredEvent(t *testing.T) {
 
 	ctx := context.Background()
 	ctx = util.SetAPIKey(ctx, "test-key")
-	ctx = util.SetAuthHeader(ctx, "SIGNOZ-API-KEY")
+	ctx = util.SetAuthHeader(ctx, "BYLONIS-API-KEY")
 	ctx = util.SetSigNozURL(ctx, sigNoz.URL)
 	ctx = newAnalyticsTestContext(ctx, "sess-client")
 
@@ -2651,7 +2693,7 @@ func TestPromptFetchedEvent(t *testing.T) {
 
 	ctx := context.Background()
 	ctx = util.SetAPIKey(ctx, "k")
-	ctx = util.SetAuthHeader(ctx, "SIGNOZ-API-KEY")
+	ctx = util.SetAuthHeader(ctx, "BYLONIS-API-KEY")
 	ctx = util.SetSigNozURL(ctx, sigNoz.URL)
 	ctx = newAnalyticsTestContext(ctx, "sess-prompt")
 
@@ -2689,7 +2731,7 @@ func TestResourceFetchedEvent(t *testing.T) {
 
 	ctx := context.Background()
 	ctx = util.SetAPIKey(ctx, "k")
-	ctx = util.SetAuthHeader(ctx, "SIGNOZ-API-KEY")
+	ctx = util.SetAuthHeader(ctx, "BYLONIS-API-KEY")
 	ctx = util.SetSigNozURL(ctx, sigNoz.URL)
 	ctx = newAnalyticsTestContext(ctx, "sess-res")
 
@@ -2799,7 +2841,7 @@ func TestRegisteredEventHasProtocolVersion(t *testing.T) {
 
 	ctx := context.Background()
 	ctx = util.SetAPIKey(ctx, "test-key")
-	ctx = util.SetAuthHeader(ctx, "SIGNOZ-API-KEY")
+	ctx = util.SetAuthHeader(ctx, "BYLONIS-API-KEY")
 	ctx = util.SetSigNozURL(ctx, sigNoz.URL)
 	ctx = newAnalyticsTestContext(ctx, "sess-registered")
 
@@ -2844,7 +2886,7 @@ func TestToolCallEventHasErrorType(t *testing.T) {
 
 	ctx := context.Background()
 	ctx = util.SetAPIKey(ctx, "test-key")
-	ctx = util.SetAuthHeader(ctx, "SIGNOZ-API-KEY")
+	ctx = util.SetAuthHeader(ctx, "BYLONIS-API-KEY")
 	ctx = util.SetSigNozURL(ctx, sigNoz.URL)
 	ctx = newAnalyticsTestContext(ctx, "sess-tool")
 

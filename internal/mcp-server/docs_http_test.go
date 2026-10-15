@@ -23,7 +23,7 @@ func TestDocsToolsRequireAuth(t *testing.T) {
 
 	resp := serveJSONRPC(t, handler, "", `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"bylonis_search_docs","arguments":{"query":"docker","limit":1}}}`)
 	require.Equal(t, http.StatusUnauthorized, resp.Code)
-	require.Contains(t, resp.Body.String(), "Authorization or SIGNOZ-API-KEY header required")
+	require.Contains(t, resp.Body.String(), "Authorization or BYLONIS-API-KEY header required")
 }
 
 func TestReadinessAndHealthEndpointsTrackDocsIndex(t *testing.T) {

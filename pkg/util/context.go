@@ -59,7 +59,7 @@ func GetAPIKey(ctx context.Context) (string, bool) {
 	return apiKey, ok
 }
 
-// SetAuthHeader stores the auth header name in the context (e.g. "Authorization" or "SIGNOZ-API-KEY").
+// SetAuthHeader stores the auth header name in the context (e.g. "Authorization" or "BYLONIS-API-KEY").
 func SetAuthHeader(ctx context.Context, header string) context.Context {
 	return context.WithValue(ctx, authHeaderContextKey, header)
 }

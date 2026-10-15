@@ -90,7 +90,7 @@ func TestGetAlertByRuleID(t *testing.T) {
 				assert.Equal(t, expectedPath, r.URL.Path)
 
 				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-				assert.Equal(t, "test-api-key", r.Header.Get("SIGNOZ-API-KEY"))
+				assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
 
 				w.WriteHeader(tt.statusCode)
 				responseBody, _ := json.Marshal(tt.resp)
@@ -99,7 +99,7 @@ func TestGetAlertByRuleID(t *testing.T) {
 			defer server.Close()
 
 			logger := logpkg.New("debug")
-			client := NewClient(logger, server.URL, "test-api-key", "SIGNOZ-API-KEY", nil)
+			client := NewClient(logger, server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
 
 			ctx := context.Background()
 			result, err := client.GetAlertByRuleID(ctx, tt.ruleID)
@@ -134,7 +134,7 @@ func TestListAlertRules(t *testing.T) {
 		assert.Equal(t, "/api/v2/rules", r.URL.Path)
 		assert.Equal(t, "", r.URL.RawQuery)
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		assert.Equal(t, "test-api-key", r.Header.Get("SIGNOZ-API-KEY"))
+		assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
 
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"status":"success","data":[{"id":"rule-1","alert":"High CPU","state":"inactive"}]}`))
@@ -142,7 +142,7 @@ func TestListAlertRules(t *testing.T) {
 	defer server.Close()
 
 	logger := logpkg.New("debug")
-	client := NewClient(logger, server.URL, "test-api-key", "SIGNOZ-API-KEY", nil)
+	client := NewClient(logger, server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
 
 	result, err := client.ListAlertRules(context.Background())
 	require.NoError(t, err)
@@ -214,7 +214,7 @@ func TestValidateCredentials(t *testing.T) {
 
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-				assert.Equal(t, "test-api-key", r.Header.Get("SIGNOZ-API-KEY"))
+				assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
 				assert.Equal(t, http.MethodGet, r.Method)
 
 				switch r.URL.Path {
@@ -233,7 +233,7 @@ func TestValidateCredentials(t *testing.T) {
 			defer server.Close()
 
 			logger := logpkg.New("debug")
-			client := NewClient(logger, server.URL, "test-api-key", "SIGNOZ-API-KEY", nil)
+			client := NewClient(logger, server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
 
 			err := client.ValidateCredentials(context.Background())
 
@@ -290,8 +290,8 @@ func TestGetAnalyticsIdentity(t *testing.T) {
 		},
 		{
 			name:              "api key auth resolves via service accounts me",
-			authHeaderName:    "SIGNOZ-API-KEY",
-			expectedHeader:    "SIGNOZ-API-KEY",
+			authHeaderName:    "BYLONIS-API-KEY",
+			expectedHeader:    "BYLONIS-API-KEY",
 			expectedHeaderVal: "test-api-key",
 			expectedPath:      "/api/v1/service_accounts/me",
 			statusCode:        http.StatusOK,
@@ -318,8 +318,8 @@ func TestGetAnalyticsIdentity(t *testing.T) {
 		},
 		{
 			name:              "unauthorized identity lookup returns auth error",
-			authHeaderName:    "SIGNOZ-API-KEY",
-			expectedHeader:    "SIGNOZ-API-KEY",
+			authHeaderName:    "BYLONIS-API-KEY",
+			expectedHeader:    "BYLONIS-API-KEY",
 			expectedHeaderVal: "test-api-key",
 			expectedPath:      "/api/v1/service_accounts/me",
 			statusCode:        http.StatusUnauthorized,
@@ -330,8 +330,8 @@ func TestGetAnalyticsIdentity(t *testing.T) {
 		},
 		{
 			name:              "malformed success response returns parse error",
-			authHeaderName:    "SIGNOZ-API-KEY",
-			expectedHeader:    "SIGNOZ-API-KEY",
+			authHeaderName:    "BYLONIS-API-KEY",
+			expectedHeader:    "BYLONIS-API-KEY",
 			expectedHeaderVal: "test-api-key",
 			expectedPath:      "/api/v1/service_accounts/me",
 			statusCode:        http.StatusOK,
@@ -438,7 +438,7 @@ func TestDoRequest_RetryLogsDebugThenWarn(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(newBufferedLogger(&logBuf, slog.LevelDebug), server.URL, "test-api-key", "SIGNOZ-API-KEY", nil)
+	client := NewClient(newBufferedLogger(&logBuf, slog.LevelDebug), server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
 
 	_, err := client.doRequest(context.Background(), http.MethodGet, server.URL, nil, time.Second)
 	require.Error(t, err)
@@ -484,7 +484,7 @@ func TestDoRequest_SucceedsAfterRetryWithoutRetriesExhaustedLog(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(newBufferedLogger(&logBuf, slog.LevelDebug), server.URL, "test-api-key", "SIGNOZ-API-KEY", nil)
+	client := NewClient(newBufferedLogger(&logBuf, slog.LevelDebug), server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
 
 	body, err := client.doRequest(context.Background(), http.MethodGet, server.URL, nil, time.Second)
 	require.NoError(t, err)
@@ -521,7 +521,7 @@ func TestDoRequest_NonRetryableStatusOmitsRetriesExhausted(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(newBufferedLogger(&logBuf, slog.LevelDebug), server.URL, "test-api-key", "SIGNOZ-API-KEY", nil)
+	client := NewClient(newBufferedLogger(&logBuf, slog.LevelDebug), server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
 
 	_, err := client.doRequest(context.Background(), http.MethodGet, server.URL, nil, time.Second)
 	require.Error(t, err)
@@ -607,7 +607,7 @@ func TestListMetricKeys(t *testing.T) {
 				assert.Equal(t, "/api/v1/metrics/filters/keys", r.URL.Path)
 
 				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-				assert.Equal(t, "test-api-key", r.Header.Get("SIGNOZ-API-KEY"))
+				assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
 
 				w.WriteHeader(tt.statusCode)
 				responseBody, _ := json.Marshal(tt.resp)
@@ -616,7 +616,7 @@ func TestListMetricKeys(t *testing.T) {
 			defer server.Close()
 
 			logger := logpkg.New("debug")
-			client := NewClient(logger, server.URL, "test-api-key", "SIGNOZ-API-KEY", nil)
+			client := NewClient(logger, server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
 
 			ctx := context.Background()
 			result, err := client.ListMetricKeys(ctx)
@@ -727,7 +727,7 @@ func TestListDashboards(t *testing.T) {
 				assert.Equal(t, "/api/v1/dashboards", r.URL.Path)
 
 				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-				assert.Equal(t, "test-api-key", r.Header.Get("SIGNOZ-API-KEY"))
+				assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
 
 				w.WriteHeader(tt.statusCode)
 				responseBody, _ := json.Marshal(tt.resp)
@@ -736,7 +736,7 @@ func TestListDashboards(t *testing.T) {
 			defer server.Close()
 
 			logger := logpkg.New("debug")
-			client := NewClient(logger, server.URL, "test-api-key", "SIGNOZ-API-KEY", nil)
+			client := NewClient(logger, server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
 
 			ctx := context.Background()
 			result, err := client.ListDashboards(ctx)
@@ -850,7 +850,7 @@ func TestListServices(t *testing.T) {
 				assert.Equal(t, http.MethodPost, r.Method)
 				assert.Equal(t, "/api/v1/services", r.URL.Path)
 				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-				assert.Equal(t, "test-api-key", r.Header.Get("SIGNOZ-API-KEY"))
+				assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
 
 				var requestBody map[string]string
 				err := json.NewDecoder(r.Body).Decode(&requestBody)
@@ -865,7 +865,7 @@ func TestListServices(t *testing.T) {
 			defer server.Close()
 
 			logger := logpkg.New("debug")
-			client := NewClient(logger, server.URL, "test-api-key", "SIGNOZ-API-KEY", nil)
+			client := NewClient(logger, server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
 
 			ctx := context.Background()
 			result, err := client.ListServices(ctx, tt.start, tt.end)
@@ -1033,7 +1033,7 @@ func TestGetAlertHistory(t *testing.T) {
 				assert.Equal(t, expectedPath, r.URL.Path)
 
 				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-				assert.Equal(t, "test-api-key", r.Header.Get("SIGNOZ-API-KEY"))
+				assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
 
 				var requestBody types.AlertHistoryRequest
 				err := json.NewDecoder(r.Body).Decode(&requestBody)
@@ -1051,7 +1051,7 @@ func TestGetAlertHistory(t *testing.T) {
 			defer server.Close()
 
 			logger := logpkg.New("debug")
-			client := NewClient(logger, server.URL, "test-api-key", "SIGNOZ-API-KEY", nil)
+			client := NewClient(logger, server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
 
 			ctx := context.Background()
 			result, err := client.GetAlertHistory(ctx, tt.ruleID, tt.request)
@@ -1203,7 +1203,7 @@ func TestQueryBuilderV5(t *testing.T) {
 				assert.Equal(t, "/api/v5/query_range", r.URL.Path)
 
 				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-				assert.Equal(t, "test-api-key", r.Header.Get("SIGNOZ-API-KEY"))
+				assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
 
 				body, err := io.ReadAll(r.Body)
 				require.NoError(t, err)
@@ -1216,7 +1216,7 @@ func TestQueryBuilderV5(t *testing.T) {
 			defer server.Close()
 
 			logger := logpkg.New("debug")
-			client := NewClient(logger, server.URL, "test-api-key", "SIGNOZ-API-KEY", nil)
+			client := NewClient(logger, server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
 
 			ctx := context.Background()
 			result, err := client.QueryBuilderV5(ctx, tt.queryBody)
@@ -1256,7 +1256,7 @@ func TestCreateDashboard(t *testing.T) {
 		assert.Equal(t, http.MethodPost, r.Method)
 		assert.Equal(t, "/api/v1/dashboards", r.URL.Path)
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		assert.Equal(t, "test-api-key", r.Header.Get("SIGNOZ-API-KEY"))
+		assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
 
 		var body types.Dashboard
 		err := json.NewDecoder(r.Body).Decode(&body)
@@ -1272,7 +1272,7 @@ func TestCreateDashboard(t *testing.T) {
 	defer server.Close()
 
 	logger := logpkg.New("debug")
-	client := NewClient(logger, server.URL, "test-api-key", "SIGNOZ-API-KEY", nil)
+	client := NewClient(logger, server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
 
 	d := types.Dashboard{
 		Title:   "whatever",
@@ -1297,7 +1297,7 @@ func TestUpdateDashboard(t *testing.T) {
 		assert.Equal(t, http.MethodPut, r.Method)
 		assert.Equal(t, "/api/v1/dashboards/id-123", r.URL.Path)
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		assert.Equal(t, "test-api-key", r.Header.Get("SIGNOZ-API-KEY"))
+		assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
 
 		var body types.Dashboard
 		err := json.NewDecoder(r.Body).Decode(&body)
@@ -1310,7 +1310,7 @@ func TestUpdateDashboard(t *testing.T) {
 	defer srv.Close()
 
 	logger := logpkg.New("debug")
-	client := NewClient(logger, srv.URL, "test-api-key", "SIGNOZ-API-KEY", nil)
+	client := NewClient(logger, srv.URL, "test-api-key", "BYLONIS-API-KEY", nil)
 
 	d := types.Dashboard{
 		Title:   "updated-title",
@@ -1326,14 +1326,14 @@ func TestDeleteDashboard(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodDelete, r.Method)
 		assert.Equal(t, "/api/v1/dashboards/dash-456", r.URL.Path)
-		assert.Equal(t, "test-api-key", r.Header.Get("SIGNOZ-API-KEY"))
+		assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
 
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer srv.Close()
 
 	logger := logpkg.New("debug")
-	client := NewClient(logger, srv.URL, "test-api-key", "SIGNOZ-API-KEY", nil)
+	client := NewClient(logger, srv.URL, "test-api-key", "BYLONIS-API-KEY", nil)
 
 	err := client.DeleteDashboard(context.Background(), "dash-456")
 	require.NoError(t, err)
@@ -1404,7 +1404,7 @@ func TestGetFieldKeys(t *testing.T) {
 				assert.Equal(t, http.MethodGet, r.Method)
 				assert.Equal(t, "/api/v1/fields/keys", r.URL.Path)
 				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-				assert.Equal(t, "test-api-key", r.Header.Get("SIGNOZ-API-KEY"))
+				assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
 
 				q := r.URL.Query()
 				assert.Equal(t, tt.signal, q.Get("signal"))
@@ -1421,7 +1421,7 @@ func TestGetFieldKeys(t *testing.T) {
 			defer server.Close()
 
 			logger := logpkg.New("debug")
-			client := NewClient(logger, server.URL, "test-api-key", "SIGNOZ-API-KEY", nil)
+			client := NewClient(logger, server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
 
 			ctx := context.Background()
 			result, err := client.GetFieldKeys(ctx, tt.signal, tt.metricName, tt.searchText, tt.fieldContext, tt.fieldDataType, tt.source)
@@ -1506,7 +1506,7 @@ func TestGetFieldValues(t *testing.T) {
 				assert.Equal(t, http.MethodGet, r.Method)
 				assert.Equal(t, "/api/v1/fields/values", r.URL.Path)
 				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-				assert.Equal(t, "test-api-key", r.Header.Get("SIGNOZ-API-KEY"))
+				assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
 
 				q := r.URL.Query()
 				assert.Equal(t, tt.signal, q.Get("signal"))
@@ -1522,7 +1522,7 @@ func TestGetFieldValues(t *testing.T) {
 			defer server.Close()
 
 			logger := logpkg.New("debug")
-			client := NewClient(logger, server.URL, "test-api-key", "SIGNOZ-API-KEY", nil)
+			client := NewClient(logger, server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
 
 			ctx := context.Background()
 			result, err := client.GetFieldValues(ctx, tt.signal, tt.fieldName, tt.metricName, tt.searchText, tt.source)
@@ -1558,7 +1558,7 @@ func TestDoRequest_RetryOn503ThenSuccess(t *testing.T) {
 	defer srv.Close()
 
 	logger := logpkg.New("debug")
-	c := NewClient(logger, srv.URL, "test-key", "SIGNOZ-API-KEY", nil)
+	c := NewClient(logger, srv.URL, "test-key", "BYLONIS-API-KEY", nil)
 
 	result, err := c.doRequest(context.Background(), http.MethodGet, srv.URL+"/test", nil, DefaultQueryTimeout)
 	require.NoError(t, err)
@@ -1576,7 +1576,7 @@ func TestDoRequest_RetriesExhausted(t *testing.T) {
 	defer srv.Close()
 
 	logger := logpkg.New("debug")
-	c := NewClient(logger, srv.URL, "test-key", "SIGNOZ-API-KEY", nil)
+	c := NewClient(logger, srv.URL, "test-key", "BYLONIS-API-KEY", nil)
 
 	result, err := c.doRequest(context.Background(), http.MethodGet, srv.URL+"/test", nil, DefaultQueryTimeout)
 	assert.Error(t, err)
@@ -1593,7 +1593,7 @@ func TestDoRequest_ContextCancelled(t *testing.T) {
 	defer srv.Close()
 
 	logger := logpkg.New("debug")
-	c := NewClient(logger, srv.URL, "test-key", "SIGNOZ-API-KEY", nil)
+	c := NewClient(logger, srv.URL, "test-key", "BYLONIS-API-KEY", nil)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
@@ -1612,7 +1612,7 @@ func TestDoRequest_NoRetryOn4xx(t *testing.T) {
 	defer srv.Close()
 
 	logger := logpkg.New("debug")
-	c := NewClient(logger, srv.URL, "test-key", "SIGNOZ-API-KEY", nil)
+	c := NewClient(logger, srv.URL, "test-key", "BYLONIS-API-KEY", nil)
 
 	_, err := c.doRequest(context.Background(), http.MethodGet, srv.URL+"/test", nil, DefaultQueryTimeout)
 	assert.Error(t, err)
@@ -1635,7 +1635,7 @@ func TestDoRequest_RetryOn429(t *testing.T) {
 	defer srv.Close()
 
 	logger := logpkg.New("debug")
-	c := NewClient(logger, srv.URL, "test-key", "SIGNOZ-API-KEY", nil)
+	c := NewClient(logger, srv.URL, "test-key", "BYLONIS-API-KEY", nil)
 
 	result, err := c.doRequest(context.Background(), http.MethodGet, srv.URL+"/test", nil, DefaultQueryTimeout)
 	require.NoError(t, err)
@@ -1652,7 +1652,7 @@ func TestNewClient_SetsCustomHeaders(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify standard headers are present
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		assert.Equal(t, "test-api-key", r.Header.Get("SIGNOZ-API-KEY"))
+		assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
 
 		// Verify custom headers are injected
 		assert.Equal(t, "test-id.access", r.Header.Get("CF-Access-Client-Id"))
@@ -1664,7 +1664,7 @@ func TestNewClient_SetsCustomHeaders(t *testing.T) {
 	defer server.Close()
 
 	logger := logpkg.New("debug")
-	client := NewClient(logger, server.URL, "test-api-key", "SIGNOZ-API-KEY", customHeaders)
+	client := NewClient(logger, server.URL, "test-api-key", "BYLONIS-API-KEY", customHeaders)
 
 	_, err := client.ListAlerts(context.Background(), types.ListAlertsParams{})
 	assert.NoError(t, err)
@@ -1674,7 +1674,7 @@ func TestNewClient_NilHeaders(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Standard headers should still be set when custom headers map is nil
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		assert.Equal(t, "test-api-key", r.Header.Get("SIGNOZ-API-KEY"))
+		assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
 
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"status":"success","data":[]}`))
@@ -1682,7 +1682,7 @@ func TestNewClient_NilHeaders(t *testing.T) {
 	defer server.Close()
 
 	logger := logpkg.New("debug")
-	client := NewClient(logger, server.URL, "test-api-key", "SIGNOZ-API-KEY", nil)
+	client := NewClient(logger, server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
 
 	_, err := client.ListAlerts(context.Background(), types.ListAlertsParams{})
 	assert.NoError(t, err)
@@ -1691,7 +1691,7 @@ func TestNewClient_NilHeaders(t *testing.T) {
 func TestNewClient_EmptyHeaders(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		assert.Equal(t, "test-api-key", r.Header.Get("SIGNOZ-API-KEY"))
+		assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
 
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"status":"success","data":[]}`))
@@ -1699,7 +1699,7 @@ func TestNewClient_EmptyHeaders(t *testing.T) {
 	defer server.Close()
 
 	logger := logpkg.New("debug")
-	client := NewClient(logger, server.URL, "test-api-key", "SIGNOZ-API-KEY", map[string]string{})
+	client := NewClient(logger, server.URL, "test-api-key", "BYLONIS-API-KEY", map[string]string{})
 
 	_, err := client.ListAlerts(context.Background(), types.ListAlertsParams{})
 	assert.NoError(t, err)
@@ -1708,14 +1708,14 @@ func TestNewClient_EmptyHeaders(t *testing.T) {
 func TestNewClient_ReservedHeadersSkipped(t *testing.T) {
 	customHeaders := map[string]string{
 		"Content-Type":        "text/plain",
-		"SIGNOZ-API-KEY":      "overridden-key",
+		"BYLONIS-API-KEY":     "overridden-key",
 		"CF-Access-Client-Id": "test-id",
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Reserved headers should NOT be overridden by custom headers
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		assert.Equal(t, "test-api-key", r.Header.Get("SIGNOZ-API-KEY"))
+		assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
 
 		// Non-reserved custom headers should still be injected
 		assert.Equal(t, "test-id", r.Header.Get("CF-Access-Client-Id"))
@@ -1726,7 +1726,7 @@ func TestNewClient_ReservedHeadersSkipped(t *testing.T) {
 	defer server.Close()
 
 	logger := logpkg.New("debug")
-	client := NewClient(logger, server.URL, "test-api-key", "SIGNOZ-API-KEY", customHeaders)
+	client := NewClient(logger, server.URL, "test-api-key", "BYLONIS-API-KEY", customHeaders)
 
 	_, err := client.ListAlerts(context.Background(), types.ListAlertsParams{})
 	assert.NoError(t, err)
@@ -1740,7 +1740,7 @@ func TestCreateAlertRule_v2Returns201(t *testing.T) {
 		_, _ = w.Write([]byte(`{"status":"success","data":{"id":"rule-123"}}`))
 	}))
 	defer srv.Close()
-	client := NewClient(logpkg.New("debug"), srv.URL, "k", "SIGNOZ-API-KEY", nil)
+	client := NewClient(logpkg.New("debug"), srv.URL, "k", "BYLONIS-API-KEY", nil)
 
 	data, err := client.CreateAlertRule(context.Background(), []byte(`{"alert":"x"}`))
 	require.NoError(t, err)
@@ -1756,7 +1756,7 @@ func TestUpdateAlertRule_v2Returns204(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	}))
 	defer srv.Close()
-	client := NewClient(logpkg.New("debug"), srv.URL, "k", "SIGNOZ-API-KEY", nil)
+	client := NewClient(logpkg.New("debug"), srv.URL, "k", "BYLONIS-API-KEY", nil)
 
 	err := client.UpdateAlertRule(context.Background(), "abc-123", []byte(`{"alert":"x"}`))
 	require.NoError(t, err)
@@ -1771,7 +1771,7 @@ func TestDeleteAlertRule_v2Returns204(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	}))
 	defer srv.Close()
-	client := NewClient(logpkg.New("debug"), srv.URL, "k", "SIGNOZ-API-KEY", nil)
+	client := NewClient(logpkg.New("debug"), srv.URL, "k", "BYLONIS-API-KEY", nil)
 
 	err := client.DeleteAlertRule(context.Background(), "abc-123")
 	require.NoError(t, err)
@@ -1786,7 +1786,7 @@ func TestTestNotificationChannel_UsesNewPath(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	}))
 	defer srv.Close()
-	client := NewClient(logpkg.New("debug"), srv.URL, "k", "SIGNOZ-API-KEY", nil)
+	client := NewClient(logpkg.New("debug"), srv.URL, "k", "BYLONIS-API-KEY", nil)
 
 	err := client.TestNotificationChannel(context.Background(), []byte(`{"name":"x"}`))
 	require.NoError(t, err)
@@ -1800,7 +1800,7 @@ func TestUpdateNotificationChannel_Returns204(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	}))
 	defer srv.Close()
-	client := NewClient(logpkg.New("debug"), srv.URL, "k", "SIGNOZ-API-KEY", nil)
+	client := NewClient(logpkg.New("debug"), srv.URL, "k", "BYLONIS-API-KEY", nil)
 
 	err := client.UpdateNotificationChannel(context.Background(), "42", []byte(`{"name":"x"}`))
 	require.NoError(t, err)
@@ -1815,7 +1815,7 @@ func TestDeleteNotificationChannel(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	}))
 	defer srv.Close()
-	client := NewClient(logpkg.New("debug"), srv.URL, "k", "SIGNOZ-API-KEY", nil)
+	client := NewClient(logpkg.New("debug"), srv.URL, "k", "BYLONIS-API-KEY", nil)
 
 	err := client.DeleteNotificationChannel(context.Background(), "42")
 	require.NoError(t, err)
@@ -1835,7 +1835,7 @@ func TestListViews(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient(logpkg.New("error"), server.URL, "k", "SIGNOZ-API-KEY", nil)
+	c := NewClient(logpkg.New("error"), server.URL, "k", "BYLONIS-API-KEY", nil)
 	_, err := c.ListViews(context.Background(), "traces", "ak", "ops")
 	require.NoError(t, err)
 	assert.Equal(t, http.MethodGet, gotMethod)
@@ -1853,7 +1853,7 @@ func TestGetView(t *testing.T) {
 		_, _ = w.Write([]byte(`{"status":"success","data":{}}`))
 	}))
 	defer server.Close()
-	c := NewClient(logpkg.New("error"), server.URL, "k", "SIGNOZ-API-KEY", nil)
+	c := NewClient(logpkg.New("error"), server.URL, "k", "BYLONIS-API-KEY", nil)
 	_, err := c.GetView(context.Background(), "view-uuid-1")
 	require.NoError(t, err)
 	assert.Equal(t, http.MethodGet, gotMethod)
@@ -1870,7 +1870,7 @@ func TestCreateView(t *testing.T) {
 		_, _ = w.Write([]byte(`{"status":"success","data":{"id":"new-id"}}`))
 	}))
 	defer server.Close()
-	c := NewClient(logpkg.New("error"), server.URL, "k", "SIGNOZ-API-KEY", nil)
+	c := NewClient(logpkg.New("error"), server.URL, "k", "BYLONIS-API-KEY", nil)
 	body := []byte(`{"name":"x","sourcePage":"traces","compositeQuery":{}}`)
 	_, err := c.CreateView(context.Background(), body)
 	require.NoError(t, err)
@@ -1887,7 +1887,7 @@ func TestUpdateView(t *testing.T) {
 		_, _ = w.Write([]byte(`{"status":"success","data":{}}`))
 	}))
 	defer server.Close()
-	c := NewClient(logpkg.New("error"), server.URL, "k", "SIGNOZ-API-KEY", nil)
+	c := NewClient(logpkg.New("error"), server.URL, "k", "BYLONIS-API-KEY", nil)
 	_, err := c.UpdateView(context.Background(), "view-1", []byte(`{}`))
 	require.NoError(t, err)
 	assert.Equal(t, http.MethodPut, gotMethod)
@@ -1902,7 +1902,7 @@ func TestDeleteView(t *testing.T) {
 		_, _ = w.Write([]byte(`{"status":"success"}`))
 	}))
 	defer server.Close()
-	c := NewClient(logpkg.New("error"), server.URL, "k", "SIGNOZ-API-KEY", nil)
+	c := NewClient(logpkg.New("error"), server.URL, "k", "BYLONIS-API-KEY", nil)
 	_, err := c.DeleteView(context.Background(), "view-1")
 	require.NoError(t, err)
 	assert.Equal(t, http.MethodDelete, gotMethod)
@@ -1942,7 +1942,7 @@ func TestDoRequest_RejectsOversizeResponse(t *testing.T) {
 	defer server.Close()
 
 	var logBuf bytes.Buffer
-	client := NewClient(newBufferedLogger(&logBuf, slog.LevelDebug), server.URL, "test-api-key", "SIGNOZ-API-KEY", nil)
+	client := NewClient(newBufferedLogger(&logBuf, slog.LevelDebug), server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
 
 	_, err := client.doRequest(context.Background(), http.MethodGet, server.URL, nil, 30*time.Second)
 	require.Error(t, err)
@@ -1961,7 +1961,7 @@ func TestDoRequest_AllowsLargeUnderCapResponse(t *testing.T) {
 	defer server.Close()
 
 	var logBuf bytes.Buffer
-	client := NewClient(newBufferedLogger(&logBuf, slog.LevelDebug), server.URL, "test-api-key", "SIGNOZ-API-KEY", nil)
+	client := NewClient(newBufferedLogger(&logBuf, slog.LevelDebug), server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
 
 	got, err := client.doRequest(context.Background(), http.MethodGet, server.URL, nil, 30*time.Second)
 	require.NoError(t, err)

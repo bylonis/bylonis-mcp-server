@@ -114,7 +114,7 @@ end
 
 subgraph APICall["SigNoz API Call"]
     CLIENT["SigNoz Client<br/>(otelhttp instrumented)"]
-    CLIENT --> APIREQ["HTTP Request with SIGNOZ-API-KEY header"]
+    CLIENT --> APIREQ["HTTP Request with BYLONIS-API-KEY header"]
     APIREQ --> S1["SigNoz Instance 1"]
     APIREQ --> S2["SigNoz Instance 2"]
     APIREQ --> SN["SigNoz Instance N"]
