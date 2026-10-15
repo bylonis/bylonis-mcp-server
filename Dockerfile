@@ -1,5 +1,9 @@
 # Build stage
-FROM golang:1.25-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
+
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+ARG VERSION=dev
 
 # Install git and ca-certificates for dependencies
 RUN apk --no-cache add git ca-certificates tzdata
@@ -16,8 +20,8 @@ RUN go mod download
 COPY . .
 
 # Build the application with optimizations
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -ldflags='-w -s -extldflags "-static"' \
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build \
+    -ldflags="-w -s -extldflags '-static' -X github.com/bylonis/bylonis-mcp-server/pkg/version.Version=${VERSION}" \
     -a -installsuffix cgo \
     -o signoz-mcp-server \
     ./cmd/server/
