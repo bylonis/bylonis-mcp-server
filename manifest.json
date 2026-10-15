@@ -180,7 +180,7 @@
   ],
   "resources": [
     {
-      "uri": "signoz://docs/sitemap",
+      "uri": "bylonis://docs/sitemap",
       "name": "SigNoz Docs Sitemap",
       "description": "Indexed sitemap used by signoz_search_docs and signoz_fetch_doc",
       "mimeType": "text/markdown"

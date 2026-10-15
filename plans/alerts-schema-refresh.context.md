@@ -27,7 +27,7 @@
 - CompareOp aliases (from upstream `compare.go`): literal (`above`, `below`, `equal`, `not_equal`, `above_or_equal`, `below_or_equal`, `outside_bounds`), short (`eq`, `not_eq`, `above_or_eq`, `below_or_eq`), symbolic (`>`, `<`, `=`, `!=`, `>=`, `<=`), numeric (`1`..`7`). All accepted; descriptions highlight the canonical literals.
 - MatchType aliases (from upstream `match.go`): add `avg` (alias for `on_average`) and `sum` (alias for `in_total`).
 
-### 2026-04-23 — Enrich `signoz://alert/instructions` with user-facing docs coverage
+### 2026-04-23 — Enrich `bylonis://alert/instructions` with user-facing docs coverage
 - Prompted by review of https://signoz.io/docs/alerts/ and the referenced openapi.yml. Schema/types/validator/examples are all aligned with upstream; the remaining gap is guidance the LLM needs to *reason* from a user prompt to a valid payload.
 - Added to Instructions (no type or validator changes):
   1. **Quick Workflow** — an 8-step decision tree (signal → alertType → ruleType → envelope → aggregation shape → filter → thresholds → evaluation → notification). Placed right after the CRITICAL section so the LLM sees it before diving into per-field tables.

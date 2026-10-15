@@ -2884,7 +2884,7 @@ func TestResourceFetchedEvent(t *testing.T) {
 	ctx = newAnalyticsTestContext(ctx, "sess-res")
 
 	singleHook(t, hooks.OnAfterReadResource, "OnAfterReadResource")(ctx, nil,
-		&mcp.ReadResourceRequest{Params: mcp.ReadResourceParams{URI: "signoz://dashboard/abc"}},
+		&mcp.ReadResourceRequest{Params: mcp.ReadResourceParams{URI: "bylonis://dashboard/abc"}},
 		&mcp.ReadResourceResult{})
 
 	waitForCondition(t, time.Second, func() bool {
@@ -2897,8 +2897,8 @@ func TestResourceFetchedEvent(t *testing.T) {
 	if call.event != analytics.EventResourceFetched {
 		t.Fatalf("event = %q, want %q", call.event, analytics.EventResourceFetched)
 	}
-	if call.attrs[analytics.AttrResourceURI] != "signoz://dashboard/abc" {
-		t.Fatalf("resourceUri attr = %v, want signoz://dashboard/abc", call.attrs[analytics.AttrResourceURI])
+	if call.attrs[analytics.AttrResourceURI] != "bylonis://dashboard/abc" {
+		t.Fatalf("resourceUri attr = %v, want bylonis://dashboard/abc", call.attrs[analytics.AttrResourceURI])
 	}
 }
 

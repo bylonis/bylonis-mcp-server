@@ -52,7 +52,7 @@ func (h *Handler) RegisterAlertsHandlers(s *server.MCPServer) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
-		mcp.WithDescription("Get the rule definition for a specific alert rule by ruleId (GET /api/v2/rules/{ruleId}).\n\nResponse shape depends on the SigNoz server version. Post-#10997 servers return the canonical Rule type with audit fields createdAt/updatedAt/createdBy/updatedBy; older servers return GettableRule with createAt/updateAt/createBy/updateBy (no 'd')."),
+		mcp.WithDescription("Get the rule definition for a specific alert rule by ruleId (GET /api/v2/rules/{ruleId}).\n\nResponse shape depends on the ByLonis server version. Post-#10997 servers return the canonical Rule type with audit fields createdAt/updatedAt/createdBy/updatedBy; older servers return GettableRule with createAt/updateAt/createBy/updateBy (no 'd')."),
 		mcp.WithString("ruleId", mcp.Required(), mcp.Description("Alert rule ID (UUIDv7 on v2 servers).")),
 	)
 	addTool(s, getAlertTool, h.handleGetAlert)
@@ -77,14 +77,14 @@ func (h *Handler) RegisterAlertsHandlers(s *server.MCPServer) {
 		"bylonis_create_alert",
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithDescription(
-			"Creates a new alert rule in SigNoz (POST /api/v2/rules).\n\n"+
+			"Creates a new alert rule in ByLonis (POST /api/v2/rules).\n\n"+
 				"SCHEMA — pick based on ruleType:\n"+
 				"- threshold_rule / promql_rule → v2alpha1 with structured condition.thresholds (per-tier channel routing), evaluation block, notificationSettings.\n"+
 				"- anomaly_rule → **v1 schema**: top-level evalWindow and frequency; condition.op, condition.matchType, condition.target, condition.algorithm, condition.seasonality; compositeQuery.queries[].spec.functions carries the anomaly function. Omit thresholds, evaluation, schemaVersion.\n\n"+
 				"CRITICAL: You MUST read these resources BEFORE generating any alert payload:\n"+
-				"1. signoz://alert/instructions — REQUIRED: Alert structure, field descriptions, valid values\n"+
-				"2. signoz://alert/examples — REQUIRED: canonical payloads covering metric/logs/traces threshold, PromQL, anomaly (v1), tiered thresholds, formula, full notificationSettings, and a Cost Meter cumulative-budget alert.\n"+
-				"3. signoz://promql/instructions — REQUIRED when ruleType=promql_rule: SigNoz needs the Prometheus 3.x UTF-8 quoted-selector form ({\"metric.name.with.dots\"}) for OTel metric names. Underscored / __name__ / bare-dotted forms return no data.\n\n"+
+				"1. bylonis://alert/instructions — REQUIRED: Alert structure, field descriptions, valid values\n"+
+				"2. bylonis://alert/examples — REQUIRED: canonical payloads covering metric/logs/traces threshold, PromQL, anomaly (v1), tiered thresholds, formula, full notificationSettings, and a Cost Meter cumulative-budget alert.\n"+
+				"3. bylonis://promql/instructions — REQUIRED when ruleType=promql_rule: ByLonis needs the Prometheus 3.x UTF-8 quoted-selector form ({\"metric.name.with.dots\"}) for OTel metric names. Underscored / __name__ / bare-dotted forms return no data.\n\n"+
 				"RECOMMENDED: Use bylonis_get_alert on an existing alert to study the exact structure.\n\n"+
 				"NOTIFICATION CHANNELS: At least one notification channel is required. "+
 				"If the user explicitly names a channel, use it directly. "+
@@ -102,9 +102,9 @@ func (h *Handler) RegisterAlertsHandlers(s *server.MCPServer) {
 		"bylonis_update_alert",
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithDescription(
-			"Updates an existing alert rule in SigNoz (PUT /api/v2/rules/{ruleId}). Replaces the full rule configuration.\n\n"+
-				"CRITICAL: Read signoz://alert/instructions and signoz://alert/examples before generating the payload. "+
-				"When ruleType=promql_rule, also read signoz://promql/instructions — OTel dotted metric names require the Prometheus 3.x UTF-8 quoted-selector form. "+
+			"Updates an existing alert rule in ByLonis (PUT /api/v2/rules/{ruleId}). Replaces the full rule configuration.\n\n"+
+				"CRITICAL: Read bylonis://alert/instructions and bylonis://alert/examples before generating the payload. "+
+				"When ruleType=promql_rule, also read bylonis://promql/instructions — OTel dotted metric names require the Prometheus 3.x UTF-8 quoted-selector form. "+
 				"Always fetch the current rule with bylonis_get_alert first and merge changes on top of it — PUT replaces the full rule.\n\n"+
 				"The rule payload is the same shape as bylonis_create_alert. All the same validation rules apply, including "+
 				"the notification-channel presence check.",
@@ -397,8 +397,8 @@ func (h *Handler) handleCreateAlert(ctx context.Context, req mcp.CallToolRequest
 
 	data, err := client.CreateAlertRule(ctx, cleanJSON)
 	if err != nil {
-		h.logger.ErrorContext(ctx, "Failed to create alert rule in SigNoz", logpkg.ErrAttr(err))
-		return mcp.NewToolResultError(fmt.Sprintf("SigNoz API Error: %s", err.Error())), nil
+		h.logger.ErrorContext(ctx, "Failed to create alert rule in ByLonis", logpkg.ErrAttr(err))
+		return mcp.NewToolResultError(fmt.Sprintf("ByLonis API Error: %s", err.Error())), nil
 	}
 
 	return mcp.NewToolResultText(string(data)), nil
@@ -432,8 +432,8 @@ func (h *Handler) handleUpdateAlert(ctx context.Context, req mcp.CallToolRequest
 	}
 
 	if err := client.UpdateAlertRule(ctx, ruleID, cleanJSON); err != nil {
-		h.logger.ErrorContext(ctx, "Failed to update alert rule in SigNoz", slog.String("ruleId", ruleID), logpkg.ErrAttr(err))
-		return mcp.NewToolResultError(fmt.Sprintf("SigNoz API Error: %s", err.Error())), nil
+		h.logger.ErrorContext(ctx, "Failed to update alert rule in ByLonis", slog.String("ruleId", ruleID), logpkg.ErrAttr(err))
+		return mcp.NewToolResultError(fmt.Sprintf("ByLonis API Error: %s", err.Error())), nil
 	}
 
 	return mcp.NewToolResultText(fmt.Sprintf(`{"status":"success","ruleId":%q}`, ruleID)), nil
@@ -449,7 +449,7 @@ func (h *Handler) handleDeleteAlert(ctx context.Context, req mcp.CallToolRequest
 		return mcp.NewToolResultError(`Parameter validation failed: "ruleId" is required.`), nil
 	}
 	if !util.IsUUIDv7(ruleID) {
-		return mcp.NewToolResultError(fmt.Sprintf(`Invalid "ruleId": %q is not a UUIDv7. The SigNoz API will reject this with invalid_input.`, ruleID)), nil
+		return mcp.NewToolResultError(fmt.Sprintf(`Invalid "ruleId": %q is not a UUIDv7. The ByLonis API will reject this with invalid_input.`, ruleID)), nil
 	}
 
 	h.logger.DebugContext(ctx, "Tool called: bylonis_delete_alert", slog.String("ruleId", ruleID))
@@ -459,8 +459,8 @@ func (h *Handler) handleDeleteAlert(ctx context.Context, req mcp.CallToolRequest
 	}
 
 	if err := client.DeleteAlertRule(ctx, ruleID); err != nil {
-		h.logger.ErrorContext(ctx, "Failed to delete alert rule in SigNoz", slog.String("ruleId", ruleID), logpkg.ErrAttr(err))
-		return mcp.NewToolResultError(fmt.Sprintf("SigNoz API Error: %s", err.Error())), nil
+		h.logger.ErrorContext(ctx, "Failed to delete alert rule in ByLonis", slog.String("ruleId", ruleID), logpkg.ErrAttr(err))
+		return mcp.NewToolResultError(fmt.Sprintf("ByLonis API Error: %s", err.Error())), nil
 	}
 
 	return mcp.NewToolResultText(fmt.Sprintf(`{"status":"success","ruleId":%q}`, ruleID)), nil
@@ -503,7 +503,7 @@ func (h *Handler) validateAlertPayload(ctx context.Context, rawConfig map[string
 	return cleanJSON, nil
 }
 
-// fetchChannelNames retrieves all notification channel names from the SigNoz API.
+// fetchChannelNames retrieves all notification channel names from the ByLonis API.
 func fetchChannelNames(ctx context.Context, c signozclient.Client) ([]string, error) {
 	resp, err := c.ListNotificationChannels(ctx)
 	if err != nil {
@@ -630,9 +630,9 @@ func formatInvalidChannelsError(invalid, available []string) string {
 // registerAlertResources registers MCP resources needed for alert creation.
 func (h *Handler) registerAlertResources(s *server.MCPServer) {
 	alertInstructions := mcp.NewResource(
-		"signoz://alert/instructions",
+		"bylonis://alert/instructions",
 		"Alert Rule Instructions",
-		mcp.WithResourceDescription("SigNoz alert rule creation guide: alert types, rule types, condition structure, threshold configuration (v2alpha1 schema), composite query format, filter expressions, labels, routing, and notification settings."),
+		mcp.WithResourceDescription("ByLonis alert rule creation guide: alert types, rule types, condition structure, threshold configuration (v2alpha1 schema), composite query format, filter expressions, labels, routing, and notification settings."),
 		mcp.WithMIMEType("text/plain"),
 	)
 
@@ -647,7 +647,7 @@ func (h *Handler) registerAlertResources(s *server.MCPServer) {
 	})
 
 	alertExamples := mcp.NewResource(
-		"signoz://alert/examples",
+		"bylonis://alert/examples",
 		"Alert Rule Examples",
 		mcp.WithResourceDescription("Complete working alert rule examples for all types: metrics threshold, logs with v2 multi-threshold routing, traces latency, PromQL, ClickHouse SQL exceptions, anomaly detection, and formula-based alerts."),
 		mcp.WithMIMEType("text/plain"),

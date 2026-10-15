@@ -464,7 +464,7 @@ type FormulaSpec struct {
 // BuildMetricsQueryPayloadJSON builds the metrics payload and returns the
 // marshalled JSON. It handles formula specs that need a different shape.
 // source is an optional data-source filter (e.g. "meter" for Cost Meter queries);
-// pass an empty string for the default SigNoz metrics store.
+// pass an empty string for the default ByLonis metrics store.
 func BuildMetricsQueryPayloadJSON(startTime, endTime, stepInterval int64, queries []MetricsQuerySpec, requestType, source string) ([]byte, error) {
 	if requestType == "" {
 		requestType = "time_series"

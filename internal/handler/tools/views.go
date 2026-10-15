@@ -32,7 +32,7 @@ func validateSourcePage(sp string) error {
 }
 
 // RegisterViewHandlers registers the unified saved-views CRUD tools plus
-// the signoz://view/instructions and signoz://view/examples resources.
+// the bylonis://view/instructions and bylonis://view/examples resources.
 func (h *Handler) RegisterViewHandlers(s *server.MCPServer) {
 	h.logger.Debug("Registering view handlers")
 
@@ -40,7 +40,7 @@ func (h *Handler) RegisterViewHandlers(s *server.MCPServer) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
-		mcp.WithDescription("List SigNoz saved Explorer views for a given sourcePage. A saved view is a reusable Explorer query (filters, aggregations, panel type) — supported for the Logs, Traces, and Metrics Explorer pages. "+
+		mcp.WithDescription("List ByLonis saved Explorer views for a given sourcePage. A saved view is a reusable Explorer query (filters, aggregations, panel type) — supported for the Logs, Traces, and Metrics Explorer pages. "+
 			"IMPORTANT: Supports pagination via 'limit' and 'offset'. The response includes 'pagination' with 'total', 'hasMore', and 'nextOffset'. When searching for a specific view, ALWAYS check 'pagination.hasMore' — if true, continue paging with 'nextOffset' until you find the item or 'hasMore' is false. Never conclude a view doesn't exist until you've checked all pages. Default: limit=50, offset=0."),
 		mcp.WithString("sourcePage", mcp.Required(), mcp.Description(`Required. Which Explorer to list views for. One of: "traces", "logs", "metrics".`)),
 		mcp.WithString("name", mcp.Description("Optional partial-match filter on view name (applied server-side).")),
@@ -54,7 +54,7 @@ func (h *Handler) RegisterViewHandlers(s *server.MCPServer) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
-		mcp.WithDescription("Fetch a single SigNoz saved view by UUID. Use the returned object as the base for bylonis_update_view — the update is a full-body replace."),
+		mcp.WithDescription("Fetch a single ByLonis saved view by UUID. Use the returned object as the base for bylonis_update_view — the update is a full-body replace."),
 		mcp.WithString("viewId", mcp.Required(), mcp.Description("Saved view UUID. Use bylonis_list_views to discover IDs.")),
 	)
 	addTool(s, getTool, h.handleGetView)
@@ -63,17 +63,17 @@ func (h *Handler) RegisterViewHandlers(s *server.MCPServer) {
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
 		mcp.WithDescription(
-			"Create a new SigNoz saved Explorer view.\n\n"+
+			"Create a new ByLonis saved Explorer view.\n\n"+
 				"CRITICAL: You MUST read these resources BEFORE composing a payload:\n"+
-				"1. signoz://view/instructions — REQUIRED: SavedView field schema and sourcePage rules\n"+
-				"2. signoz://view/examples — REQUIRED: full working payloads for traces/logs/metrics\n\n"+
+				"1. bylonis://view/instructions — REQUIRED: SavedView field schema and sourcePage rules\n"+
+				"2. bylonis://view/examples — REQUIRED: full working payloads for traces/logs/metrics\n\n"+
 				"Required fields: name, sourcePage (one of traces|logs|metrics), compositeQuery (object). "+
 				"Optional: category, tags, extraData. Server populates id, createdAt/By, updatedAt/By — "+
 				"do not send them.",
 		),
 		mcp.WithString("name", mcp.Required(), mcp.Description("Display name of the view.")),
 		mcp.WithString("sourcePage", mcp.Required(), mcp.Enum("traces", "logs", "metrics"), mcp.Description(`Which Explorer this view belongs to. One of: "traces", "logs", "metrics".`)),
-		mcp.WithObject("compositeQuery", mcp.Required(), mcp.AdditionalProperties(true), mcp.Description("The Query Builder payload as an object (not a string). Must contain queryType plus matching sub-query. See signoz://view/instructions and signoz://view/examples.")),
+		mcp.WithObject("compositeQuery", mcp.Required(), mcp.AdditionalProperties(true), mcp.Description("The Query Builder payload as an object (not a string). Must contain queryType plus matching sub-query. See bylonis://view/instructions and bylonis://view/examples.")),
 		mcp.WithString("category", mcp.Description("Optional free-form grouping label.")),
 		mcp.WithArray("tags", mcp.WithStringItems(), mcp.Description("Optional free-form tags.")),
 		mcp.WithString("extraData", mcp.Description("Optional UI-controlled options as a JSON-encoded string (safe to leave empty).")),
@@ -84,10 +84,10 @@ func (h *Handler) RegisterViewHandlers(s *server.MCPServer) {
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
 		mcp.WithDescription(
-			"Replace an existing SigNoz saved view (HTTP PUT — full body replace).\n\n"+
+			"Replace an existing ByLonis saved view (HTTP PUT — full body replace).\n\n"+
 				"CRITICAL: You MUST read these resources BEFORE composing a payload:\n"+
-				"1. signoz://view/instructions — REQUIRED: SavedView field schema and sourcePage rules\n"+
-				"2. signoz://view/examples — REQUIRED: full working payloads for traces/logs/metrics\n\n"+
+				"1. bylonis://view/instructions — REQUIRED: SavedView field schema and sourcePage rules\n"+
+				"2. bylonis://view/examples — REQUIRED: full working payloads for traces/logs/metrics\n\n"+
 				"Pass the view's UUID as viewId and the full SavedView body as view. "+
 				"ALWAYS call bylonis_get_view first, modify the `data` object it returns, "+
 				"and pass that under the `view` field here. Partial bodies will wipe unspecified fields. "+
@@ -107,15 +107,15 @@ func (h *Handler) RegisterViewHandlers(s *server.MCPServer) {
 	deleteTool := mcp.NewTool("bylonis_delete_view",
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
-		mcp.WithDescription("Permanently delete a SigNoz saved view by UUID. This cannot be undone."),
+		mcp.WithDescription("Permanently delete a ByLonis saved view by UUID. This cannot be undone."),
 		mcp.WithString("viewId", mcp.Required(), mcp.Description("UUID of the view to delete.")),
 	)
 	addTool(s, deleteTool, h.handleDeleteView)
 
 	viewInstructions := mcp.NewResource(
-		"signoz://view/instructions",
+		"bylonis://view/instructions",
 		"Saved View Instructions",
-		mcp.WithResourceDescription("SigNoz saved-view schema: SavedView fields, sourcePage values, compositeQuery rules, and the GET-then-PUT update flow."),
+		mcp.WithResourceDescription("ByLonis saved-view schema: SavedView fields, sourcePage values, compositeQuery rules, and the GET-then-PUT update flow."),
 		mcp.WithMIMEType("text/markdown"),
 	)
 	s.AddResource(viewInstructions, func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
@@ -129,7 +129,7 @@ func (h *Handler) RegisterViewHandlers(s *server.MCPServer) {
 	})
 
 	viewExamples := mcp.NewResource(
-		"signoz://view/examples",
+		"bylonis://view/examples",
 		"Saved View Examples",
 		mcp.WithResourceDescription("Three complete SavedView payloads — one per sourcePage (traces, logs, metrics) — suitable for bylonis_create_view."),
 		mcp.WithMIMEType("text/markdown"),
@@ -162,7 +162,7 @@ func savedViewSchemaProperties() map[string]any {
 		"compositeQuery": map[string]any{
 			"type":                 "object",
 			"additionalProperties": true,
-			"description":          "The Query Builder payload as an object (not a string). Must contain queryType plus matching sub-query. See signoz://view/instructions and signoz://view/examples.",
+			"description":          "The Query Builder payload as an object (not a string). Must contain queryType plus matching sub-query. See bylonis://view/instructions and bylonis://view/examples.",
 		},
 		"category": map[string]any{
 			"type":        "string",
@@ -186,7 +186,7 @@ func withRequiredFields(fields ...string) mcp.PropertyOption {
 	}
 }
 
-// serverPopulatedViewFields are set by the SigNoz API on create/read and
+// serverPopulatedViewFields are set by the ByLonis API on create/read and
 // must not be echoed back on create or update — upstream ignores them at
 // best and rejects them at worst.
 var serverPopulatedViewFields = []string{
@@ -392,7 +392,7 @@ func (h *Handler) handleCreateView(ctx context.Context, req mcp.CallToolRequest)
 	}
 	cq, present := args["compositeQuery"]
 	if !present {
-		return mcp.NewToolResultError(`Parameter validation failed: "compositeQuery" is required. Read signoz://view/instructions and signoz://view/examples for the schema.`), nil
+		return mcp.NewToolResultError(`Parameter validation failed: "compositeQuery" is required. Read bylonis://view/instructions and bylonis://view/examples for the schema.`), nil
 	}
 	if err := validateBuilderSignal(cq, sourcePage); err != nil {
 		return mcp.NewToolResultError(err.Error()), nil

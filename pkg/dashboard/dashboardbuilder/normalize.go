@@ -32,10 +32,10 @@ func filterItemsSlice(items any) []any {
 }
 
 // canonicalDynamicSource maps an incoming dynamicVariablesSource value to the
-// canonical form written by the current SigNoz UI dropdown
+// canonical form written by the current ByLonis UI dropdown
 // (frontend AttributeSource enum): "Traces", "Logs", "Metrics", "All telemetry".
 // The GET API and older payloads may return any casing of these values, plus
-// the legacy alias "all sources" which earlier versions of the SigNoz
+// the legacy alias "all sources" which earlier versions of the ByLonis
 // frontend used in place of "All telemetry". LLMs that echo a GET payload
 // back on update would otherwise fail validation unnecessarily.
 //
@@ -57,7 +57,7 @@ func canonicalDynamicSource(s string) string {
 }
 
 // uppercaseFilterOpsInQueryMaps normalizes `filters.items[].op` within each
-// query or formula entry to uppercase. The SigNoz write API only accepts the
+// query or formula entry to uppercase. The ByLonis write API only accepts the
 // Capitalized operator forms in validFilterOperators (IN, NOT_IN, LIKE, ILIKE,
 // EXISTS, CONTAINS, =, !=, ...), while the GET API may return either case.
 // Without this, an LLM that echoes a GET payload back on update trips panel
@@ -93,7 +93,7 @@ func uppercaseFilterOpsInQueryMaps(entries []map[string]any) {
 }
 
 // normalizeFilterItemsInQueryMaps walks each `filters.items[]` entry on a
-// query or formula and heals two read/write shape quirks that stop the SigNoz
+// query or formula and heals two read/write shape quirks that stop the ByLonis
 // UI edit modal from hydrating the filter row — even though the list/render
 // path and the ClickHouse query path both accept the broken shape via the
 // top-level `filter.expression` string:

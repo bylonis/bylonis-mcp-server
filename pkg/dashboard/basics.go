@@ -64,7 +64,7 @@ Variables [Critical]:
 
 Default to DYNAMIC Variables:
 - ALWAYS prefer DYNAMIC type variables. They auto-derive dropdown values from OpenTelemetry resource/tag attributes using DynamicVariablesAttribute and DynamicVariablesSource, require no manual SQL, and stay in sync with backend state automatically.
-- Set DynamicVariablesSource to one of: "Traces", "Logs", "Metrics", or "All telemetry" (matches the values written by the SigNoz UI dropdown). Note: GET responses may return these in any casing (e.g. "metrics") and older SigNoz versions used the legacy alias "all sources" in place of "All telemetry"; the server normalizes case and aliases on write so echoing a GET payload back is safe.
+- Set DynamicVariablesSource to one of: "Traces", "Logs", "Metrics", or "All telemetry" (matches the values written by the ByLonis UI dropdown). Note: GET responses may return these in any casing (e.g. "metrics") and older ByLonis versions used the legacy alias "all sources" in place of "All telemetry"; the server normalizes case and aliases on write so echoing a GET payload back is safe.
 - Set DynamicVariablesAttribute to the attribute key (e.g., "service.name", "deployment.environment", "k8s.namespace.name").
 - When you know the attribute (e.g., the user says "filter by service" → use service.name, "filter by environment" → use deployment.environment), create the DYNAMIC variable directly without extra API calls.
 - When the right attribute is NOT obvious, call bylonis_get_field_keys with the relevant signal and fieldContext=resource to discover available resource attributes, then pick the best match. Optionally call bylonis_get_field_values to preview values and confirm the attribute is populated. Use the discovered attribute as DynamicVariablesAttribute.
@@ -91,7 +91,4 @@ Applying Variables to Panels [Critical — MUST prompt the user]:
 - Rationale: variables often apply to a subset of panels (e.g., a service.name filter belongs on RED panels but not on a global latency heatmap). Silent auto-injection produces dashboards that look valid syntactically but over-filter unrelated panels.
 - This applies to both bylonis_create_dashboard (introducing a variable at creation time) and bylonis_update_dashboard (adding a variable to an existing dashboard).
 
-Links:
-- Dashboard: https://signoz.io/docs/userguide/manage-dashboards/
-- Variables: https://signoz.io/docs/userguide/manage-variables/
 `

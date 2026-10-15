@@ -38,7 +38,7 @@ Verified working after the fix:
 Review of the PR surfaced two gaps, both addressed here:
 
 - **Test coverage.** The existing `TestQueryPayloadRoundTrip_PreservesSource` only exercises the `signoz_execute_builder_query` path (unmarshal → validate → marshal of a hand-written payload). The `signoz_query_metrics` path goes through `BuildMetricsQueryPayloadJSON` — the function that actually gained the `source` argument — and had no direct test. Added `TestBuildMetricsQueryPayloadJSON_AppliesSource`, asserting source lands on every `builder_query` spec, never on a `builder_formula` spec, and is omitted when empty.
-- **Discoverability.** The `source` parameter was documented in the README param reference, but the `signoz://metrics-aggregation-guide` MCP resource (`pkg/metricsrules/guide.go`) — the agent-facing guide with payload examples — had no mention of Cost Meter. An agent reading it would never learn to set `source: "meter"`. Added a "Cost Meter (Telemetry Ingestion Volume)" section with the six real meter metric names/units (verified live via `signoz_list_metrics source=meter`: all delta monotonic sums) and a working example payload.
+- **Discoverability.** The `source` parameter was documented in the README param reference, but the `bylonis://metrics-aggregation-guide` MCP resource (`pkg/metricsrules/guide.go`) — the agent-facing guide with payload examples — had no mention of Cost Meter. An agent reading it would never learn to set `source: "meter"`. Added a "Cost Meter (Telemetry Ingestion Volume)" section with the six real meter metric names/units (verified live via `signoz_list_metrics source=meter`: all delta monotonic sums) and a working example payload.
 
 The six Cost Meter metrics (verified live): `signoz.meter.log.count`/`.size`, `signoz.meter.metric.datapoint.count`/`.size`, `signoz.meter.span.count`/`.size`.
 
@@ -76,7 +76,7 @@ Confirmed the MCP can create Cost Meter **alerts, saved views, and dashboards** 
 
 Decisions/edits this round:
 - **No client-side coercion** anywhere — backend owns the schema; the MCP paths are passthroughs.
-- Added Cost Meter discoverability across the resources: alert resources get a `source` line in the builder-query spec section, a "Cumulative window (Cost Meter spend budgets)" subsection in Evaluation, and Example 11 (`metric_cost_meter`) in `signoz://alert/examples`. Saved-view instructions extend the existing `source` field row to name `"meter"` (metrics views only). The dashboard query-builder guide gets a short "Cost Meter (usage/billing metrics)" note under Metrics-Specific Features. Kept these brief (no full view/dashboard example payloads) per the concise-docs preference.
+- Added Cost Meter discoverability across the resources: alert resources get a `source` line in the builder-query spec section, a "Cumulative window (Cost Meter spend budgets)" subsection in Evaluation, and Example 11 (`metric_cost_meter`) in `bylonis://alert/examples`. Saved-view instructions extend the existing `source` field row to name `"meter"` (metrics views only). The dashboard query-builder guide gets a short "Cost Meter (usage/billing metrics)" note under Metrics-Specific Features. Kept these brief (no full view/dashboard example payloads) per the concise-docs preference.
 - New CLAUDE.md convention: live-instance E2E verification should be delegated to a subagent (clean up, never print creds, report round-tripped fields, copy existing shapes).
 
 ### 2026-06-08 — Codex (gpt-5.5/xhigh) review fixes + cumulative decoupled from Cost Meter

@@ -1,4 +1,4 @@
-// Package panelvalidator provides schema validation for SigNoz dashboard panels.
+// Package panelvalidator provides schema validation for ByLonis dashboard panels.
 // It validates the frontend JSON format used by the dashboard API (POST/PUT /api/v1/dashboards).
 // This package is standalone with zero external dependencies - copy it into any Go project.
 package panelvalidator
@@ -332,7 +332,7 @@ var panelTypeQueryTypes = map[string]map[string]bool{
 // Section 3: Go Structs (matching frontend JSON format)
 // =============================================================================
 
-// Panel represents a SigNoz dashboard widget/panel.
+// Panel represents a ByLonis dashboard widget/panel.
 type Panel struct {
 	ID                    string            `json:"id"`
 	PanelTypes            string            `json:"panelTypes"`
@@ -893,7 +893,7 @@ func validateHistogramPanel(p Panel, r *ValidationResult) {
 // Section 7: Main ValidatePanel Function
 // =============================================================================
 
-// ValidatePanel validates a SigNoz dashboard panel and returns errors and warnings.
+// ValidatePanel validates a ByLonis dashboard panel and returns errors and warnings.
 // Errors indicate the panel will not render correctly.
 // Warnings indicate the panel will work but may produce unexpected results.
 func ValidatePanel(panel Panel) ValidationResult {

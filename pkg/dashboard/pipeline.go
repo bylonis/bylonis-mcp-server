@@ -1,10 +1,10 @@
 // Package dashboard provides a unified validation and normalization pipeline
-// for SigNoz dashboard JSON payloads. It chains two complementary layers:
+// for ByLonis dashboard JSON payloads. It chains two complementary layers:
 //
 //   - dashboardbuilder: structural validation + defaults (layout, variables, nil-slice init, auto-layout)
 //   - panelvalidator:   semantic validation per widget (operators, data sources, panel-type rules)
 //
-// Call Validate before sending dashboard JSON to the SigNoz API.
+// Call Validate before sending dashboard JSON to the ByLonis API.
 package dashboard
 
 import (
@@ -17,7 +17,7 @@ import (
 )
 
 // Validate parses raw dashboard JSON, applies defaults, runs structural and
-// semantic validation, and returns clean JSON bytes ready for the SigNoz API.
+// semantic validation, and returns clean JSON bytes ready for the ByLonis API.
 //
 // The pipeline:
 //  1. dashboardbuilder.ParseFromJSON — parse, apply defaults (nil-slice init,

@@ -57,7 +57,7 @@ func NewHandler(log *slog.Logger, cfg *config.Config) *Handler {
 	}
 }
 
-// GetClient returns a cached SigNoz client for the tenant identified by
+// GetClient returns a cached ByLonis client for the tenant identified by
 // the apiKey and signozURL stored in the request context.
 // Both stdio and HTTP transports guarantee these values are present
 // in the context before any tool handler is called.
@@ -92,7 +92,7 @@ func (h *Handler) GetClient(ctx context.Context) (signozclient.Client, error) {
 		headers = h.customHeaders
 	}
 
-	h.logger.DebugContext(ctx, "Creating new SigNoz client for tenant")
+	h.logger.DebugContext(ctx, "Creating new ByLonis client for tenant")
 	newClient := signozclient.NewClient(h.logger, signozURL, apiKey, authHeader, headers)
 	newClient.SetMeters(h.meters)
 	h.clientCache.Add(cacheKey, newClient)

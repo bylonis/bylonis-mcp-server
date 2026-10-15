@@ -186,16 +186,16 @@ func validateBuilderQuery(prefix string, q *Query, errs *ValidationError) {
 
 // validateFilterExpressionConsistency rejects builder queries whose
 // `filter.expression` string omits any key present in `filters.items[]`. Both
-// the SigNoz list/graph renderer (which reads `filter.expression` directly)
+// the ByLonis list/graph renderer (which reads `filter.expression` directly)
 // and the edit-modal expression-reconstruction path (which walks
 // `filters.items[]`) must agree, or the two produce different query payloads:
 // the list view silently drops predicates, and the edit modal trips on an
-// item it cannot find a home for. The SigNoz backend tolerates this
+// item it cannot find a home for. The ByLonis backend tolerates this
 // inconsistency on write (it does not reject mismatched payloads), so we
 // enforce it here — permissive upstream does not mean correct.
 //
 // Only runs when both sides are non-empty: an empty `filter.expression` lets
-// SigNoz build from items, and an empty `filters.items[]` means
+// ByLonis build from items, and an empty `filters.items[]` means
 // expression-only is intentional.
 func validateFilterExpressionConsistency(prefix string, qd map[string]any, errs *ValidationError) {
 	filterMap, _ := qd["filter"].(map[string]any)
@@ -235,7 +235,7 @@ func validateFilterExpressionConsistency(prefix string, qd map[string]any, errs 
 
 // containsKeyAsIdentifier reports whether `key` appears in `expression` as a
 // standalone identifier — that is, flanked by characters that cannot be part
-// of a SigNoz attribute name, or by the start/end of the expression. This
+// of a ByLonis attribute name, or by the start/end of the expression. This
 // avoids false positives where a shorter key substring-matches inside a
 // longer identifier (e.g. key "service.name" appearing in "service.name_v2",
 // or key "k8s.namespace" appearing in "k8s.namespace.name").

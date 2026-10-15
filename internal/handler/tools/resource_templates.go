@@ -21,7 +21,7 @@ func (h *Handler) RegisterResourceTemplates(s *server.MCPServer) {
 
 	s.AddResourceTemplate(
 		mcp.NewResourceTemplate(
-			"signoz://alert/{ruleId}/summary",
+			"bylonis://alert/{ruleId}/summary",
 			"Alert Summary",
 			mcp.WithTemplateDescription("Get alert configuration and recent history for a specific alert rule."),
 			mcp.WithTemplateMIMEType("application/json"),
@@ -31,7 +31,7 @@ func (h *Handler) RegisterResourceTemplates(s *server.MCPServer) {
 
 	s.AddResourceTemplate(
 		mcp.NewResourceTemplate(
-			"signoz://dashboard/{uuid}/summary",
+			"bylonis://dashboard/{uuid}/summary",
 			"Dashboard Summary",
 			mcp.WithTemplateDescription("Get dashboard metadata and widget list for a specific dashboard."),
 			mcp.WithTemplateMIMEType("application/json"),
@@ -41,7 +41,7 @@ func (h *Handler) RegisterResourceTemplates(s *server.MCPServer) {
 }
 
 func (h *Handler) handleAlertSummaryResource(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
-	ruleID := extractURIParam(req.Params.URI, "signoz://alert/", "/summary")
+	ruleID := extractURIParam(req.Params.URI, "bylonis://alert/", "/summary")
 	if ruleID == "" {
 		return nil, fmt.Errorf("missing ruleId in URI")
 	}
@@ -93,7 +93,7 @@ func (h *Handler) handleAlertSummaryResource(ctx context.Context, req mcp.ReadRe
 }
 
 func (h *Handler) handleDashboardSummaryResource(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
-	uuid := extractURIParam(req.Params.URI, "signoz://dashboard/", "/summary")
+	uuid := extractURIParam(req.Params.URI, "bylonis://dashboard/", "/summary")
 	if uuid == "" {
 		return nil, fmt.Errorf("missing uuid in URI")
 	}
@@ -121,7 +121,7 @@ func (h *Handler) handleDashboardSummaryResource(ctx context.Context, req mcp.Re
 
 // extractURIParam extracts the parameter value from a URI by stripping the
 // prefix and suffix. Returns empty string if the URI doesn't match.
-// e.g., extractURIParam("signoz://alert/123/summary", "signoz://alert/", "/summary") returns "123"
+// e.g., extractURIParam("bylonis://alert/123/summary", "bylonis://alert/", "/summary") returns "123"
 func extractURIParam(uri, prefix, suffix string) string {
 	if !strings.HasPrefix(uri, prefix) || !strings.HasSuffix(uri, suffix) {
 		return ""

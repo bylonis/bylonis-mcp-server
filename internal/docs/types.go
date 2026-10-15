@@ -6,7 +6,7 @@ const CorpusSchemaVersion = 1
 
 const (
 	DefaultSitemapURL = "https://signoz.io/docs/sitemap.md"
-	DocsSitemapURI    = "signoz://docs/sitemap"
+	DocsSitemapURI    = "bylonis://docs/sitemap"
 )
 
 type CorpusSnapshot struct {

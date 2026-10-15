@@ -289,34 +289,9 @@ func NewMCPServer(log *slog.Logger, handler *tools.Handler, cfg *config.Config, 
 	}
 }
 
-func (m *MCPServer) Run(ctx context.Context) error {
-	// Middleware order matters: mcp-go applies tool-handler middlewares in
-	// reverse-slice order, so the first-appended wraps outermost. Register
-	// loggingMiddleware FIRST so it wraps recovery — when a tool panics,
-	// recovery converts it to an error that bubbles back to loggingMiddleware
-	// via the normal return path, so mcp.tool.calls{is_error=true} and the
-	// codes.Error span status actually get recorded.
-	s := server.NewMCPServer("BylonisMCP", version.Version,
-		server.WithLogging(),
-		server.WithToolCapabilities(false),
-		server.WithInstructions(instructions.ServerInstructions),
-		server.WithHooks(m.buildHooks()),
-		server.WithToolHandlerMiddleware(m.loggingMiddleware()),
-		server.WithRecovery(),
-	)
-
-	m.logger.InfoContext(ctx, "Starting SigNoz MCP Server",
-		slog.String("server_name", "BylonisMCPServer"),
-		slog.String("transport_mode", m.config.TransportMode))
-
-	// Short-circuit if shutdown already signaled. The async docs-index build
-	// below would otherwise continue to run after Run() returns; tests rely
-	// on a 2 s exit bound.
-	if err := ctx.Err(); err != nil {
-		m.logger.InfoContext(ctx, "Shutdown signaled before startup; exiting early")
-		return nil
-	}
-
+// startDocsIndex registers the docs index the docs tools read and builds it in
+// the background. It only runs when the docs tools are enabled.
+func (m *MCPServer) startDocsIndex(ctx context.Context) error {
 	// Register a placeholder IndexRegistry up-front so the docs tool handlers
 	// have a non-nil *IndexRegistry to reference. Ready() reports false until
 	// the async corpus build below calls Swap() with a real snapshot, so docs
@@ -371,8 +346,12 @@ func (m *MCPServer) Run(ctx context.Context) error {
 			}()
 		}
 	}()
+	return nil
+}
 
-	// Register all handlers
+// registerHandlers adds every tool, resource and prompt the server exposes.
+// The docs tools are only added when they are enabled.
+func (m *MCPServer) registerHandlers(s *server.MCPServer) {
 	m.handler.RegisterMetricsHandlers(s)
 	m.handler.RegisterFieldsHandlers(s)
 	m.handler.RegisterAlertsHandlers(s)
@@ -381,13 +360,50 @@ func (m *MCPServer) Run(ctx context.Context) error {
 	m.handler.RegisterQueryBuilderV5Handlers(s)
 	m.handler.RegisterLogsHandlers(s)
 	m.handler.RegisterViewHandlers(s)
-	m.handler.RegisterDocsHandlers(s)
+	if m.config.DocsToolsEnabled {
+		m.handler.RegisterDocsHandlers(s)
+	}
 	m.handler.RegisterTracesHandlers(s)
 	m.handler.RegisterNotificationChannelHandlers(s)
 	m.handler.RegisterResourceTemplates(s)
-
-	// Register prompts
 	prompts.RegisterPrompts(s.AddPrompt)
+}
+
+func (m *MCPServer) Run(ctx context.Context) error {
+	// Middleware order matters: mcp-go applies tool-handler middlewares in
+	// reverse-slice order, so the first-appended wraps outermost. Register
+	// loggingMiddleware FIRST so it wraps recovery — when a tool panics,
+	// recovery converts it to an error that bubbles back to loggingMiddleware
+	// via the normal return path, so mcp.tool.calls{is_error=true} and the
+	// codes.Error span status actually get recorded.
+	s := server.NewMCPServer("BylonisMCP", version.Version,
+		server.WithLogging(),
+		server.WithToolCapabilities(false),
+		server.WithInstructions(instructions.ServerInstructions),
+		server.WithHooks(m.buildHooks()),
+		server.WithToolHandlerMiddleware(m.loggingMiddleware()),
+		server.WithRecovery(),
+	)
+
+	m.logger.InfoContext(ctx, "Starting ByLonis MCP Server",
+		slog.String("server_name", "BylonisMCPServer"),
+		slog.String("transport_mode", m.config.TransportMode))
+
+	// Short-circuit if shutdown already signaled. The async docs-index build
+	// below would otherwise continue to run after Run() returns; tests rely
+	// on a 2 s exit bound.
+	if err := ctx.Err(); err != nil {
+		m.logger.InfoContext(ctx, "Shutdown signaled before startup; exiting early")
+		return nil
+	}
+
+	if m.config.DocsToolsEnabled {
+		if err := m.startDocsIndex(ctx); err != nil {
+			return err
+		}
+	}
+
+	m.registerHandlers(s)
 
 	m.logger.InfoContext(ctx, "All handlers registered successfully")
 

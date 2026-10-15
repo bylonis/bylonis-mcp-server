@@ -1,7 +1,7 @@
 package metricsrules
 
 // MetricsGuide is the full markdown guide served as the
-// signoz://metrics-aggregation-guide MCP resource.
+// bylonis://metrics-aggregation-guide MCP resource.
 const MetricsGuide = `# Metrics Aggregation Guide
 
 ## Pre-Query Checklist
@@ -217,9 +217,9 @@ Formula C: A / B * 100
 
 ---
 
-## Cost Meter (SigNoz usage / billing metrics)
+## Cost Meter (ByLonis usage / billing metrics)
 
-Cost Meter is the data store for the metrics SigNoz meters and bills on. Today these are
+Cost Meter is the data store for the metrics ByLonis meters and bills on. Today these are
 telemetry ingestion volume — logs, spans, and metric data points, by count and by bytes —
 and the set evolves (it may include other billable usage, such as AI credit consumption, in
 future). They answer questions like "which services consume the most telemetry budget?" or

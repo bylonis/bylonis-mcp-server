@@ -1,14 +1,14 @@
 // Package views holds the MCP resource content served at
-// signoz://view/instructions and signoz://view/examples. The content
+// bylonis://view/instructions and bylonis://view/examples. The content
 // teaches an LLM how to construct SavedView payloads before calling
 // bylonis_create_view / bylonis_update_view.
 package views
 
-// Instructions is the body of signoz://view/instructions.
-const Instructions = `# SigNoz Saved View Schema
+// Instructions is the body of bylonis://view/instructions.
+const Instructions = `# ByLonis Saved View Schema
 
 A saved view is a reusable snapshot of an Explorer query. It maps 1:1
-to the "Saved Views" feature in the SigNoz UI (traces-explorer,
+to the "Saved Views" feature in the ByLonis UI (traces-explorer,
 logs-explorer, metrics-explorer).
 
 ## SavedView fields
@@ -57,7 +57,7 @@ The server rejects them with HTTP 400 "failed to validate request body".
 | signal       | string   | Required. MUST match sourcePage: "traces" / "logs" / "metrics" |
 | source       | string   | Usually "". Set "meter" (metrics views only) to save a Cost Meter usage/billing view |
 | stepInterval | integer  | Seconds per bucket. 0 for list panels, e.g. 60 for graphs |
-| filter       | object   | { "expression": "SigNoz filter expression" } |
+| filter       | object   | { "expression": "ByLonis filter expression" } |
 | having       | object   | { "expression": "" } unless aggregating |
 | aggregations | array    | Required for metrics graphs (see metrics example) |
 
@@ -67,7 +67,6 @@ The server rejects them with HTTP 400 "failed to validate request body".
   ` + "`\"signal\":\"traces\"`" + ` in every builder_query spec.
 - **panelType by intent:** "list" for tabular spans/logs; "graph" for
   time-series; "table" for grouped tables; "value" for a single number.
-- **Full Query Builder v5 spec:** https://signoz.io/docs/userguide/query-builder-v5/
 
 ## Update flow
 
@@ -106,5 +105,5 @@ omitting them up front is clearer.)
       }
     }
 
-See signoz://view/examples for complete payloads per sourcePage.
+See bylonis://view/examples for complete payloads per sourcePage.
 `

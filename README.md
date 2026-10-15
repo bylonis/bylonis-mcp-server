@@ -359,8 +359,8 @@ HTTP mode exposes unauthenticated probe endpoints. New Kubernetes deployments sh
 | `bylonis_get_service_top_operations` | Get top operations for a service |
 | `bylonis_list_views` | List saved Explorer views for a sourcePage (traces/logs/metrics) |
 | `bylonis_get_view` | Get a saved view by UUID |
-| `bylonis_search_docs` | Search official SigNoz docs for product, setup, instrumentation, config, API, deployment, or troubleshooting questions |
-| `bylonis_fetch_doc` | Fetch full markdown for one official SigNoz docs page or heading |
+| `bylonis_search_docs` | Off by default (`BYLONIS_DOCS_TOOLS_ENABLED`). Search the upstream project docs for product, setup, instrumentation, config, API, deployment, or troubleshooting questions |
+| `bylonis_fetch_doc` | Off by default (`BYLONIS_DOCS_TOOLS_ENABLED`). Fetch full markdown for one upstream docs page or heading |
 | `bylonis_create_view` | Create a new saved Explorer view |
 | `bylonis_update_view` | Replace an existing saved view (full-body PUT) |
 | `bylonis_delete_view` | Delete a saved view by UUID |
@@ -559,7 +559,7 @@ Fetch full markdown for one official SigNoz docs page from the local index. Acce
   - `heading` (optional) - Heading anchor ID or heading text
   - `searchContext` - User's original question
 
-#### `signoz://docs/sitemap`
+#### `bylonis://docs/sitemap`
 
 Read-only MCP resource containing the indexed docs sitemap used by the docs search and fetch tools.
 
@@ -568,7 +568,7 @@ Read-only MCP resource containing the indexed docs sitemap used by the docs sear
 Create a new saved Explorer view.
 
 - **Parameters**: JSON payload matching the `SavedView` schema.
-- **Tip**: Read MCP resources `signoz://view/instructions` and `signoz://view/examples` before composing payloads.
+- **Tip**: Read MCP resources `bylonis://view/instructions` and `bylonis://view/examples` before composing payloads.
 
 #### `bylonis_update_view`
 
@@ -577,7 +577,7 @@ Replace an existing saved view (full-body PUT).
 - **Parameters**:
   - `viewId` (required) - UUID of the view to replace
   - `view` (required) - Full `SavedView` object (`name`, `sourcePage`, `compositeQuery`, plus any of `category`, `tags`, `extraData`)
-- **Tip**: Read MCP resources `signoz://view/instructions` and `signoz://view/examples` before composing payloads. Call `bylonis_get_view` first, pass its `data` object under `view` with whichever fields changed. Partial bodies wipe unspecified fields.
+- **Tip**: Read MCP resources `bylonis://view/instructions` and `bylonis://view/examples` before composing payloads. Call `bylonis_get_view` first, pass its `data` object under `view` with whichever fields changed. Partial bodies wipe unspecified fields.
 
 #### `bylonis_delete_view`
 
@@ -694,7 +694,7 @@ Create a new alert rule in SigNoz via `POST /api/v2/rules`.
 - **Schema varies by `ruleType`**:
   - `threshold_rule` / `promql_rule` → **v2alpha1** (structured `condition.thresholds`, `evaluation`, `notificationSettings`).
   - `anomaly_rule` → **v1** schema: top-level `evalWindow` and `frequency`; `condition.op`/`matchType`/`target`/`algorithm`/`seasonality`; anomaly function inside `compositeQuery.queries[].spec.functions`. Omit `thresholds`, `evaluation`, `schemaVersion`.
-- **Tip**: Read MCP resources `signoz://alert/instructions` and `signoz://alert/examples` (the ten canonical SigNoz PR #11023 payloads plus a Cost Meter cumulative-budget example) before composing payloads. For `promql_rule`, also read `signoz://promql/instructions` — OTel dotted metric names require the Prometheus 3.x UTF-8 quoted-selector form.
+- **Tip**: Read MCP resources `bylonis://alert/instructions` and `bylonis://alert/examples` (the ten canonical SigNoz PR #11023 payloads plus a Cost Meter cumulative-budget example) before composing payloads. For `promql_rule`, also read `bylonis://promql/instructions` — OTel dotted metric names require the Prometheus 3.x UTF-8 quoted-selector form.
 
 #### `bylonis_update_alert`
 
@@ -766,7 +766,7 @@ Executes a SigNoz Query Builder v5 query.
 - **Query types**: the per-envelope `compositeQuery.queries[i].type` selects the spec shape:
   - `builder_query` — signal-specific spec (logs/traces/metrics) with filter, aggregations, groupBy, etc.
   - `builder_formula` — formula expression referencing other query names (e.g. `A / B * 100`).
-  - `promql` — `{name, query, disabled, step?, legend?}`. PromQL for OTel metrics requires the Prometheus 3.x UTF-8 quoted-selector form `{"metric.name.with.dots"}`; read the `signoz://promql/instructions` resource for details.
+  - `promql` — `{name, query, disabled, step?, legend?}`. PromQL for OTel metrics requires the Prometheus 3.x UTF-8 quoted-selector form `{"metric.name.with.dots"}`; read the `bylonis://promql/instructions` resource for details.
   - `clickhouse_sql` — `{name, query, disabled, legend?}`.
 - **Documentation**: See [SigNoz Query Builder v5 docs](https://signoz.io/docs/userguide/query-builder-v5/)
 
@@ -782,6 +782,7 @@ Executes a SigNoz Query Builder v5 query.
 | `TRANSPORT_MODE`  | MCP transport mode: `stdio`(default) or `http`                                 | No                                  |
 | `MCP_SERVER_PORT` | Port for HTTP transport mode                                                   | Yes only when `TRANSPORT_MODE=http` |
 | `MCP_MAX_REQUEST_BYTES` | Max inbound MCP HTTP request body size in bytes (default: `4194304` / 4 MiB). Bounds memory from a single oversized request. | No |
+| `BYLONIS_DOCS_TOOLS_ENABLED` | Register `bylonis_search_docs` and `bylonis_fetch_doc` (default: `false`). Their corpus is the upstream documentation, so they stay off until ByLonis publishes its own docs; when off, the docs index is not loaded or refreshed | No |
 | `BYLONIS_DOCS_REFRESH_INTERVAL` | Runtime docs sitemap refresh interval (Go duration, default: `6h`) | No |
 | `BYLONIS_DOCS_FULL_REFRESH_INTERVAL` | Runtime full docs refresh interval (Go duration, default: `24h`) | No |
 | `OAUTH_ENABLED`   | Enable OAuth 2.1 authentication flow (`true`/`false`)                          | No (default: `false`)               |

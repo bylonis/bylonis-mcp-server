@@ -29,7 +29,7 @@ func (h *Handler) RegisterTracesHandlers(s *server.MCPServer) {
 		mcp.WithString("aggregation", mcp.Required(), mcp.Description("Aggregation function to apply. One of: count, count_distinct, avg, sum, min, max, p50, p75, p90, p95, p99, rate")),
 		mcp.WithString("aggregateOn", mcp.Description("Field name to aggregate on (e.g., 'durationNano'). Required for all aggregations except count and rate.")),
 		mcp.WithString("groupBy", mcp.Description("Comma-separated list of field names to group results by (e.g., 'service.name' or 'service.name, name'). Leave empty for a single aggregate value.")),
-		mcp.WithString("filter", mcp.Description("Filter expression using SigNoz search syntax (e.g., \"hasError = true AND httpMethod = 'GET'\"). Combined with service/operation/error/duration params using AND.")),
+		mcp.WithString("filter", mcp.Description("Filter expression using ByLonis search syntax (e.g., \"hasError = true AND httpMethod = 'GET'\"). Combined with service/operation/error/duration params using AND.")),
 		mcp.WithString("service", mcp.Description("Shortcut filter for service name. Equivalent to adding service.name = '<value>' to filter.")),
 		mcp.WithString("operation", mcp.Description("Shortcut filter for span/operation name. Equivalent to adding name = '<value>' to filter.")),
 		mcp.WithString("error", mcp.Description("Shortcut filter for error spans ('true' or 'false'). Equivalent to adding hasError = true/false to filter.")),
@@ -53,7 +53,7 @@ func (h *Handler) RegisterTracesHandlers(s *server.MCPServer) {
 		mcp.WithDescription("Search traces with flexible filtering. Supports free-form query expressions, optional service/operation/error filters, and duration filtering. "+
 			"Use service param to scope to a single service, or query param for any filter expression. "+
 			"Defaults to last 1 hour if no time specified."),
-		mcp.WithString("query", mcp.Description("Free-form filter expression using SigNoz search syntax. Examples: \"service.name = 'payment-svc' AND hasError = true\", \"httpMethod = 'POST' AND responseStatusCode >= 500\". Combined with shortcut params using AND.")),
+		mcp.WithString("query", mcp.Description("Free-form filter expression using ByLonis search syntax. Examples: \"service.name = 'payment-svc' AND hasError = true\", \"httpMethod = 'POST' AND responseStatusCode >= 500\". Combined with shortcut params using AND.")),
 		mcp.WithString("service", mcp.Description("Optional service name to filter by.")),
 		mcp.WithString("operation", mcp.Description("Operation/span name to filter by.")),
 		mcp.WithString("error", mcp.Description("Filter by error status ('true' or 'false').")),

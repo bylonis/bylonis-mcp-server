@@ -43,7 +43,7 @@ func (h *Handler) RegisterDashboardHandlers(s *server.MCPServer) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
-		mcp.WithDescription("List all dashboards from SigNoz (returns summary with name, UUID, description, tags, and timestamps). IMPORTANT: This tool supports pagination using 'limit' and 'offset' parameters. The response includes 'pagination' metadata with 'total', 'hasMore', and 'nextOffset' fields. When searching for a specific dashboard, ALWAYS check 'pagination.hasMore' - if true, continue paginating through all pages using 'nextOffset' until you find the item or 'hasMore' is false. Never conclude an item doesn't exist until you've checked all pages. Default: limit=50, offset=0."),
+		mcp.WithDescription("List all dashboards from ByLonis (returns summary with name, UUID, description, tags, and timestamps). IMPORTANT: This tool supports pagination using 'limit' and 'offset' parameters. The response includes 'pagination' metadata with 'total', 'hasMore', and 'nextOffset' fields. When searching for a specific dashboard, ALWAYS check 'pagination.hasMore' - if true, continue paginating through all pages using 'nextOffset' until you find the item or 'hasMore' is false. Never conclude an item doesn't exist until you've checked all pages. Default: limit=50, offset=0."),
 		mcp.WithString("limit", mcp.Description("Maximum number of dashboards to return per page. Use this to paginate through large result sets. Default: 50. Example: '50' for 50 results, '100' for 100 results. Must be greater than 0.")),
 		mcp.WithString("offset", mcp.Description("Number of results to skip before returning results. Use for pagination: offset=0 for first page, offset=50 for second page (if limit=50), offset=100 for third page, etc. Check 'pagination.nextOffset' in the response to get the next page offset. Default: 0. Must be >= 0.")),
 	)
@@ -66,15 +66,15 @@ func (h *Handler) RegisterDashboardHandlers(s *server.MCPServer) {
 		mcp.WithDescription(
 			"Creates a new monitoring dashboard based on the provided title, layout, and widget configuration. "+
 				"CRITICAL: You MUST read these resources BEFORE generating any dashboard output:\n"+
-				"1. signoz://dashboard/instructions - REQUIRED: Dashboard structure and basics\n"+
-				"2. signoz://dashboard/widgets-instructions - REQUIRED: Widget configuration rules\n"+
-				"3. signoz://dashboard/widgets-examples - REQUIRED: Complete widget examples with all required fields\n\n"+
+				"1. bylonis://dashboard/instructions - REQUIRED: Dashboard structure and basics\n"+
+				"2. bylonis://dashboard/widgets-instructions - REQUIRED: Widget configuration rules\n"+
+				"3. bylonis://dashboard/widgets-examples - REQUIRED: Complete widget examples with all required fields\n\n"+
 				"QUERY-SPECIFIC RESOURCES (read based on query type used):\n"+
-				"- For PromQL queries: signoz://promql/instructions\n"+
-				"- For Query Builder queries: signoz://dashboard/query-builder-example\n"+
-				"- For ClickHouse SQL on logs: signoz://dashboard/clickhouse-schema-for-logs + signoz://dashboard/clickhouse-logs-example\n"+
-				"- For ClickHouse SQL on metrics: signoz://dashboard/clickhouse-schema-for-metrics + signoz://dashboard/clickhouse-metrics-example\n"+
-				"- For ClickHouse SQL on traces: signoz://dashboard/clickhouse-schema-for-traces + signoz://dashboard/clickhouse-traces-example\n\n"+
+				"- For PromQL queries: bylonis://promql/instructions\n"+
+				"- For Query Builder queries: bylonis://dashboard/query-builder-example\n"+
+				"- For ClickHouse SQL on logs: bylonis://dashboard/clickhouse-schema-for-logs + bylonis://dashboard/clickhouse-logs-example\n"+
+				"- For ClickHouse SQL on metrics: bylonis://dashboard/clickhouse-schema-for-metrics + bylonis://dashboard/clickhouse-metrics-example\n"+
+				"- For ClickHouse SQL on traces: bylonis://dashboard/clickhouse-schema-for-traces + bylonis://dashboard/clickhouse-traces-example\n\n"+
 				"IMPORTANT: The widgets-examples resource contains complete, working widget configurations. "+
 				"You must consult it to ensure all required fields (id, panelTypes, title, query, selectedLogFields, selectedTracesFields, thresholds, contextLinks) are properly populated.",
 		),
@@ -88,18 +88,18 @@ func (h *Handler) RegisterDashboardHandlers(s *server.MCPServer) {
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithDescription(
 			"Update an existing dashboard by supplying its UUID along with a fully assembled dashboard JSON object.\n\n"+
-				"MANDATORY FIRST STEP: Read signoz://dashboard/widgets-examples before doing ANYTHING else. This is NON-NEGOTIABLE.\n\n"+
+				"MANDATORY FIRST STEP: Read bylonis://dashboard/widgets-examples before doing ANYTHING else. This is NON-NEGOTIABLE.\n\n"+
 				"The provided object must represent the complete post-update state, combining the current dashboard data and the intended modifications.\n\n"+
 				"REQUIRED RESOURCES (read ALL before generating output):\n"+
-				"1. signoz://dashboard/instructions\n"+
-				"2. signoz://dashboard/widgets-instructions\n"+
-				"3. signoz://dashboard/widgets-examples ← CRITICAL: Shows complete widget field structure\n\n"+
+				"1. bylonis://dashboard/instructions\n"+
+				"2. bylonis://dashboard/widgets-instructions\n"+
+				"3. bylonis://dashboard/widgets-examples ← CRITICAL: Shows complete widget field structure\n\n"+
 				"CONDITIONAL RESOURCES (based on query type):\n"+
-				"• PromQL → signoz://promql/instructions\n"+
-				"• Query Builder → signoz://dashboard/query-builder-example\n"+
-				"• ClickHouse Logs → signoz://dashboard/clickhouse-schema-for-logs + signoz://dashboard/clickhouse-logs-example\n"+
-				"• ClickHouse Metrics → signoz://dashboard/clickhouse-schema-for-metrics + signoz://dashboard/clickhouse-metrics-example\n"+
-				"• ClickHouse Traces → signoz://dashboard/clickhouse-schema-for-traces + signoz://dashboard/clickhouse-traces-example\n\n"+
+				"• PromQL → bylonis://promql/instructions\n"+
+				"• Query Builder → bylonis://dashboard/query-builder-example\n"+
+				"• ClickHouse Logs → bylonis://dashboard/clickhouse-schema-for-logs + bylonis://dashboard/clickhouse-logs-example\n"+
+				"• ClickHouse Metrics → bylonis://dashboard/clickhouse-schema-for-metrics + bylonis://dashboard/clickhouse-metrics-example\n"+
+				"• ClickHouse Traces → bylonis://dashboard/clickhouse-schema-for-traces + bylonis://dashboard/clickhouse-traces-example\n\n"+
 				"WARNING: Failing to consult widgets-examples will result in incomplete widget configurations missing required fields "+
 				"(id, panelTypes, title, query, selectedLogFields, selectedTracesFields, thresholds, contextLinks).",
 		),
@@ -121,14 +121,14 @@ func (h *Handler) RegisterDashboardHandlers(s *server.MCPServer) {
 		"bylonis_import_dashboard",
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithDescription(
-			"Create a new SigNoz dashboard from a curated template hosted in the SigNoz/dashboards GitHub repo. "+
+			"Create a new ByLonis dashboard from a curated template hosted in the upstream open-source dashboards repository on GitHub. "+
 				"Takes a single 'path' argument (e.g. 'hostmetrics/hostmetrics.json' or 'postgresql/postgresql.json') "+
 				"that points to a template file on the main branch. The server fetches the JSON, validates it, "+
 				"and creates the dashboard in one call — the client does not need to inline the template body. "+
 				"To discover the available paths, call bylonis_list_dashboard_templates first and let the model pick the best match. "+
 				"For custom dashboards, use bylonis_create_dashboard.",
 		),
-		mcp.WithString("path", mcp.Required(), mcp.Description("Template path within the SigNoz/dashboards repo, e.g. 'hostmetrics/hostmetrics.json'.")),
+		mcp.WithString("path", mcp.Required(), mcp.Description("Template path within the dashboards template repository, e.g. 'hostmetrics/hostmetrics.json'.")),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
 	)
 
@@ -139,7 +139,7 @@ func (h *Handler) RegisterDashboardHandlers(s *server.MCPServer) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithDescription(
-			"List all curated SigNoz dashboard templates bundled with this server. "+
+			"List all curated ByLonis dashboard templates bundled with this server. "+
 				"Returns the full catalog as a JSON array — each entry includes 'id', 'title', 'path', 'description', 'category', and 'keywords'. "+
 				"Use this to discover which template fits the user's intent, then pass the chosen 'path' to bylonis_import_dashboard. "+
 				"The catalog is small enough to read in full; let the model decide the best match rather than relying on keyword scoring.",
@@ -239,8 +239,8 @@ func (h *Handler) handleCreateDashboard(ctx context.Context, req mcp.CallToolReq
 	data, err := client.CreateDashboardRaw(ctx, cleanJSON)
 
 	if err != nil {
-		h.logger.ErrorContext(ctx, "Failed to create dashboard in SigNoz", logpkg.ErrAttr(err))
-		return mcp.NewToolResultError(fmt.Sprintf("SigNoz API Error: %s", err.Error())), nil
+		h.logger.ErrorContext(ctx, "Failed to create dashboard in ByLonis", logpkg.ErrAttr(err))
+		return mcp.NewToolResultError(fmt.Sprintf("ByLonis API Error: %s", err.Error())), nil
 	}
 
 	return mcp.NewToolResultText(string(data)), nil
@@ -257,7 +257,7 @@ func (h *Handler) handleImportDashboard(ctx context.Context, req mcp.CallToolReq
 	}
 	path = strings.TrimSpace(path)
 	if strings.Contains(path, "..") || strings.HasPrefix(path, "/") || strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
-		return mcp.NewToolResultError(`Parameter validation failed: "path" must be a relative template path within the SigNoz/dashboards repo (e.g. "hostmetrics/hostmetrics.json"), not an absolute path or URL.`), nil
+		return mcp.NewToolResultError(`Parameter validation failed: "path" must be a relative template path within the dashboards template repository (e.g. "hostmetrics/hostmetrics.json"), not an absolute path or URL.`), nil
 	}
 
 	h.logger.DebugContext(ctx, "Tool called: bylonis_import_dashboard", slog.String("path", path))
@@ -290,7 +290,7 @@ func (h *Handler) handleImportDashboard(ctx context.Context, req mcp.CallToolReq
 	data, err := client.CreateDashboardRaw(ctx, cleanJSON)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "Failed to create dashboard from template", slog.String("path", path), logpkg.ErrAttr(err))
-		return mcp.NewToolResultError(fmt.Sprintf("SigNoz API Error: %s", err.Error())), nil
+		return mcp.NewToolResultError(fmt.Sprintf("ByLonis API Error: %s", err.Error())), nil
 	}
 
 	return mcp.NewToolResultText(string(data)), nil
@@ -318,7 +318,7 @@ func fetchTemplate(ctx context.Context, path string) ([]byte, error) {
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, fmt.Errorf("template not found at %s (HTTP 404). Verify the path exists on the main branch of the SigNoz/dashboards repo", path)
+		return nil, fmt.Errorf("template not found at %s (HTTP 404). Verify the path exists on the main branch of the dashboards template repository", path)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("HTTP %d fetching %s", resp.StatusCode, path)
@@ -374,8 +374,8 @@ func (h *Handler) handleUpdateDashboard(ctx context.Context, req mcp.CallToolReq
 	err = client.UpdateDashboardRaw(ctx, uuid, cleanJSON)
 
 	if err != nil {
-		h.logger.ErrorContext(ctx, "Failed to update dashboard in SigNoz", logpkg.ErrAttr(err))
-		return mcp.NewToolResultError(fmt.Sprintf("SigNoz API Error: %s", err.Error())), nil
+		h.logger.ErrorContext(ctx, "Failed to update dashboard in ByLonis", logpkg.ErrAttr(err))
+		return mcp.NewToolResultError(fmt.Sprintf("ByLonis API Error: %s", err.Error())), nil
 	}
 
 	return mcp.NewToolResultText("dashboard updated"), nil
@@ -400,7 +400,7 @@ func (h *Handler) handleDeleteDashboard(ctx context.Context, req mcp.CallToolReq
 	err = client.DeleteDashboard(ctx, uuid)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "Failed to delete dashboard", slog.String("uuid", uuid), logpkg.ErrAttr(err))
-		return mcp.NewToolResultError(fmt.Sprintf("SigNoz API Error: %s", err.Error())), nil
+		return mcp.NewToolResultError(fmt.Sprintf("ByLonis API Error: %s", err.Error())), nil
 	}
 	return mcp.NewToolResultText("dashboard deleted"), nil
 }
@@ -408,9 +408,9 @@ func (h *Handler) handleDeleteDashboard(ctx context.Context, req mcp.CallToolReq
 // registerDashboardResources registers all MCP resources needed for dashboard creation/update.
 func (h *Handler) registerDashboardResources(s *server.MCPServer) {
 	clickhouseLogsSchemaResource := mcp.NewResource(
-		"signoz://dashboard/clickhouse-schema-for-logs",
+		"bylonis://dashboard/clickhouse-schema-for-logs",
 		"ClickHouse Logs Schema",
-		mcp.WithResourceDescription("ClickHouse schema for logs_v2, logs_v2_resource, tag_attributes_v2 and their distributed counterparts. requires dashboard instructions at signoz://dashboard/instructions"),
+		mcp.WithResourceDescription("ClickHouse schema for logs_v2, logs_v2_resource, tag_attributes_v2 and their distributed counterparts. requires dashboard instructions at bylonis://dashboard/instructions"),
 		mcp.WithMIMEType("text/plain"),
 	)
 
@@ -425,9 +425,9 @@ func (h *Handler) registerDashboardResources(s *server.MCPServer) {
 	})
 
 	clickhouseLogsExample := mcp.NewResource(
-		"signoz://dashboard/clickhouse-logs-example",
+		"bylonis://dashboard/clickhouse-logs-example",
 		"Clickhouse Examples for logs",
-		mcp.WithResourceDescription("ClickHouse SQL query examples for SigNoz logs. Includes resource filter patterns (CTE), timeseries queries, value queries, common use cases (Kubernetes clusters, error logs by service), and key patterns for timestamp filtering, attribute access (resource vs standard, indexed vs non-indexed), severity filters, variables, and performance optimization tips."),
+		mcp.WithResourceDescription("ClickHouse SQL query examples for ByLonis logs. Includes resource filter patterns (CTE), timeseries queries, value queries, common use cases (Kubernetes clusters, error logs by service), and key patterns for timestamp filtering, attribute access (resource vs standard, indexed vs non-indexed), severity filters, variables, and performance optimization tips."),
 		mcp.WithMIMEType("text/plain"),
 	)
 
@@ -442,9 +442,9 @@ func (h *Handler) registerDashboardResources(s *server.MCPServer) {
 	})
 
 	clickhouseMetricsSchemaResource := mcp.NewResource(
-		"signoz://dashboard/clickhouse-schema-for-metrics",
+		"bylonis://dashboard/clickhouse-schema-for-metrics",
 		"ClickHouse Metrics Schema",
-		mcp.WithResourceDescription("ClickHouse schema for samples_v4, exp_hist, time_series_v4 (and 6hrs/1day variants) and their distributed counterparts. requires dashboard instructions at signoz://dashboard/instructions"),
+		mcp.WithResourceDescription("ClickHouse schema for samples_v4, exp_hist, time_series_v4 (and 6hrs/1day variants) and their distributed counterparts. requires dashboard instructions at bylonis://dashboard/instructions"),
 		mcp.WithMIMEType("text/plain"),
 	)
 
@@ -459,9 +459,9 @@ func (h *Handler) registerDashboardResources(s *server.MCPServer) {
 	})
 
 	clickhouseMetricsExample := mcp.NewResource(
-		"signoz://dashboard/clickhouse-metrics-example",
+		"bylonis://dashboard/clickhouse-metrics-example",
 		"Clickhouse Examples for Metrics",
-		mcp.WithResourceDescription("ClickHouse SQL query examples for SigNoz metrics. Includes basic queries , rate calculation patterns for counter metrics (using lagInFrame and runningDifference), error rate calculations (ratio of two metrics), histogram quantile queries for latency percentiles (P95, P99), and key patterns for time series table selection by granularity, timestamp filtering, label filtering, time interval aggregation, variables, and performance optimization"),
+		mcp.WithResourceDescription("ClickHouse SQL query examples for ByLonis metrics. Includes basic queries , rate calculation patterns for counter metrics (using lagInFrame and runningDifference), error rate calculations (ratio of two metrics), histogram quantile queries for latency percentiles (P95, P99), and key patterns for time series table selection by granularity, timestamp filtering, label filtering, time interval aggregation, variables, and performance optimization"),
 		mcp.WithMIMEType("text/plain"),
 	)
 
@@ -476,9 +476,9 @@ func (h *Handler) registerDashboardResources(s *server.MCPServer) {
 	})
 
 	clickhouseTracesSchemaResource := mcp.NewResource(
-		"signoz://dashboard/clickhouse-schema-for-traces",
+		"bylonis://dashboard/clickhouse-schema-for-traces",
 		"ClickHouse Traces Schema",
-		mcp.WithResourceDescription("ClickHouse schema for signoz_index_v3, signoz_spans, signoz_error_index_v2, traces_v3_resource, dependency_graph_minutes_v2, trace_summary, top_level_operations and their distributed counterparts. requires dashboard instructions at signoz://dashboard/instructions"),
+		mcp.WithResourceDescription("ClickHouse schema for signoz_index_v3, signoz_spans, signoz_error_index_v2, traces_v3_resource, dependency_graph_minutes_v2, trace_summary, top_level_operations and their distributed counterparts. requires dashboard instructions at bylonis://dashboard/instructions"),
 		mcp.WithMIMEType("text/plain"),
 	)
 
@@ -493,9 +493,9 @@ func (h *Handler) registerDashboardResources(s *server.MCPServer) {
 	})
 
 	clickhouseTracesExample := mcp.NewResource(
-		"signoz://dashboard/clickhouse-traces-example",
+		"bylonis://dashboard/clickhouse-traces-example",
 		"Clickhouse Examples for Traces",
-		mcp.WithResourceDescription("ClickHouse SQL examples for SigNoz traces: resource filters, timeseries/value/table queries, span event extraction, latency analysis, and performance tips."),
+		mcp.WithResourceDescription("ClickHouse SQL examples for ByLonis traces: resource filters, timeseries/value/table queries, span event extraction, latency analysis, and performance tips."),
 		mcp.WithMIMEType("text/plain"),
 	)
 
@@ -510,9 +510,9 @@ func (h *Handler) registerDashboardResources(s *server.MCPServer) {
 	})
 
 	promqlExample := mcp.NewResource(
-		"signoz://promql/instructions",
+		"bylonis://promql/instructions",
 		"PromQL Instructions",
-		mcp.WithResourceDescription("SigNoz PromQL guide — used by promql_rule alerts and PromQL dashboard widgets. Covers OTel dotted metric names (Prometheus 3.x UTF-8 quoted selector form), the anti-pattern table of forms that return no data, dotted resource attributes in by() and label matchers, examples by metric type, and the pre-flight checklist for PromQL alerts."),
+		mcp.WithResourceDescription("ByLonis PromQL guide — used by promql_rule alerts and PromQL dashboard widgets. Covers OTel dotted metric names (Prometheus 3.x UTF-8 quoted selector form), the anti-pattern table of forms that return no data, dotted resource attributes in by() and label matchers, examples by metric type, and the pre-flight checklist for PromQL alerts."),
 		mcp.WithMIMEType("text/plain"),
 	)
 
@@ -527,9 +527,9 @@ func (h *Handler) registerDashboardResources(s *server.MCPServer) {
 	})
 
 	queryBuilderExample := mcp.NewResource(
-		"signoz://dashboard/query-builder-example",
+		"bylonis://dashboard/query-builder-example",
 		"Query Builder Examples",
-		mcp.WithResourceDescription("SigNoz Query Builder reference: CRITICAL OpenTelemetry metric naming conventions (dot vs underscore suffixes), filtering, aggregation, legend formatting for grouped charts, search syntax, operators, field existence behavior, full-text search, functions, advanced examples, and best practices."),
+		mcp.WithResourceDescription("ByLonis Query Builder reference: CRITICAL OpenTelemetry metric naming conventions (dot vs underscore suffixes), filtering, aggregation, legend formatting for grouped charts, search syntax, operators, field existence behavior, full-text search, functions, advanced examples, and best practices."),
 		mcp.WithMIMEType("text/plain"),
 	)
 
@@ -544,9 +544,9 @@ func (h *Handler) registerDashboardResources(s *server.MCPServer) {
 	})
 
 	dashboardInstructions := mcp.NewResource(
-		"signoz://dashboard/instructions",
+		"bylonis://dashboard/instructions",
 		"Dashboard Basic Instructions",
-		mcp.WithResourceDescription("SigNoz dashboard basics: title, tags, description, and comprehensive variable configuration rules (types, properties, referencing, chaining)."),
+		mcp.WithResourceDescription("ByLonis dashboard basics: title, tags, description, and comprehensive variable configuration rules (types, properties, referencing, chaining)."),
 		mcp.WithMIMEType("text/plain"),
 	)
 
@@ -561,9 +561,9 @@ func (h *Handler) registerDashboardResources(s *server.MCPServer) {
 	})
 
 	widgetsInstructions := mcp.NewResource(
-		"signoz://dashboard/widgets-instructions",
+		"bylonis://dashboard/widgets-instructions",
 		"Dashboard Basic Instructions",
-		mcp.WithResourceDescription("SigNoz dashboard widgets: 7 panel types (Bar, Histogram, List, Pie, Table, Timeseries, Value) with use cases, configuration options, and critical layout rules (grid coordinates, dimensions, legends)."),
+		mcp.WithResourceDescription("ByLonis dashboard widgets: 7 panel types (Bar, Histogram, List, Pie, Table, Timeseries, Value) with use cases, configuration options, and critical layout rules (grid coordinates, dimensions, legends)."),
 		mcp.WithMIMEType("text/plain"),
 	)
 
@@ -578,7 +578,7 @@ func (h *Handler) registerDashboardResources(s *server.MCPServer) {
 	})
 
 	widgetsExamplesResource := mcp.NewResource(
-		"signoz://dashboard/widgets-examples",
+		"bylonis://dashboard/widgets-examples",
 		"Dashboard Widgets Examples",
 		mcp.WithResourceDescription("Complete widget configurations with required fields, panel-specific examples, validation checks, troubleshooting, and legend formatting for grouped chart queries."),
 		mcp.WithMIMEType("text/plain"),

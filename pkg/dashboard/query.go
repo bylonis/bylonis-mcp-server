@@ -1,8 +1,7 @@
 package dashboard
 
 const ClickhouseSqlQueryForMetrics = `
-SigNoz Metrics ClickHouse Query Examples
-Source: https://signoz.io/docs/userguide/write-a-metrics-clickhouse-query/
+ByLonis Metrics ClickHouse Query Examples
 
 ================================================================================
 BASIC QUERIES
@@ -263,8 +262,7 @@ Legend Formatting:
 `
 
 const ClickhouseSqlQueryForLogs = `
-	SigNoz Logs ClickHouse Query Examples
-Source: https://signoz.io/docs/userguide/logs_clickhouse_queries/
+	ByLonis Logs ClickHouse Query Examples
 
 ================================================================================
 ESSENTIAL PATTERNS
@@ -455,8 +453,7 @@ Indexed vs Non-Indexed Attributes:
 `
 
 const ClickhouseSqlQueryForTraces = `
-	SigNoz Traces ClickHouse Query Examples
-Source: https://signoz.io/docs/userguide/writing-clickhouse-traces-query/
+	ByLonis Traces ClickHouse Query Examples
 
 ================================================================================
 ESSENTIAL PATTERNS
@@ -651,8 +648,8 @@ Performance Tips:
 `
 
 const Querybuilder = `
-SigNoz Query Builder Reference
-Consolidated guide for SigNoz Query Builder, search syntax, operators, and advanced querying.
+ByLonis Query Builder Reference
+Consolidated guide for ByLonis Query Builder, search syntax, operators, and advanced querying.
 
 ================================================================================
 METRICS NAMING CONVENTIONS (CRITICAL FOR QUERY BUILDER)
@@ -721,7 +718,7 @@ Common OpenTelemetry Collector Metrics:
   - otelcol_connector_received_items.sum
   - otelcol_connector_produced_items.sum
 
-Common SigNoz Metrics:
+Common ByLonis Metrics:
   - bylonis_latency.sum
   - bylonis_latency.count
   - bylonis_latency.bucket
@@ -753,7 +750,7 @@ Legend Formatting:
   Examples:
     - groupBy service.name -> legend {{service.name}}
     - groupBy service.name and http.method -> legend {{service.name}} - {{http.method}}
-  Without legend, SigNoz shows raw query identifiers.
+  Without legend, ByLonis shows raw query identifiers.
 
 Multi-Query Analysis:
   Combine queries with formulas:

@@ -213,10 +213,10 @@ func TestIntegration_PromqlInstructionsResourceRegistered(t *testing.T) {
 	}
 
 	res, err := c.ReadResource(ctx, mcp.ReadResourceRequest{
-		Params: mcp.ReadResourceParams{URI: "signoz://promql/instructions"},
+		Params: mcp.ReadResourceParams{URI: "bylonis://promql/instructions"},
 	})
 	if err != nil {
-		t.Fatalf("ReadResource(signoz://promql/instructions) failed: %v", err)
+		t.Fatalf("ReadResource(bylonis://promql/instructions) failed: %v", err)
 	}
 	if len(res.Contents) == 0 {
 		t.Fatal("expected resource contents, got none")
@@ -225,8 +225,8 @@ func TestIntegration_PromqlInstructionsResourceRegistered(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected TextResourceContents, got %T", res.Contents[0])
 	}
-	if tc.URI != "signoz://promql/instructions" {
-		t.Errorf("URI = %q, want signoz://promql/instructions", tc.URI)
+	if tc.URI != "bylonis://promql/instructions" {
+		t.Errorf("URI = %q, want bylonis://promql/instructions", tc.URI)
 	}
 	// Sanity check: the body must carry the OTel dotted-name guidance, the
 	// anti-pattern framing, and the PR #11023 consumer-group-lag example.
