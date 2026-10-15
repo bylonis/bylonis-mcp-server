@@ -1256,8 +1256,18 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 			rootSpan.SetAttributes(otelpkg.AppendCallerCorrelation(ctx, nil)...)
 		}
 
-		// Extract X-SigNoz-URL custom header (takes precedence over JWT audience)
-		customURL := r.Header.Get("X-SigNoz-URL")
+		// Extract the instance URL header (takes precedence over JWT audience).
+		// X-SigNoz-URL is accepted until v1.1; when both are sent, X-ByLonis-URL wins.
+		customURLHeader := signozclient.URLHeader
+		customURL := r.Header.Get(signozclient.URLHeader)
+		if customURL == "" {
+			if customURL = r.Header.Get(signozclient.DeprecatedURLHeader); customURL != "" {
+				customURLHeader = signozclient.DeprecatedURLHeader
+				// Mark the trace (not the logs, to avoid per-request noise) so clients
+				// still on the deprecated header can be found before v1.1.
+				trace.SpanFromContext(ctx).SetAttributes(attribute.Bool("mcp.deprecated_url_header", true))
+			}
+		}
 
 		// Check for auth credentials from headers.
 		// Clients can provide either:
@@ -1378,14 +1388,14 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Determine final URL with precedence: X-SigNoz-URL header > config URL
+		// Determine final URL with precedence: instance URL header > config URL
 		if customURL != "" {
 			trimmed := strings.TrimSuffix(customURL, "/")
 			normalized, err := util.NormalizeSigNozURL(trimmed)
 			if err != nil {
-				m.logAuthFailure(ctx, r, http.StatusBadRequest, authFailureInvalidSignozURL, authMode, "Invalid X-SigNoz-URL header",
+				m.logAuthFailure(ctx, r, http.StatusBadRequest, authFailureInvalidSignozURL, authMode, "Invalid "+customURLHeader+" header",
 					slog.String("url", customURL), logpkg.ErrAttr(err))
-				http.Error(w, fmt.Sprintf("Invalid X-SigNoz-URL: %v", err), http.StatusBadRequest)
+				http.Error(w, fmt.Sprintf("Invalid %s: %v", customURLHeader, err), http.StatusBadRequest)
 				return
 			}
 			// Set the SigNoz URL on ctx first so an allowlist rejection is attributed.
@@ -1398,7 +1408,7 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 			signozURL = m.config.URL
 			m.logger.DebugContext(ctx, "Using URL from environment config", slog.String("mcp.tenant_url", signozURL))
 		} else {
-			m.logAuthFailure(ctx, r, http.StatusBadRequest, authFailureMissingSignozURL, authMode, "No SigNoz URL found in X-SigNoz-URL header or environment")
+			m.logAuthFailure(ctx, r, http.StatusBadRequest, authFailureMissingSignozURL, authMode, "No ByLonis URL found in "+signozclient.URLHeader+" header or environment")
 			http.Error(w, "SigNoz instance URL is required", http.StatusBadRequest)
 			return
 		}
