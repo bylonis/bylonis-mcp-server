@@ -75,7 +75,7 @@ func (h *Handler) GetClient(ctx context.Context) (signozclient.Client, error) {
 	}
 
 	if authHeader == "" {
-		authHeader = "SIGNOZ-API-KEY"
+		authHeader = signozclient.APIKeyHeader
 	}
 
 	cacheKey := util.HashTenantKey(apiKey, signozURL)

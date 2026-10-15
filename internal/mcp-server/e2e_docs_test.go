@@ -42,8 +42,8 @@ func TestE2EDocsAgentFlow(t *testing.T) {
 	t.Cleanup(testSrv.Close)
 
 	mcpClient, err := client.NewStreamableHttpClient(testSrv.URL+"/mcp", transport.WithHTTPHeaders(map[string]string{
-		"SIGNOZ-API-KEY": "test-key",
-		"X-SigNoz-URL":   "https://example.signoz.cloud",
+		"BYLONIS-API-KEY": "test-key",
+		"X-SigNoz-URL":    "https://example.signoz.cloud",
 	}))
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = mcpClient.Close() })

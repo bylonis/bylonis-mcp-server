@@ -43,7 +43,7 @@ func TestOAuthAuthorizationFlow(t *testing.T) {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
-		if r.Header.Get("SIGNOZ-API-KEY") != "snz-api-key" {
+		if r.Header.Get("BYLONIS-API-KEY") != "snz-api-key" {
 			w.WriteHeader(http.StatusUnauthorized)
 			_, _ = w.Write([]byte(`{"status":"error","message":"Unauthorized"}`))
 			return
@@ -228,7 +228,7 @@ func TestOAuthAuthorizationFlowServiceAccountFallback(t *testing.T) {
 				w.WriteHeader(http.StatusMethodNotAllowed)
 				return
 			}
-			if r.Header.Get("SIGNOZ-API-KEY") != "snz-api-key" {
+			if r.Header.Get("BYLONIS-API-KEY") != "snz-api-key" {
 				w.WriteHeader(http.StatusUnauthorized)
 				_, _ = w.Write([]byte(`{"status":"error","message":"Unauthorized"}`))
 				return
@@ -421,7 +421,7 @@ func TestAuthorizeSubmitStripsSigNozURLPathQueryFragment(t *testing.T) {
 			http.NotFound(w, r)
 			return
 		}
-		if r.Header.Get("SIGNOZ-API-KEY") != "snz-api-key" {
+		if r.Header.Get("BYLONIS-API-KEY") != "snz-api-key" {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -553,7 +553,7 @@ func TestAuthorizePageUsesIssuerPathPrefixForFormAndCSRFCookie(t *testing.T) {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
-		if r.Header.Get("SIGNOZ-API-KEY") != "snz-api-key" {
+		if r.Header.Get("BYLONIS-API-KEY") != "snz-api-key" {
 			w.WriteHeader(http.StatusUnauthorized)
 			_, _ = w.Write([]byte(`{"status":"error","message":"Unauthorized"}`))
 			return
@@ -665,7 +665,7 @@ func TestOAuthEmitterFiresOnAuthorizeAndTokenIssue(t *testing.T) {
 			http.NotFound(w, r)
 			return
 		}
-		if r.Header.Get("SIGNOZ-API-KEY") != "snz-api-key" {
+		if r.Header.Get("BYLONIS-API-KEY") != "snz-api-key" {
 			w.WriteHeader(http.StatusUnauthorized)
 			_, _ = w.Write([]byte(`{"status":"error"}`))
 			return

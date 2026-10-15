@@ -330,7 +330,7 @@ func (h *Handler) validateSigNozCredentials(ctx context.Context, signozURL, apiK
 	if strings.EqualFold(signozURL, configNormalized) {
 		headers = h.config.CustomHeaders
 	}
-	signozClient := client.NewClient(h.logger, signozURL, apiKey, "SIGNOZ-API-KEY", headers)
+	signozClient := client.NewClient(h.logger, signozURL, apiKey, client.APIKeyHeader, headers)
 	return signozClient.ValidateCredentials(ctx)
 }
 

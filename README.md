@@ -298,7 +298,7 @@ MCP_SERVER_PORT=8000 \
         "signoz": {
             "url": "http://localhost:8000/mcp",
             "headers": {
-                "SIGNOZ-API-KEY": "your-api-key-here"
+                "BYLONIS-API-KEY": "your-api-key-here"
             }
         }
     }

@@ -214,7 +214,7 @@ func (m *MCPServer) identifyAndTrackAsync(ctx context.Context, event string, tra
 func (m *MCPServer) trackOAuthEvent(ctx context.Context, event, apiKey, signozURL string, props map[string]any) {
 	if apiKey != "" {
 		ctx = util.SetAPIKey(ctx, apiKey)
-		ctx = util.SetAuthHeader(ctx, "SIGNOZ-API-KEY")
+		ctx = util.SetAuthHeader(ctx, signozclient.APIKeyHeader)
 	}
 	if signozURL != "" {
 		ctx = util.SetSigNozURL(ctx, signozURL)
@@ -1106,7 +1106,7 @@ func (m *MCPServer) runStdio(ctx context.Context, s *server.MCPServer) error {
 	stdio := server.NewStdioServer(s)
 	stdio.SetContextFunc(func(ctx context.Context) context.Context {
 		ctx = util.SetAPIKey(ctx, m.config.APIKey)
-		ctx = util.SetAuthHeader(ctx, "SIGNOZ-API-KEY")
+		ctx = util.SetAuthHeader(ctx, signozclient.APIKeyHeader)
 		ctx = util.SetSigNozURL(ctx, m.config.URL)
 		// Stdio has no HTTP headers; seed the default so client_source is
 		// always populated.
@@ -1125,13 +1125,15 @@ func isJWTToken(token string) bool {
 }
 
 const (
-	authModeNone                = "none"
-	authModeSignozAPIKeyHeader  = "signoz-api-key-header"
-	authModeAuthorizationAPIKey = "authorization-api-key"
-	authModeAuthorizationBearer = "authorization-bearer"
-	authModeAuthorizationJWT    = "authorization-jwt"
-	authModeOAuthAccessToken    = "oauth-access-token"
-	authModeConfigAPIKey        = "config-api-key"
+	authModeNone         = "none"
+	authModeAPIKeyHeader = "api-key-header"
+	// a client still on the SIGNOZ-API-KEY header, accepted until v1.1
+	authModeDeprecatedAPIKeyHeader = "signoz-api-key-header"
+	authModeAuthorizationAPIKey    = "authorization-api-key"
+	authModeAuthorizationBearer    = "authorization-bearer"
+	authModeAuthorizationJWT       = "authorization-jwt"
+	authModeOAuthAccessToken       = "oauth-access-token"
+	authModeConfigAPIKey           = "config-api-key"
 
 	authFailureExpiredOAuthToken   = "expired_oauth_token"
 	authFailureInvalidOAuthToken   = "invalid_oauth_token"
@@ -1259,10 +1261,15 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 
 		// Check for auth credentials from headers.
 		// Clients can provide either:
-		//   - SIGNOZ-API-KEY: <pat-token>
+		//   - BYLONIS-API-KEY: <pat-token>   (SIGNOZ-API-KEY until v1.1)
 		//   - Authorization: Bearer <token>  (JWT, PAT)
 		//   - Authorization: <token>         (legacy)
-		signozAPIKey := r.Header.Get("SIGNOZ-API-KEY")
+		headerAuthMode := authModeAPIKeyHeader
+		signozAPIKey := r.Header.Get(signozclient.APIKeyHeader)
+		if signozAPIKey == "" {
+			signozAPIKey = r.Header.Get(signozclient.DeprecatedAPIKeyHeader)
+			headerAuthMode = authModeDeprecatedAPIKeyHeader
+		}
 		authHeader := r.Header.Get("Authorization")
 
 		var apiKey string
@@ -1271,12 +1278,12 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 		authMode := authModeNone
 
 		if signozAPIKey != "" {
-			// Explicit PAT via SIGNOZ-API-KEY header — forward as-is.
+			// Explicit PAT via the API key header — forward as-is.
 			apiKey = strings.TrimPrefix(signozAPIKey, "Bearer ")
-			authMode = authModeSignozAPIKeyHeader
+			authMode = headerAuthMode
 
 			ctx = util.SetAPIKey(ctx, apiKey)
-			ctx = util.SetAuthHeader(ctx, "SIGNOZ-API-KEY")
+			ctx = util.SetAuthHeader(ctx, signozclient.APIKeyHeader)
 		} else if authHeader != "" {
 			token := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
 			if customURL != "" {
@@ -1287,11 +1294,11 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 					ctx = util.SetAPIKey(ctx, apiKey)
 					ctx = util.SetAuthHeader(ctx, "Authorization")
 				} else {
-					// PAT token — forward via SIGNOZ-API-KEY
+					// PAT token — forward via the API key header
 					apiKey = token
 					authMode = authModeAuthorizationAPIKey
 					ctx = util.SetAPIKey(ctx, apiKey)
-					ctx = util.SetAuthHeader(ctx, "SIGNOZ-API-KEY")
+					ctx = util.SetAuthHeader(ctx, signozclient.APIKeyHeader)
 				}
 			} else if m.config.OAuthEnabled {
 				decryptedAPIKey, decryptedURL, _, _, err := oauth.DecryptToken(token, []byte(m.config.OAuthTokenSecret))
@@ -1302,7 +1309,7 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 					usedOAuthToken = true
 					authMode = authModeOAuthAccessToken
 					ctx = util.SetAPIKey(ctx, apiKey)
-					ctx = util.SetAuthHeader(ctx, "SIGNOZ-API-KEY")
+					ctx = util.SetAuthHeader(ctx, signozclient.APIKeyHeader)
 				case errors.Is(err, oauth.ErrExpiredToken):
 					authMode = authModeOAuthAccessToken
 					// The token is expired but was once server-issued, so the
@@ -1331,14 +1338,14 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 					apiKey = token
 					authMode = authModeAuthorizationAPIKey
 					ctx = util.SetAPIKey(ctx, apiKey)
-					ctx = util.SetAuthHeader(ctx, "SIGNOZ-API-KEY")
+					ctx = util.SetAuthHeader(ctx, signozclient.APIKeyHeader)
 					m.logger.DebugContext(ctx, "Bearer token did not match OAuth token format, falling back to raw API key")
 				}
 			} else {
 				apiKey = token
 				authMode = authModeAuthorizationAPIKey
 				ctx = util.SetAPIKey(ctx, apiKey)
-				ctx = util.SetAuthHeader(ctx, "SIGNOZ-API-KEY")
+				ctx = util.SetAuthHeader(ctx, signozclient.APIKeyHeader)
 			}
 
 		} else if m.config.APIKey != "" {
@@ -1346,14 +1353,14 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 			apiKey = m.config.APIKey
 			authMode = authModeConfigAPIKey
 			ctx = util.SetAPIKey(ctx, apiKey)
-			ctx = util.SetAuthHeader(ctx, "SIGNOZ-API-KEY")
+			ctx = util.SetAuthHeader(ctx, signozclient.APIKeyHeader)
 			m.logger.DebugContext(ctx, "Using API key from environment config")
 		} else {
 			m.logAuthFailure(ctx, r, http.StatusUnauthorized, authFailureMissingCredential, authMode, "No API key found in headers or environment")
 			if m.config.OAuthEnabled {
 				m.setOAuthChallenge(w, "")
 			}
-			http.Error(w, "Authorization or SIGNOZ-API-KEY header required", http.StatusUnauthorized)
+			http.Error(w, "Authorization or "+signozclient.APIKeyHeader+" header required", http.StatusUnauthorized)
 			return
 		}
 

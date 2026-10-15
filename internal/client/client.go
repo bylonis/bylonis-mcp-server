@@ -25,8 +25,12 @@ import (
 )
 
 const (
-	SignozApiKey = "SIGNOZ-API-KEY"
-	ContentType  = "Content-Type"
+	// APIKeyHeader carries a ByLonis service account API key, both from MCP
+	// clients and towards the ByLonis backend.
+	APIKeyHeader = "BYLONIS-API-KEY"
+	// DeprecatedAPIKeyHeader is still accepted from MCP clients until v1.1.
+	DeprecatedAPIKeyHeader = "SIGNOZ-API-KEY"
+	ContentType            = "Content-Type"
 
 	// DefaultQueryTimeout is used for read-only API calls.
 	DefaultQueryTimeout = 600 * time.Second
