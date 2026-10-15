@@ -11,13 +11,13 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 
-	signozclient "github.com/SigNoz/signoz-mcp-server/internal/client"
-	"github.com/SigNoz/signoz-mcp-server/pkg/alert"
-	logpkg "github.com/SigNoz/signoz-mcp-server/pkg/log"
-	"github.com/SigNoz/signoz-mcp-server/pkg/paginate"
-	"github.com/SigNoz/signoz-mcp-server/pkg/timeutil"
-	"github.com/SigNoz/signoz-mcp-server/pkg/types"
-	"github.com/SigNoz/signoz-mcp-server/pkg/util"
+	signozclient "github.com/bylonis/bylonis-mcp-server/internal/client"
+	"github.com/bylonis/bylonis-mcp-server/pkg/alert"
+	logpkg "github.com/bylonis/bylonis-mcp-server/pkg/log"
+	"github.com/bylonis/bylonis-mcp-server/pkg/paginate"
+	"github.com/bylonis/bylonis-mcp-server/pkg/timeutil"
+	"github.com/bylonis/bylonis-mcp-server/pkg/types"
+	"github.com/bylonis/bylonis-mcp-server/pkg/util"
 )
 
 func (h *Handler) RegisterAlertsHandlers(s *server.MCPServer) {

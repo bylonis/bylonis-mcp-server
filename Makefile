@@ -21,7 +21,7 @@ goimports:
 
 build: fmt goimports
 	@echo "🚀 Building ..."
-	@go build $(GO_FLAGS) -ldflags "-X github.com/SigNoz/signoz-mcp-server/pkg/version.Version=$(VERSION)" -o bin/signoz-mcp-server ./cmd/server/...
+	@go build $(GO_FLAGS) -ldflags "-X github.com/bylonis/bylonis-mcp-server/pkg/version.Version=$(VERSION)" -o bin/signoz-mcp-server ./cmd/server/...
 
 test:
 	@echo "🧪 Running all tests..."

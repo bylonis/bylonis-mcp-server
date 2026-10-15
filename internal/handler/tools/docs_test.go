@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	docsindex "github.com/SigNoz/signoz-mcp-server/internal/docs"
+	docsindex "github.com/bylonis/bylonis-mcp-server/internal/docs"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/stretchr/testify/require"
 )

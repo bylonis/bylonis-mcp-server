@@ -3,10 +3,10 @@ package tools
 import (
 	"context"
 
-	logpkg "github.com/SigNoz/signoz-mcp-server/pkg/log"
+	logpkg "github.com/bylonis/bylonis-mcp-server/pkg/log"
 	"github.com/mark3labs/mcp-go/mcp"
 
-	signozclient "github.com/SigNoz/signoz-mcp-server/internal/client"
+	signozclient "github.com/bylonis/bylonis-mcp-server/internal/client"
 )
 
 // newTestHandler returns a Handler whose GetClient always returns the given mock.

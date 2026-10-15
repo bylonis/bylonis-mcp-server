@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/SigNoz/signoz-mcp-server/internal/client"
+	"github.com/bylonis/bylonis-mcp-server/internal/client"
 )
 
 func TestHandleSearchTraces_BasicQuery(t *testing.T) {

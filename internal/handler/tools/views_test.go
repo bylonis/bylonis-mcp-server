@@ -9,7 +9,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 
-	"github.com/SigNoz/signoz-mcp-server/internal/client"
+	"github.com/bylonis/bylonis-mcp-server/internal/client"
 )
 
 func TestHandleListViews_Traces(t *testing.T) {

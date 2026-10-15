@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
-	docsindex "github.com/SigNoz/signoz-mcp-server/internal/docs"
+	docsindex "github.com/bylonis/bylonis-mcp-server/internal/docs"
 )
 
 func (h *Handler) RegisterDocsHandlers(s *server.MCPServer) {

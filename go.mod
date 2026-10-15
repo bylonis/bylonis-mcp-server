@@ -1,4 +1,4 @@
-module github.com/SigNoz/signoz-mcp-server
+module github.com/bylonis/bylonis-mcp-server
 
 go 1.25.5
 

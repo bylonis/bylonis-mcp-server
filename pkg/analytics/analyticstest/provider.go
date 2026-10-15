@@ -3,7 +3,7 @@ package analyticstest
 import (
 	"context"
 
-	"github.com/SigNoz/signoz-mcp-server/pkg/types/analyticstypes"
+	"github.com/bylonis/bylonis-mcp-server/pkg/types/analyticstypes"
 )
 
 // Provider is an exported test-only analytics provider.

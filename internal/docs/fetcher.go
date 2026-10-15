@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SigNoz/signoz-mcp-server/pkg/version"
+	"github.com/bylonis/bylonis-mcp-server/pkg/version"
 	"golang.org/x/time/rate"
 )
 
@@ -201,7 +201,7 @@ func defaultUserAgent() string {
 	if ver == "" {
 		ver = "dev"
 	}
-	return fmt.Sprintf("signoz-mcp-server/%s (+https://github.com/SigNoz/signoz-mcp-server; docs-indexer)", ver)
+	return fmt.Sprintf("signoz-mcp-server/%s (+https://github.com/bylonis/bylonis-mcp-server; docs-indexer)", ver)
 }
 
 func RemoteHost(remoteAddr string) string {

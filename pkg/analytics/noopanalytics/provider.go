@@ -3,8 +3,8 @@ package noopanalytics
 import (
 	"context"
 
-	"github.com/SigNoz/signoz-mcp-server/pkg/analytics"
-	"github.com/SigNoz/signoz-mcp-server/pkg/types/analyticstypes"
+	"github.com/bylonis/bylonis-mcp-server/pkg/analytics"
+	"github.com/bylonis/bylonis-mcp-server/pkg/types/analyticstypes"
 )
 
 type provider struct {

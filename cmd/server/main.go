@@ -14,16 +14,16 @@ import (
 	"go.opentelemetry.io/otel"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/SigNoz/signoz-mcp-server/internal/config"
-	"github.com/SigNoz/signoz-mcp-server/internal/handler/tools"
-	mcpserver "github.com/SigNoz/signoz-mcp-server/internal/mcp-server"
-	"github.com/SigNoz/signoz-mcp-server/pkg/analytics"
-	"github.com/SigNoz/signoz-mcp-server/pkg/analytics/noopanalytics"
-	"github.com/SigNoz/signoz-mcp-server/pkg/analytics/segmentanalytics"
-	"github.com/SigNoz/signoz-mcp-server/pkg/dashboard"
-	logpkg "github.com/SigNoz/signoz-mcp-server/pkg/log"
-	otelpkg "github.com/SigNoz/signoz-mcp-server/pkg/otel"
-	"github.com/SigNoz/signoz-mcp-server/pkg/version"
+	"github.com/bylonis/bylonis-mcp-server/internal/config"
+	"github.com/bylonis/bylonis-mcp-server/internal/handler/tools"
+	mcpserver "github.com/bylonis/bylonis-mcp-server/internal/mcp-server"
+	"github.com/bylonis/bylonis-mcp-server/pkg/analytics"
+	"github.com/bylonis/bylonis-mcp-server/pkg/analytics/noopanalytics"
+	"github.com/bylonis/bylonis-mcp-server/pkg/analytics/segmentanalytics"
+	"github.com/bylonis/bylonis-mcp-server/pkg/dashboard"
+	logpkg "github.com/bylonis/bylonis-mcp-server/pkg/log"
+	otelpkg "github.com/bylonis/bylonis-mcp-server/pkg/otel"
+	"github.com/bylonis/bylonis-mcp-server/pkg/version"
 )
 
 func main() {

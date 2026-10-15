@@ -15,11 +15,11 @@ import (
 	"testing"
 	"time"
 
-	logpkg "github.com/SigNoz/signoz-mcp-server/pkg/log"
+	logpkg "github.com/bylonis/bylonis-mcp-server/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/SigNoz/signoz-mcp-server/pkg/types"
+	"github.com/bylonis/bylonis-mcp-server/pkg/types"
 )
 
 func newBufferedLogger(buf *bytes.Buffer, level slog.Level) *slog.Logger {

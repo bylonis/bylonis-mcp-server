@@ -9,8 +9,8 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 
-	"github.com/SigNoz/signoz-mcp-server/internal/client"
-	"github.com/SigNoz/signoz-mcp-server/pkg/types"
+	"github.com/bylonis/bylonis-mcp-server/internal/client"
+	"github.com/bylonis/bylonis-mcp-server/pkg/types"
 )
 
 func TestHandleListAlerts(t *testing.T) {

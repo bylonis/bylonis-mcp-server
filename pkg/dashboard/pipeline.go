@@ -12,8 +12,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/SigNoz/signoz-mcp-server/pkg/dashboard/dashboardbuilder"
-	panelvalidator "github.com/SigNoz/signoz-mcp-server/pkg/dashboard/panelbuilder"
+	"github.com/bylonis/bylonis-mcp-server/pkg/dashboard/dashboardbuilder"
+	panelvalidator "github.com/bylonis/bylonis-mcp-server/pkg/dashboard/panelbuilder"
 )
 
 // Validate parses raw dashboard JSON, applies defaults, runs structural and

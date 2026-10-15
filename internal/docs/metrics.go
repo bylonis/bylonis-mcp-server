@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	otelpkg "github.com/SigNoz/signoz-mcp-server/pkg/otel"
+	otelpkg "github.com/bylonis/bylonis-mcp-server/pkg/otel"
 )
 
 // RecordMetrics emits the active index gauges from the registry's current

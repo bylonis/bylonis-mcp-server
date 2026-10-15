@@ -9,12 +9,12 @@ import (
 
 	"github.com/mark3labs/mcp-go/server"
 
-	"github.com/SigNoz/signoz-mcp-server/internal/config"
-	"github.com/SigNoz/signoz-mcp-server/internal/handler/tools"
-	"github.com/SigNoz/signoz-mcp-server/pkg/analytics/noopanalytics"
-	"github.com/SigNoz/signoz-mcp-server/pkg/instructions"
-	logpkg "github.com/SigNoz/signoz-mcp-server/pkg/log"
-	"github.com/SigNoz/signoz-mcp-server/pkg/version"
+	"github.com/bylonis/bylonis-mcp-server/internal/config"
+	"github.com/bylonis/bylonis-mcp-server/internal/handler/tools"
+	"github.com/bylonis/bylonis-mcp-server/pkg/analytics/noopanalytics"
+	"github.com/bylonis/bylonis-mcp-server/pkg/instructions"
+	logpkg "github.com/bylonis/bylonis-mcp-server/pkg/log"
+	"github.com/bylonis/bylonis-mcp-server/pkg/version"
 )
 
 // brandingAllowed lists the "signoz" occurrences that may reach the assistant,
