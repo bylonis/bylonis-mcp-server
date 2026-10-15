@@ -1120,6 +1120,18 @@ func (m *MCPServer) runStdio(ctx context.Context, s *server.MCPServer) error {
 	return nil
 }
 
+// headerWithAlias returns the value of header, or of its deprecated alias when
+// header is absent; deprecated reports whether the alias was used.
+func headerWithAlias(r *http.Request, header, alias string) (value string, deprecated bool) {
+	if v := r.Header.Get(header); v != "" {
+		return v, false
+	}
+	if v := r.Header.Get(alias); v != "" {
+		return v, true
+	}
+	return "", false
+}
+
 func isJWTToken(token string) bool {
 	return strings.Count(token, ".") == 2 && strings.HasPrefix(token, "eyJ")
 }
@@ -1238,15 +1250,20 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 		// 401/early-reject paths) propagates them. Values are advisory and
 		// flow into every log/span/event, so they are normalized
 		// (trim + length-cap) before being stashed.
-		clientSource := util.NormalizeCallerCorrelationValue(r.Header.Get("X-SigNoz-Client-Source"))
+		// X-SigNoz-* names are accepted until v1.1; the X-ByLonis-* one wins.
+		rawClientSource, oldClientSource := headerWithAlias(r, signozclient.ClientSourceHeader, signozclient.DeprecatedClientSourceHeader)
+		rawThreadID, oldThreadID := headerWithAlias(r, signozclient.AssistantThreadIDHeader, signozclient.DeprecatedAssistantThreadIDHeader)
+		rawExecutionID, oldExecutionID := headerWithAlias(r, signozclient.AssistantExecutionIDHeader, signozclient.DeprecatedAssistantExecutionIDHeader)
+
+		clientSource := util.NormalizeCallerCorrelationValue(rawClientSource)
 		if clientSource == "" {
 			clientSource = util.ClientSourceUserClient
 		}
 		ctx = util.SetClientSource(ctx, clientSource)
-		if threadID := util.NormalizeCallerCorrelationValue(r.Header.Get("X-SigNoz-Assistant-Thread-Id")); threadID != "" {
+		if threadID := util.NormalizeCallerCorrelationValue(rawThreadID); threadID != "" {
 			ctx = util.SetAssistantThreadID(ctx, threadID)
 		}
-		if executionID := util.NormalizeCallerCorrelationValue(r.Header.Get("X-SigNoz-Assistant-Execution-Id")); executionID != "" {
+		if executionID := util.NormalizeCallerCorrelationValue(rawExecutionID); executionID != "" {
 			ctx = util.SetAssistantExecutionID(ctx, executionID)
 		}
 
@@ -1254,6 +1271,9 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 		// still queryable by caller.
 		if rootSpan := trace.SpanFromContext(ctx); rootSpan.IsRecording() {
 			rootSpan.SetAttributes(otelpkg.AppendCallerCorrelation(ctx, nil)...)
+			if oldClientSource || oldThreadID || oldExecutionID {
+				rootSpan.SetAttributes(attribute.Bool("mcp.deprecated_correlation_header", true))
+			}
 		}
 
 		// Extract the instance URL header (takes precedence over JWT audience).

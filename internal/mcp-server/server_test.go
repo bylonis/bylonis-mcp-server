@@ -634,13 +634,13 @@ func TestAuthMiddlewarePropagatesAssistantCorrelationHeaders(t *testing.T) {
 			req.Header.Set("BYLONIS-API-KEY", "test-key")
 			req.Header.Set("X-ByLonis-URL", "https://tenant.example.com")
 			if tc.clientSource != "" {
-				req.Header.Set("X-SigNoz-Client-Source", tc.clientSource)
+				req.Header.Set("X-ByLonis-Client-Source", tc.clientSource)
 			}
 			if tc.threadID != "" {
-				req.Header.Set("X-SigNoz-Assistant-Thread-Id", tc.threadID)
+				req.Header.Set("X-ByLonis-Assistant-Thread-Id", tc.threadID)
 			}
 			if tc.executionID != "" {
-				req.Header.Set("X-SigNoz-Assistant-Execution-Id", tc.executionID)
+				req.Header.Set("X-ByLonis-Assistant-Execution-Id", tc.executionID)
 			}
 
 			var gotSource, gotThread, gotExec string
@@ -671,6 +671,92 @@ func TestAuthMiddlewarePropagatesAssistantCorrelationHeaders(t *testing.T) {
 			}
 			if tc.wantExecPresent && gotExec != tc.executionID {
 				t.Fatalf("exec = %q, want %q", gotExec, tc.executionID)
+			}
+		})
+	}
+}
+
+func TestAuthMiddlewareCorrelationHeaderAliases(t *testing.T) {
+	cases := []struct {
+		name           string
+		headers        map[string]string
+		wantSource     string
+		wantThread     string
+		wantExec       string
+		wantDeprecated bool
+	}{
+		{
+			name: "bylonis headers",
+			headers: map[string]string{
+				"X-ByLonis-Client-Source":          "ai-assistant",
+				"X-ByLonis-Assistant-Thread-Id":    "thread-new",
+				"X-ByLonis-Assistant-Execution-Id": "exec-new",
+			},
+			wantSource: "ai-assistant", wantThread: "thread-new", wantExec: "exec-new",
+		},
+		{
+			name: "deprecated headers",
+			headers: map[string]string{
+				"X-SigNoz-Client-Source":          "ai-assistant",
+				"X-SigNoz-Assistant-Thread-Id":    "thread-old",
+				"X-SigNoz-Assistant-Execution-Id": "exec-old",
+			},
+			wantSource: "ai-assistant", wantThread: "thread-old", wantExec: "exec-old", wantDeprecated: true,
+		},
+		{
+			name: "both prefers bylonis",
+			headers: map[string]string{
+				"X-ByLonis-Client-Source":          "new-source",
+				"X-SigNoz-Client-Source":           "old-source",
+				"X-ByLonis-Assistant-Thread-Id":    "thread-new",
+				"X-SigNoz-Assistant-Thread-Id":     "thread-old",
+				"X-ByLonis-Assistant-Execution-Id": "exec-new",
+				"X-SigNoz-Assistant-Execution-Id":  "exec-old",
+			},
+			wantSource: "new-source", wantThread: "thread-new", wantExec: "exec-new",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := &config.Config{URL: "https://tenant.example.com"}
+			server := &MCPServer{logger: logpkg.New("error"), config: cfg, analytics: noopanalytics.New()}
+
+			spanRecorder := tracetest.NewSpanRecorder()
+			tracerProvider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+			ctx, span := tracerProvider.Tracer("test").Start(context.Background(), "HTTP POST /mcp")
+
+			req := httptest.NewRequest(http.MethodPost, "/mcp", nil).WithContext(ctx)
+			req.Header.Set("BYLONIS-API-KEY", "test-key")
+			for k, v := range tc.headers {
+				req.Header.Set(k, v)
+			}
+
+			var gotSource, gotThread, gotExec string
+			rr := httptest.NewRecorder()
+			server.authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotSource, _ = util.GetClientSource(r.Context())
+				gotThread, _ = util.GetAssistantThreadID(r.Context())
+				gotExec, _ = util.GetAssistantExecutionID(r.Context())
+				w.WriteHeader(http.StatusOK)
+			})).ServeHTTP(rr, req)
+			span.End()
+
+			if rr.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d", rr.Code, http.StatusOK)
+			}
+			if gotSource != tc.wantSource || gotThread != tc.wantThread || gotExec != tc.wantExec {
+				t.Fatalf("got (%q, %q, %q), want (%q, %q, %q)", gotSource, gotThread, gotExec, tc.wantSource, tc.wantThread, tc.wantExec)
+			}
+
+			deprecated := false
+			for _, kv := range spanRecorder.Ended()[0].Attributes() {
+				if string(kv.Key) == "mcp.deprecated_correlation_header" && kv.Value.AsBool() {
+					deprecated = true
+				}
+			}
+			if deprecated != tc.wantDeprecated {
+				t.Fatalf("mcp.deprecated_correlation_header = %v, want %v", deprecated, tc.wantDeprecated)
 			}
 		})
 	}
