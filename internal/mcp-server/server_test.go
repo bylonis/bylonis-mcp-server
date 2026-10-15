@@ -352,7 +352,7 @@ func TestAuthMiddlewareAcceptsOAuthBearerToken(t *testing.T) {
 	server := &MCPServer{logger: logpkg.New("error"), config: cfg, analytics: noopanalytics.New()}
 	req := httptest.NewRequest(http.MethodPost, "/mcp", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
-	// req.Header.Set("X-SigNoz-URL", "https://1.1.1.1")
+	// req.Header.Set("X-ByLonis-URL", "https://1.1.1.1")
 
 	rr := httptest.NewRecorder()
 	server.authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -384,7 +384,7 @@ func TestAuthMiddlewareFallsBackToRawAPIKey(t *testing.T) {
 	server := &MCPServer{logger: logpkg.New("error"), config: cfg, analytics: noopanalytics.New()}
 	req := httptest.NewRequest(http.MethodPost, "/mcp", nil)
 	req.Header.Set("Authorization", "Bearer raw-api-key")
-	req.Header.Set("X-SigNoz-URL", "https://1.1.1.1")
+	req.Header.Set("X-ByLonis-URL", "https://1.1.1.1")
 
 	rr := httptest.NewRecorder()
 	server.authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -414,7 +414,7 @@ func TestAuthMiddlewareRejectsInstanceURLNotInAllowlist(t *testing.T) {
 	server := &MCPServer{logger: logpkg.New("error"), config: cfg, analytics: noopanalytics.New()}
 	req := httptest.NewRequest(http.MethodPost, "/mcp", nil)
 	req.Header.Set("BYLONIS-API-KEY", "pat-token")
-	req.Header.Set("X-SigNoz-URL", "https://1.1.1.1")
+	req.Header.Set("X-ByLonis-URL", "https://1.1.1.1")
 
 	rr := httptest.NewRecorder()
 	nextCalled := false
@@ -439,7 +439,7 @@ func TestAuthMiddlewareAllowsInstanceURLInAllowlist(t *testing.T) {
 	server := &MCPServer{logger: logpkg.New("error"), config: cfg, analytics: noopanalytics.New()}
 	req := httptest.NewRequest(http.MethodPost, "/mcp", nil)
 	req.Header.Set("BYLONIS-API-KEY", "pat-token")
-	req.Header.Set("X-SigNoz-URL", "https://demo.us.signoz.cloud")
+	req.Header.Set("X-ByLonis-URL", "https://demo.us.signoz.cloud")
 
 	rr := httptest.NewRecorder()
 	server.authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -493,6 +493,68 @@ func TestAuthMiddlewareAPIKeyHeaders(t *testing.T) {
 			// The backend always gets the ByLonis header, whatever the client sent.
 			if gotHeader != "BYLONIS-API-KEY" {
 				t.Fatalf("auth header = %q, want %q", gotHeader, "BYLONIS-API-KEY")
+			}
+		})
+	}
+}
+
+func TestAuthMiddlewareURLHeaders(t *testing.T) {
+	tests := []struct {
+		name    string
+		headers map[string]string
+		wantURL string
+	}{
+		{name: "bylonis header", headers: map[string]string{"X-ByLonis-URL": "https://new.example.com"}, wantURL: "https://new.example.com"},
+		{name: "deprecated header", headers: map[string]string{"X-SigNoz-URL": "https://old.example.com"}, wantURL: "https://old.example.com"},
+		{name: "both prefers bylonis", headers: map[string]string{"X-ByLonis-URL": "https://new.example.com", "X-SigNoz-URL": "https://old.example.com"}, wantURL: "https://new.example.com"},
+		{name: "none falls back to config", headers: map[string]string{}, wantURL: "https://config.example.com"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &config.Config{URL: "https://config.example.com"}
+			server := &MCPServer{logger: logpkg.New("error"), config: cfg, analytics: noopanalytics.New()}
+			req := httptest.NewRequest(http.MethodPost, "/mcp", nil)
+			req.Header.Set("BYLONIS-API-KEY", "pat-token")
+			for k, v := range tt.headers {
+				req.Header.Set(k, v)
+			}
+
+			rr := httptest.NewRecorder()
+			var gotURL string
+			server.authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotURL, _ = util.GetSigNozURL(r.Context())
+				w.WriteHeader(http.StatusOK)
+			})).ServeHTTP(rr, req)
+
+			if rr.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d", rr.Code, http.StatusOK)
+			}
+			if gotURL != tt.wantURL {
+				t.Fatalf("instance URL = %q, want %q", gotURL, tt.wantURL)
+			}
+		})
+	}
+}
+
+func TestAuthMiddlewareInvalidURLNamesTheHeaderSent(t *testing.T) {
+	for _, header := range []string{"X-ByLonis-URL", "X-SigNoz-URL"} {
+		t.Run(header, func(t *testing.T) {
+			server := &MCPServer{logger: logpkg.New("error"), config: &config.Config{}, analytics: noopanalytics.New()}
+			req := httptest.NewRequest(http.MethodPost, "/mcp", nil)
+			req.Header.Set("BYLONIS-API-KEY", "pat-token")
+			req.Header.Set(header, "https://tenant.example.com/path")
+
+			rr := httptest.NewRecorder()
+			server.authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				t.Fatal("next handler should not be called")
+			})).ServeHTTP(rr, req)
+
+			if rr.Code != http.StatusBadRequest {
+				t.Fatalf("status = %d, want %d", rr.Code, http.StatusBadRequest)
+			}
+			if !strings.Contains(rr.Body.String(), "Invalid "+header) {
+				t.Fatalf("body = %q, want it to name %s", rr.Body.String(), header)
 			}
 		})
 	}
@@ -570,7 +632,7 @@ func TestAuthMiddlewarePropagatesAssistantCorrelationHeaders(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/mcp", nil)
 			req.Header.Set("BYLONIS-API-KEY", "test-key")
-			req.Header.Set("X-SigNoz-URL", "https://tenant.example.com")
+			req.Header.Set("X-ByLonis-URL", "https://tenant.example.com")
 			if tc.clientSource != "" {
 				req.Header.Set("X-SigNoz-Client-Source", tc.clientSource)
 			}
@@ -791,7 +853,7 @@ func TestAuthMiddlewareAuthFailureTelemetryBranches(t *testing.T) {
 			name: "invalid SigNoz URL",
 			setup: func(req *http.Request) {
 				req.Header.Set("Authorization", "Bearer raw-api-key")
-				req.Header.Set("X-SigNoz-URL", "https://tenant.example.com/path")
+				req.Header.Set("X-ByLonis-URL", "https://tenant.example.com/path")
 			},
 			wantStatus: http.StatusBadRequest,
 			wantReason: authFailureInvalidSignozURL,

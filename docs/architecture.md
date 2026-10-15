@@ -49,7 +49,7 @@ subgraph HTTPPath["HTTP Transport — Multi Tenant"]
 
     AUTH --> URLCHECK{"SigNoz URL source?"}
     URLCHECK -->|OAuth token| FROMTOKEN["Already extracted<br/>from decrypted token"]
-    URLCHECK -->|X-SigNoz-URL header| NORMALIZE["normalizeSigNozURL"]
+    URLCHECK -->|X-ByLonis-URL header| NORMALIZE["normalizeSigNozURL"]
     URLCHECK -->|env set| ENVURL["Use config.URL"]
     URLCHECK -->|none| NOURL["400 Bad Request"]
 
@@ -169,4 +169,4 @@ Since tokens are self-contained encrypted blobs, any server instance with the sa
 
 ### Backward Compatibility
 
-The auth middleware tries OAuth token decryption first. If decryption fails (e.g., the Bearer token is a plain SigNoz API key), it falls back to the legacy `Authorization` header + `X-SigNoz-URL` header approach. Existing integrations continue to work without changes.
+The auth middleware tries OAuth token decryption first. If decryption fails (e.g., the Bearer token is a plain SigNoz API key), it falls back to the legacy `Authorization` header + `X-ByLonis-URL` header approach (`X-SigNoz-URL` is still accepted until v1.1). Existing integrations continue to work without changes.
