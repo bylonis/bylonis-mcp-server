@@ -334,10 +334,9 @@ func (m *MCPServer) startDocsIndex(ctx context.Context) error {
 		// "blob loaded fine" case, we deliberately skip the on-boot refresh
 		// so startup doesn't pay a ~15 s CPU/memory spike against the live
 		// corpus; freshness is handled by the scheduled refresher
-		// (6 h incremental, 24 h forced) and by the manually-dispatched
-		// docs-index-refresh workflow that maintainers run ahead of a
-		// release (.github/workflows/docs-index-refresh.yml) to keep the
-		// committed blob reasonably fresh at cold-boot time.
+		// (6 h incremental, 24 h forced) and by `make docs-index`, run by
+		// hand ahead of a release to keep the committed blob reasonably
+		// fresh at cold-boot time.
 		if !loaded {
 			go func() {
 				if err := refresher.Trigger(ctx, true); err != nil {
