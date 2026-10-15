@@ -1,9 +1,9 @@
 services:
-  signoz-mcp-server:
-    build: 
+  bylonis-mcp-server:
+    build:
       context: .
       dockerfile: Dockerfile
-    container_name: signoz-mcp-server
+    container_name: bylonis-mcp-server
     ports:
       - "${MCP_SERVER_PORT:-8000}:8000"
     environment:
@@ -14,11 +14,11 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-info}
     restart: unless-stopped
     networks:
-      - signoz-mcp-network
+      - bylonis-mcp-network
     labels:
-      - "com.signoz.service=signoz-mcp-server"
-      - "com.signoz.description=SigNoz MCP Server for AI assistants"
+      - "ai.bylonis.service=bylonis-mcp-server"
+      - "ai.bylonis.description=ByLonis MCP Server for AI assistants"
 
 networks:
-  signoz-mcp-network:
+  bylonis-mcp-network:
     driver: bridge

@@ -131,7 +131,7 @@ func LoadConfig() (*Config, error) {
 
 	instanceURLAllowlist := util.ParseInstanceURLAllowlist(getEnv(InstanceURLAllowlistEnv, ""))
 	if instanceURLAllowlist.Configured() {
-		log.Printf("INFO: SigNoz URL allowlist enabled via %s; only matching SigNoz hosts will be served", InstanceURLAllowlistEnv)
+		log.Printf("INFO: ByLonis URL allowlist enabled via %s; only matching ByLonis hosts will be served", InstanceURLAllowlistEnv)
 	}
 
 	return &Config{

@@ -694,7 +694,7 @@ func (m *MCPServer) startMethodSpan(ctx context.Context, method mcp.MCPMethod) (
 	}
 	attrs = otelpkg.AppendCallerCorrelation(ctx, attrs)
 
-	return otel.Tracer("signoz-mcp-server").Start(ctx, "MCP "+string(method),
+	return otel.Tracer("bylonis-mcp-server").Start(ctx, "MCP "+string(method),
 		trace.WithSpanKind(trace.SpanKindServer),
 		trace.WithAttributes(attrs...),
 	)
@@ -930,7 +930,7 @@ func (m *MCPServer) buildHooks() *server.Hooks {
 // start/finish with duration, tool name, session ID, and search context.
 // It also creates an OTel span with GenAI semantic convention attributes.
 func (m *MCPServer) loggingMiddleware() server.ToolHandlerMiddleware {
-	tracer := otel.Tracer("signoz-mcp-server")
+	tracer := otel.Tracer("bylonis-mcp-server")
 	return func(next server.ToolHandlerFunc) server.ToolHandlerFunc {
 		return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			start := time.Now()
@@ -1164,13 +1164,13 @@ const (
 
 	authFailureExpiredOAuthToken   = "expired_oauth_token"
 	authFailureInvalidOAuthToken   = "invalid_oauth_token"
-	authFailureInvalidSignozURL    = "invalid_signoz_url"
+	authFailureInvalidSignozURL    = "invalid_bylonis_url"
 	authFailureMissingCredential   = "missing_credentials"
-	authFailureMissingSignozURL    = "missing_signoz_url"
-	authFailureDisallowedSignozURL = "disallowed_signoz_url"
+	authFailureMissingSignozURL    = "missing_bylonis_url"
+	authFailureDisallowedSignozURL = "disallowed_bylonis_url"
 )
 
-// enforceInstanceURLAllowlist rejects a client-supplied SigNoz URL not in
+// enforceInstanceURLAllowlist rejects a client-supplied ByLonis URL not in
 // BYLONIS_INSTANCE_URL_ALLOWLIST, returning false after writing the 403 + auth
 // failure. signozURL must already be on ctx so the failure carries mcp.tenant_url.
 func (m *MCPServer) enforceInstanceURLAllowlist(ctx context.Context, w http.ResponseWriter, r *http.Request, signozURL, authMode string) bool {
@@ -1178,7 +1178,7 @@ func (m *MCPServer) enforceInstanceURLAllowlist(ctx context.Context, w http.Resp
 		return true
 	}
 	m.logAuthFailure(ctx, r, http.StatusForbidden, authFailureDisallowedSignozURL, authMode,
-		"Tenant SigNoz URL is not permitted by the server allowlist", slog.String("mcp.tenant_url", signozURL))
+		"Tenant ByLonis URL is not permitted by the server allowlist", slog.String("mcp.tenant_url", signozURL))
 	http.Error(w, util.InstanceURLNotPermittedMessage(), http.StatusForbidden)
 	return false
 }
@@ -1372,10 +1372,10 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 					return
 				default:
 					// Only fall back to legacy raw API key mode when the request also
-					// carries an explicit SigNoz URL (header or config). Otherwise a
+					// carries an explicit ByLonis URL (header or config). Otherwise a
 					// stale bearer token can mask the OAuth challenge flow.
 					if customURL == "" && m.config.URL == "" {
-						m.logAuthFailure(ctx, r, http.StatusUnauthorized, authFailureInvalidOAuthToken, authModeAuthorizationBearer, "Bearer token did not match OAuth token format and no SigNoz URL is available for legacy fallback")
+						m.logAuthFailure(ctx, r, http.StatusUnauthorized, authFailureInvalidOAuthToken, authModeAuthorizationBearer, "Bearer token did not match OAuth token format and no ByLonis URL is available for legacy fallback")
 						m.setOAuthChallenge(w, `error="invalid_token", error_description="access token is invalid"`)
 						http.Error(w, "OAuth access token is invalid", http.StatusUnauthorized)
 						return
@@ -1433,7 +1433,7 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 				http.Error(w, fmt.Sprintf("Invalid %s: %v", customURLHeader, err), http.StatusBadRequest)
 				return
 			}
-			// Set the SigNoz URL on ctx first so an allowlist rejection is attributed.
+			// Set the ByLonis URL on ctx first so an allowlist rejection is attributed.
 			ctx = util.SetSigNozURL(ctx, normalized)
 			if !m.enforceInstanceURLAllowlist(ctx, w, r, normalized, authMode) {
 				return
@@ -1444,7 +1444,7 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 			m.logger.DebugContext(ctx, "Using URL from environment config", slog.String("mcp.tenant_url", signozURL))
 		} else {
 			m.logAuthFailure(ctx, r, http.StatusBadRequest, authFailureMissingSignozURL, authMode, "No ByLonis URL found in "+signozclient.URLHeader+" header or environment")
-			http.Error(w, "SigNoz instance URL is required", http.StatusBadRequest)
+			http.Error(w, "ByLonis instance URL is required", http.StatusBadRequest)
 			return
 		}
 
@@ -1476,11 +1476,12 @@ func (m *MCPServer) buildHTTP(s *server.MCPServer) *http.Server {
 		_, _ = fmt.Fprint(w, "ok")
 	})
 
-	// Readiness/health are stricter than liveness: Kubernetes should only route
-	// traffic to pods that can serve docs tools without INDEX_NOT_READY. /healthz
-	// is kept as a legacy generic health endpoint, matching SigNoz's API shape.
+	// Readiness/health are stricter than liveness: when the docs tools are
+	// enabled, Kubernetes should only route traffic to pods that can serve them
+	// without INDEX_NOT_READY. With the docs tools off (the default) there is no
+	// index to wait for. /healthz is kept as a legacy generic health endpoint.
 	readyHandler := func(w http.ResponseWriter, r *http.Request) {
-		if m.handler == nil || !m.handler.DocsIndexReady() {
+		if m.handler == nil || (m.config.DocsToolsEnabled && !m.handler.DocsIndexReady()) {
 			http.Error(w, "docs index not ready", http.StatusServiceUnavailable)
 			return
 		}
@@ -1506,7 +1507,7 @@ func (m *MCPServer) buildHTTP(s *server.MCPServer) *http.Server {
 	// transient SDK-level stream state for its lifetime, which is harmless here
 	// since the server sends no server→client messages.) The server has no
 	// functional dependence on sessions — auth
-	// and the SigNoz URL are resolved per-request from headers, tools/resources
+	// and the ByLonis URL are resolved per-request from headers, tools/resources
 	// are static, and nothing uses sampling or server→client messages. This also
 	// drops mcp-go's per-session maps (server.sessions/activeSessions), which the
 	// disabled idle sweeper would otherwise leak for POST-only clients, and aligns
@@ -1529,7 +1530,7 @@ func (m *MCPServer) buildHTTP(s *server.MCPServer) *http.Server {
 	// ({http.request.method} {http.route}) so each endpoint produces a
 	// distinct, readable span name like "HTTP POST /mcp" instead of every
 	// request collapsing into the default operation name.
-	handler := otelhttp.NewHandler(mux, "signoz-mcp-server",
+	handler := otelhttp.NewHandler(mux, "bylonis-mcp-server",
 		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
 			return "HTTP " + r.Method + " " + r.URL.Path
 		}),

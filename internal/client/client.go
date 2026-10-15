@@ -55,7 +55,7 @@ const (
 	analyticsIdentityCacheTTL = 10 * time.Minute
 )
 
-var ErrUnauthorized = errors.New("signoz credentials rejected")
+var ErrUnauthorized = errors.New("ByLonis credentials rejected")
 
 // AnalyticsIdentity is the identity tuple used for analytics attribution.
 // UserID holds the service-account ID for API-key sessions, or the SigNoz
@@ -155,9 +155,9 @@ func (s *SigNoz) ValidateCredentials(ctx context.Context) error {
 	userURL := fmt.Sprintf("%s/api/v1/user/me", s.baseURL)
 	status, body, err := s.doValidationRequest(ctx, userURL)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "SigNoz credential validation request failed",
+		s.logger.ErrorContext(ctx, "ByLonis credential validation request failed",
 			slog.String("url", userURL), logpkg.ErrAttr(err))
-		return fmt.Errorf("failed to reach SigNoz API: %w", err)
+		return fmt.Errorf("failed to reach ByLonis API: %w", err)
 	}
 
 	// 404 means the key is a service-account key; validate via service account endpoint.
@@ -167,9 +167,9 @@ func (s *SigNoz) ValidateCredentials(ctx context.Context) error {
 		saURL := fmt.Sprintf("%s/api/v1/service_accounts/me", s.baseURL)
 		status, body, err = s.doValidationRequest(ctx, saURL)
 		if err != nil {
-			s.logger.ErrorContext(ctx, "SigNoz credential validation request failed",
+			s.logger.ErrorContext(ctx, "ByLonis credential validation request failed",
 				slog.String("url", saURL), logpkg.ErrAttr(err))
-			return fmt.Errorf("failed to reach SigNoz API: %w", err)
+			return fmt.Errorf("failed to reach ByLonis API: %w", err)
 		}
 	}
 
@@ -224,9 +224,9 @@ func (s *SigNoz) fetchAnalyticsIdentity(ctx context.Context) (*AnalyticsIdentity
 	reqURL := fmt.Sprintf("%s%s", s.baseURL, endpoint)
 	status, body, err := s.doValidationRequest(ctx, reqURL)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "SigNoz analytics identity request failed",
+		s.logger.ErrorContext(ctx, "ByLonis analytics identity request failed",
 			slog.String("url", reqURL), logpkg.ErrAttr(err))
-		return nil, fmt.Errorf("failed to reach SigNoz API: %w", err)
+		return nil, fmt.Errorf("failed to reach ByLonis API: %w", err)
 	}
 	if status != http.StatusOK {
 		return nil, s.evaluateValidationResponse(ctx, status, body)
@@ -317,11 +317,11 @@ func (s *SigNoz) evaluateValidationResponse(ctx context.Context, status int, bod
 	case http.StatusOK:
 		return nil
 	case http.StatusUnauthorized, http.StatusForbidden:
-		s.logger.WarnContext(ctx, "SigNoz credential validation failed", slog.Int("status", status))
+		s.logger.WarnContext(ctx, "ByLonis credential validation failed", slog.Int("status", status))
 		return fmt.Errorf("%w: status %d", ErrUnauthorized, status)
 	default:
 		truncatedBody := logpkg.TruncBody(body)
-		s.logger.WarnContext(ctx, "SigNoz credential validation returned unexpected status",
+		s.logger.WarnContext(ctx, "ByLonis credential validation returned unexpected status",
 			slog.Int("status", status),
 			slog.String("response", truncatedBody))
 		return fmt.Errorf("unexpected status %d: %s", status, truncatedBody)
@@ -458,7 +458,7 @@ func (s *SigNoz) doRequest(ctx context.Context, method, reqURL string, body io.R
 		if retryable {
 			attrs = append(attrs, slog.Bool("retries_exhausted", true))
 		}
-		s.logger.WarnContext(ctx, "SigNoz request returned unexpected status", attrs...)
+		s.logger.WarnContext(ctx, "ByLonis request returned unexpected status", attrs...)
 		return nil, fmt.Errorf("unexpected status %d: %s", resp.StatusCode, truncatedBody)
 	}
 
@@ -494,7 +494,7 @@ func (s *SigNoz) ListMetrics(ctx context.Context, start, end int64, limit int, s
 
 func (s *SigNoz) ListMetricKeys(ctx context.Context) (json.RawMessage, error) {
 	reqURL := fmt.Sprintf("%s/api/v1/metrics/filters/keys", s.baseURL)
-	s.logger.DebugContext(s.ensureTenantContext(ctx), "Making request to SigNoz API",
+	s.logger.DebugContext(s.ensureTenantContext(ctx), "Making request to ByLonis API",
 		slog.String("method", "GET"),
 		slog.String("endpoint", "/api/v1/metrics/filters/keys"))
 	return s.doRequest(ctx, http.MethodGet, reqURL, nil, DefaultQueryTimeout)
@@ -505,13 +505,13 @@ func (s *SigNoz) ListAlerts(ctx context.Context, params types.ListAlertsParams) 
 	if qp := params.QueryParams(); len(qp) > 0 {
 		reqURL += "?" + qp.Encode()
 	}
-	s.logger.DebugContext(s.ensureTenantContext(ctx), "Fetching alerts from SigNoz", slog.String("url", reqURL))
+	s.logger.DebugContext(s.ensureTenantContext(ctx), "Fetching alerts from ByLonis", slog.String("url", reqURL))
 	return s.doRequest(ctx, http.MethodGet, reqURL, nil, DefaultQueryTimeout)
 }
 
 func (s *SigNoz) ListAlertRules(ctx context.Context) (json.RawMessage, error) {
 	reqURL := fmt.Sprintf("%s/api/v2/rules", s.baseURL)
-	s.logger.DebugContext(s.ensureTenantContext(ctx), "Fetching alert rules from SigNoz", slog.String("url", reqURL))
+	s.logger.DebugContext(s.ensureTenantContext(ctx), "Fetching alert rules from ByLonis", slog.String("url", reqURL))
 	return s.doRequest(ctx, http.MethodGet, reqURL, nil, DefaultQueryTimeout)
 }
 
@@ -527,7 +527,7 @@ func (s *SigNoz) GetAlertByRuleID(ctx context.Context, ruleID string) (json.RawM
 func (s *SigNoz) ListDashboards(ctx context.Context) (json.RawMessage, error) {
 	ctx = s.ensureTenantContext(ctx)
 	reqURL := fmt.Sprintf("%s/api/v1/dashboards", s.baseURL)
-	s.logger.DebugContext(ctx, "Fetching dashboards from SigNoz")
+	s.logger.DebugContext(ctx, "Fetching dashboards from ByLonis")
 
 	body, err := s.doRequest(ctx, http.MethodGet, reqURL, nil, DefaultQueryTimeout)
 	if err != nil {
@@ -598,7 +598,7 @@ func (s *SigNoz) ListServices(ctx context.Context, start, end string) (json.RawM
 	payload := map[string]string{"start": start, "end": end}
 	bodyBytes, _ := json.Marshal(payload)
 
-	s.logger.DebugContext(s.ensureTenantContext(ctx), "Fetching services from SigNoz",
+	s.logger.DebugContext(s.ensureTenantContext(ctx), "Fetching services from ByLonis",
 		slog.String("start", start), slog.String("end", end))
 	return s.doRequest(ctx, http.MethodPost, reqURL, bytes.NewReader(bodyBytes), DefaultQueryTimeout)
 }
@@ -810,7 +810,7 @@ const ChannelWriteTimeout = 30 * time.Second
 
 func (s *SigNoz) ListNotificationChannels(ctx context.Context) (json.RawMessage, error) {
 	reqURL := fmt.Sprintf("%s/api/v1/channels", s.baseURL)
-	s.logger.DebugContext(s.ensureTenantContext(ctx), "Fetching notification channels from SigNoz")
+	s.logger.DebugContext(s.ensureTenantContext(ctx), "Fetching notification channels from ByLonis")
 	return s.doRequest(ctx, http.MethodGet, reqURL, nil, DefaultQueryTimeout)
 }
 

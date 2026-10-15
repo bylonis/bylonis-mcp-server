@@ -23,7 +23,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build \
     -ldflags="-w -s -extldflags '-static' -X github.com/bylonis/bylonis-mcp-server/pkg/version.Version=${VERSION}" \
     -a -installsuffix cgo \
-    -o signoz-mcp-server \
+    -o bylonis-mcp-server \
     ./cmd/server/
 
 # Add MCP registry label
@@ -42,7 +42,7 @@ RUN addgroup -g 1001 -S appgroup && \
 WORKDIR /app
 
 # Copy the binary from builder stage
-COPY --from=builder /app/signoz-mcp-server .
+COPY --from=builder /app/bylonis-mcp-server .
 
 # Change ownership to non-root user
 RUN chown -R appuser:appgroup /app
@@ -54,4 +54,4 @@ USER appuser
 EXPOSE 8000
 
 # Run the application
-CMD ["./signoz-mcp-server"]
+CMD ["./bylonis-mcp-server"]

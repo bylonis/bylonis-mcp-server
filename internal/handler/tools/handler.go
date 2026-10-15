@@ -71,7 +71,7 @@ func (h *Handler) GetClient(ctx context.Context) (signozclient.Client, error) {
 	authHeader, _ := util.GetAuthHeader(ctx)
 
 	if apiKey == "" || signozURL == "" {
-		return nil, fmt.Errorf("missing tenant credentials in context (apiKey or signozURL)")
+		return nil, fmt.Errorf("missing tenant credentials in context (API key or ByLonis URL)")
 	}
 
 	if authHeader == "" {

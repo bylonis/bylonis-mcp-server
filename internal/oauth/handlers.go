@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-const csrfCookieName = "signoz_mcp_oauth_csrf"
+const csrfCookieName = "bylonis_mcp_oauth_csrf"
 
 // AnalyticsEmitter publishes OAuth flow events. apiKey and signozURL are
 // the validated tenant credentials the emitter needs to resolve identity
@@ -63,7 +63,7 @@ type registerClientResponse struct {
 
 // authFailureDisallowedSignozURL mirrors the mcp-server reason so OAuth
 // allowlist rejections are alertable on the same mcp.auth.failure_reason.
-const authFailureDisallowedSignozURL = "disallowed_signoz_url"
+const authFailureDisallowedSignozURL = "disallowed_bylonis_url"
 
 type authorizeTemplateData struct {
 	ClientID            string
@@ -199,7 +199,12 @@ func (h *Handler) HandleAuthorizeSubmit(w http.ResponseWriter, r *http.Request) 
 	}
 
 	apiKey := strings.TrimSpace(r.FormValue("api_key"))
-	signozURL := strings.TrimSpace(r.FormValue("signoz_url"))
+	// bylonis_url is the field of the bundled form; signoz_url is still read
+	// for forms rendered before the rename.
+	signozURL := strings.TrimSpace(r.FormValue("bylonis_url"))
+	if signozURL == "" {
+		signozURL = strings.TrimSpace(r.FormValue("signoz_url"))
+	}
 	if apiKey == "" {
 		h.renderAuthorizePage(w, r, http.StatusBadRequest, authorizeTemplateData{
 			ClientID:            params.ClientID,
@@ -210,7 +215,7 @@ func (h *Handler) HandleAuthorizeSubmit(w http.ResponseWriter, r *http.Request) 
 			CodeChallengeMethod: params.CodeChallengeMethod,
 			Scope:               params.Scope,
 			SignozURL:           signozURL,
-			ErrorMessage:        "Enter your SigNoz API key to continue.",
+			ErrorMessage:        "Enter your ByLonis API key to continue.",
 			ErrorCode:           "invalid_request",
 		})
 		return
@@ -226,7 +231,7 @@ func (h *Handler) HandleAuthorizeSubmit(w http.ResponseWriter, r *http.Request) 
 			CodeChallengeMethod: params.CodeChallengeMethod,
 			Scope:               params.Scope,
 			SignozURL:           signozURL,
-			ErrorMessage:        "Enter a valid SigNoz URL, for example your-instance.signoz.cloud.",
+			ErrorMessage:        "Enter a valid ByLonis URL, for example your-tenant.bylonis.ai.",
 			ErrorCode:           "invalid_request",
 		})
 		return
@@ -263,7 +268,7 @@ func (h *Handler) HandleAuthorizeSubmit(w http.ResponseWriter, r *http.Request) 
 				CodeChallengeMethod: params.CodeChallengeMethod,
 				Scope:               params.Scope,
 				SignozURL:           normalizedURL,
-				ErrorMessage:        "We couldn't sign in to that SigNoz instance. Check the URL and API key, then try again.",
+				ErrorMessage:        "We couldn't sign in to that ByLonis instance. Check the URL and API key, then try again.",
 				ErrorCode:           "access_denied",
 			})
 		default:
@@ -276,7 +281,7 @@ func (h *Handler) HandleAuthorizeSubmit(w http.ResponseWriter, r *http.Request) 
 				CodeChallengeMethod: params.CodeChallengeMethod,
 				Scope:               params.Scope,
 				SignozURL:           normalizedURL,
-				ErrorMessage:        "We couldn't reach that SigNoz instance. Check the URL and try again.",
+				ErrorMessage:        "We couldn't reach that ByLonis instance. Check the URL and try again.",
 				ErrorCode:           "temporarily_unavailable",
 			})
 		}

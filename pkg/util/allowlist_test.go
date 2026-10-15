@@ -98,11 +98,11 @@ func TestInstanceURLAllowlistStripsPortFromEntry(t *testing.T) {
 
 func TestInstanceURLNotPermittedMessage(t *testing.T) {
 	msg := InstanceURLNotPermittedMessage()
-	if !strings.Contains(msg, "https://mcp.<region>.signoz.cloud/mcp") {
-		t.Errorf("message should point to the regional MCP URL, got: %s", msg)
+	if !strings.Contains(msg, "Settings → MCP Server") {
+		t.Errorf("message should point to the MCP Server settings page, got: %s", msg)
 	}
-	if !strings.Contains(msg, MCPDocsURL) {
-		t.Errorf("message should include the docs link, got: %s", msg)
+	if strings.Contains(strings.ToLower(msg), "signoz") {
+		t.Errorf("message must not mention SigNoz, got: %s", msg)
 	}
 }
 

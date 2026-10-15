@@ -138,7 +138,7 @@ func TestOAuthAuthorizationFlow(t *testing.T) {
 		"code_challenge_method": {"S256"},
 		"scope":                 {"openid profile"},
 		"csrf_token":            {csrfToken},
-		"signoz_url":            {signozServer.URL},
+		"signoz_url":            {signozServer.URL}, // pre-rename field name, still accepted
 		"api_key":               {"snz-api-key"},
 	}
 
@@ -300,7 +300,7 @@ func TestOAuthAuthorizationFlowServiceAccountFallback(t *testing.T) {
 		"code_challenge":        {challenge},
 		"code_challenge_method": {"S256"},
 		"csrf_token":            {matches[1]},
-		"signoz_url":            {signozServer.URL},
+		"bylonis_url":           {signozServer.URL},
 		"api_key":               {"snz-api-key"},
 	}
 	submitReq := httptest.NewRequest(http.MethodPost, "/oauth/authorize", bytes.NewBufferString(form.Encode()))
@@ -384,7 +384,7 @@ func TestAuthorizeSubmitRejectsInvalidSigNozCredentials(t *testing.T) {
 		"code_challenge":        {"challenge"},
 		"code_challenge_method": {"S256"},
 		"csrf_token":            {csrfToken},
-		"signoz_url":            {signozServer.URL},
+		"bylonis_url":           {signozServer.URL},
 		"api_key":               {"bad-api-key"},
 	}
 
@@ -404,7 +404,7 @@ func TestAuthorizeSubmitRejectsInvalidSigNozCredentials(t *testing.T) {
 	if submitRR.Header().Get("Location") != "" {
 		t.Fatalf("unexpected redirect location %q", submitRR.Header().Get("Location"))
 	}
-	if !strings.Contains(submitRR.Body.String(), "We couldn&#39;t sign in to that SigNoz instance. Check the URL and API key, then try again.") {
+	if !strings.Contains(submitRR.Body.String(), "We couldn&#39;t sign in to that ByLonis instance. Check the URL and API key, then try again.") {
 		t.Fatalf("authorize POST body = %s", submitRR.Body.String())
 	}
 	if !strings.Contains(submitRR.Body.String(), `value="`+signozServer.URL+`"`) {
@@ -471,7 +471,7 @@ func TestAuthorizeSubmitStripsSigNozURLPathQueryFragment(t *testing.T) {
 		"code_challenge":        {"challenge"},
 		"code_challenge_method": {"S256"},
 		"csrf_token":            {matches[1]},
-		"signoz_url":            {signozServer.URL + "/home?orgId=123#logs"},
+		"bylonis_url":           {signozServer.URL + "/home?orgId=123#logs"},
 		"api_key":               {"snz-api-key"},
 	}
 
@@ -615,7 +615,7 @@ func TestAuthorizePageUsesIssuerPathPrefixForFormAndCSRFCookie(t *testing.T) {
 		"code_challenge":        {"challenge"},
 		"code_challenge_method": {"S256"},
 		"csrf_token":            {matches[1]},
-		"signoz_url":            {signozServer.URL},
+		"bylonis_url":           {signozServer.URL},
 		"api_key":               {"snz-api-key"},
 	}
 
@@ -722,7 +722,7 @@ func TestOAuthEmitterFiresOnAuthorizeAndTokenIssue(t *testing.T) {
 		"code_challenge":        {challenge},
 		"code_challenge_method": {"S256"},
 		"csrf_token":            {csrfToken},
-		"signoz_url":            {signozServer.URL},
+		"bylonis_url":           {signozServer.URL},
 		"api_key":               {"snz-api-key"},
 	}
 	submitReq := httptest.NewRequest(http.MethodPost, "/oauth/authorize", bytes.NewBufferString(form.Encode()))
@@ -892,7 +892,7 @@ func TestAuthorizeSubmitUnauthorizedRecordsFailureMetric(t *testing.T) {
 		"code_challenge":        {"challenge"},
 		"code_challenge_method": {"S256"},
 		"csrf_token":            {matches[1]},
-		"signoz_url":            {signozServer.URL},
+		"bylonis_url":           {signozServer.URL},
 		"api_key":               {"bad-api-key"},
 	}
 
@@ -994,8 +994,8 @@ func TestRefreshTokenGrantRejectsDisallowedInstanceURL(t *testing.T) {
 		t.Fatalf("expected one mcp.oauth.failures datapoint (found=%v)", found)
 	}
 	reasonAttr, ok := failures.DataPoints[0].Attributes.Value(attribute.Key("mcp.auth.failure_reason"))
-	if !ok || reasonAttr.AsString() != "disallowed_signoz_url" {
-		t.Fatalf("mcp.auth.failure_reason = %v, want disallowed_signoz_url", reasonAttr)
+	if !ok || reasonAttr.AsString() != "disallowed_bylonis_url" {
+		t.Fatalf("mcp.auth.failure_reason = %v, want disallowed_bylonis_url", reasonAttr)
 	}
 }
 
@@ -1050,7 +1050,7 @@ func TestAuthorizeSubmitRejectsDisallowedInstanceURL(t *testing.T) {
 		"code_challenge":        {"challenge"},
 		"code_challenge_method": {"S256"},
 		"csrf_token":            {matches[1]},
-		"signoz_url":            {"https://selfhosted.example.com"}, // disallowed; rejected before any credential probe
+		"bylonis_url":           {"https://selfhosted.example.com"}, // disallowed; rejected before any credential probe
 		"api_key":               {"some-api-key"},
 	}
 
@@ -1074,8 +1074,8 @@ func TestAuthorizeSubmitRejectsDisallowedInstanceURL(t *testing.T) {
 	}
 	dp := failures.DataPoints[0]
 	reasonAttr, ok := dp.Attributes.Value(attribute.Key("mcp.auth.failure_reason"))
-	if !ok || reasonAttr.AsString() != "disallowed_signoz_url" {
-		t.Fatalf("mcp.auth.failure_reason = %v, want disallowed_signoz_url", reasonAttr)
+	if !ok || reasonAttr.AsString() != "disallowed_bylonis_url" {
+		t.Fatalf("mcp.auth.failure_reason = %v, want disallowed_bylonis_url", reasonAttr)
 	}
 	statusAttr, ok := dp.Attributes.Value(attribute.Key("http.response.status_code"))
 	if !ok || statusAttr.AsInt64() != http.StatusForbidden {

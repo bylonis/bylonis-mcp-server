@@ -42,7 +42,7 @@ func main() {
 	}
 
 	logger := logpkg.New(cfg.LogLevel)
-	logger.InfoContext(ctx, "Starting SigNoz MCP Server",
+	logger.InfoContext(ctx, "Starting ByLonis MCP Server",
 		slog.String("log_level", cfg.LogLevel),
 		slog.String("transport_mode", cfg.TransportMode))
 

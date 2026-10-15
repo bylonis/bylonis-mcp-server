@@ -1,321 +1,90 @@
-# SigNoz MCP Server
+# ByLonis MCP Server
 
-[![Go Version](https://img.shields.io/badge/Go-1.25+-blue.svg)](https://golang.org)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![MCP Version](https://img.shields.io/badge/MCP-0.37.0-orange.svg)](https://modelcontextprotocol.io)
+A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that gives AI assistants access to the observability data of a ByLonis instance: metrics, traces, logs, alerts, dashboards, saved views, notification channels and services, queried in natural language.
 
-A Model Context Protocol (MCP) server that provides seamless access to SigNoz observability data through AI assistants and LLMs. Query metrics, traces, logs, alerts, dashboards, and services using natural language.
+ByLonis MCP Server is a fork of SigNoz MCP Server (Apache-2.0); see [NOTICE](NOTICE).
 
-**[📖 Full Documentation](https://signoz.io/docs/ai/signoz-mcp-server/)**
+## Connect to your ByLonis instance
 
-## Table of Contents
+Every ByLonis tenant runs its own MCP server at:
 
-- [Connect to SigNoz Cloud](#connect-to-signoz-cloud)
-- [Self-Hosted Installation](#self-hosted-installation)
-- [Connect to Self-Hosted SigNoz](#connect-to-self-hosted-signoz)
-- [What Can You Do With It?](#what-can-you-do-with-it)
-- [Available Tools](#available-tools)
-- [Environment Variables](#environment-variables)
-- [Claude Desktop Extension](#claude-desktop-extension)
-- [Architecture](#architecture)
-- [Contributing](#contributing)
-
-## Connect to SigNoz Cloud
-
-Connect your AI tool to SigNoz Cloud's hosted MCP server. No installation is required; just add the hosted MCP URL and authenticate.
-
-```text
-https://mcp.<region>.signoz.cloud/mcp
+```
+https://<tenant>.bylonis.ai/mcp
 ```
 
-> Make sure you select the correct region that matches your SigNoz Cloud account. Using the wrong region will result in authentication failures.
->
-> Find your region under **Settings → Ingestion** in SigNoz, or see the [SigNoz Cloud region reference](https://signoz.io/docs/ingestion/signoz-cloud/overview/#endpoint).
+Requests authenticate with a service account API key in the `BYLONIS-API-KEY` header. Create the key in **Settings → Service Accounts**; **Settings → MCP Server** shows ready-to-paste snippets for Cursor, VS Code, Claude Code, Claude Desktop and Codex.
 
-### One-Click Install Links
+Claude Code:
 
-GitHub does not reliably make custom-protocol links like `cursor://` and `vscode:` clickable in README rendering.
+```bash
+claude mcp add --transport http bylonis https://<tenant>.bylonis.ai/mcp \
+  --header "BYLONIS-API-KEY: <your-api-key>"
+```
 
-Use the documentation page for one-click install buttons:
-
-- [Open one-click install links for Cursor](https://signoz.io/docs/ai/signoz-mcp-server/#install-in-one-click)
-- [Open one-click install links for VS Code](https://signoz.io/docs/ai/signoz-mcp-server/#install-in-one-click-1)
-
-If you prefer, use the manual configuration examples below in this README.
-
-### Cursor
-
-#### Manual Configuration
-
-Add this configuration to `.cursor/mcp.json`:
+Any client that accepts a URL plus headers (Cursor `.cursor/mcp.json`, for example):
 
 ```json
 {
   "mcpServers": {
-    "signoz": {
-      "url": "https://mcp.<region>.signoz.cloud/mcp"
+    "bylonis": {
+      "url": "https://<tenant>.bylonis.ai/mcp",
+      "headers": { "BYLONIS-API-KEY": "<your-api-key>" }
     }
   }
 }
 ```
 
-Need help? See the [Cursor MCP docs](https://docs.cursor.com/context/model-context-protocol).
+`SIGNOZ-API-KEY` and `X-SigNoz-*` headers are still accepted until ByLonis v1.1.
 
-### VS Code / GitHub Copilot
+## Running the server
 
-#### Manual Configuration
+The image is published as `ghcr.io/bylonis/bylonis-mcp-server`. To build it or the binary from source:
 
-Add this configuration to `.vscode/mcp.json`:
+```bash
+docker build --build-arg VERSION=dev -t bylonis-mcp-server .
+make build   # bin/bylonis-mcp-server
+```
+
+### Stdio mode
+
+Point your MCP client at the binary; the server talks to one ByLonis instance:
 
 ```json
 {
-  "servers": {
-    "signoz": {
-      "type": "http",
-      "url": "https://mcp.<region>.signoz.cloud/mcp"
+  "mcpServers": {
+    "bylonis": {
+      "command": "/absolute/path/to/bylonis-mcp-server",
+      "env": {
+        "BYLONIS_URL": "https://<tenant>.bylonis.ai",
+        "BYLONIS_API_KEY": "<your-api-key>"
+      }
     }
   }
 }
 ```
 
-Need help? See the [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers).
-
-### Claude Desktop
-
-Add SigNoz Cloud as a custom connector in Claude Desktop:
-
-1. Open Claude Desktop.
-2. Go to **Settings → Developer** (or **Features**, depending on your version).
-3. Click **Add Custom Connector** or **Add Remote MCP Server**.
-4. Enter your SigNoz MCP URL: `https://mcp.<region>.signoz.cloud/mcp`
-
-When prompted, complete the authentication flow.
-
-### Claude Code
-
-Run this command to add the hosted SigNoz MCP server:
+### HTTP mode
 
 ```bash
-claude mcp add --scope user --transport http signoz https://mcp.<region>.signoz.cloud/mcp
-```
-
-After configuring the MCP server, authenticate in a terminal:
-
-```bash
-claude /mcp
-```
-
-Select the `signoz` server and complete the authentication flow.
-
-### OpenAI Codex
-
-Run this command to add the hosted SigNoz MCP server:
-
-```bash
-codex mcp add signoz --url https://mcp.<region>.signoz.cloud/mcp
-```
-
-Or add this configuration to `config.toml`:
-
-```toml
-[mcp_servers.signoz]
-url = "https://mcp.<region>.signoz.cloud/mcp"
-```
-
-After adding the server, authenticate:
-
-```bash
-codex mcp login signoz
-```
-
-Then run `/mcp` inside Codex to verify the connection.
-
-### SigNoz Cloud Authentication
-
-When you add the hosted MCP URL to your client, the client initiates an authentication flow. You will be prompted to enter:
-
-1. Your SigNoz instance URL (for example, `your-instance.signoz.cloud`). Protocol-less URLs are accepted; paths, query parameters, and fragments are ignored.
-2. Your API key
-
-Create an API key in **Settings → API Keys** in SigNoz. Only **Admin** users can create API keys.
-
-## Self-Hosted Installation
-
-### Download Binary (Recommended)
-
-Download the latest binary from [GitHub Releases](https://github.com/SigNoz/signoz-mcp-server/releases):
-
-```bash
-# macOS (Apple Silicon)
-curl -L https://github.com/SigNoz/signoz-mcp-server/releases/latest/download/signoz-mcp-server_darwin_arm64.tar.gz | tar xz
-
-# macOS (Intel)
-curl -L https://github.com/SigNoz/signoz-mcp-server/releases/latest/download/signoz-mcp-server_darwin_amd64.tar.gz | tar xz
-
-# Linux (amd64)
-curl -L https://github.com/SigNoz/signoz-mcp-server/releases/latest/download/signoz-mcp-server_linux_amd64.tar.gz | tar xz
-```
-
-This extracts a `signoz-mcp-server` binary in the current directory. Move it somewhere on your PATH or note the absolute path for the config below.
-
-### Go Install
-
-```bash
-go install github.com/SigNoz/signoz-mcp-server/cmd/server@latest
-```
-
-The binary is installed as `server` to `$GOPATH/bin/` (default: `$HOME/go/bin/server`). You may want to rename it:
-
-```bash
-mv "$(go env GOPATH)/bin/server" "$(go env GOPATH)/bin/signoz-mcp-server"
-```
-
-### Docker
-
-Docker images are available on [Docker Hub](https://hub.docker.com/r/signoz/signoz-mcp-server/tags):
-
-```bash
-docker pull signoz/signoz-mcp-server:latest
-```
-
-Run in HTTP mode:
-
-```bash
-docker run -p 8000:8000 \
-  -e TRANSPORT_MODE=http \
-  -e MCP_SERVER_PORT=8000 \
-  -e BYLONIS_URL=https://your-signoz-instance.com \
-  -e BYLONIS_API_KEY=your-api-key \
-  signoz/signoz-mcp-server:latest
-```
-
-Use a specific version tag (e.g. `v0.1.0`) instead of `latest` for pinned deployments.
-
-### Build from Source
-
-```bash
-git clone https://github.com/SigNoz/signoz-mcp-server.git
-cd signoz-mcp-server
-make build
-```
-
-The binary is at `./bin/signoz-mcp-server`.
-
-## Connect to Self-Hosted SigNoz
-
-### Prerequisites
-
-- A running [SigNoz](https://signoz.io) instance
-- SigNoz v0.120.0 or newer for alert rule tools that use the `/api/v2/rules` APIs
-- A SigNoz API key (Settings → API Keys in the SigNoz UI)
-- The `signoz-mcp-server` binary (see [Self-Hosted Installation](#self-hosted-installation))
-
-### Stdio Mode (Claude Desktop / Cursor / Any MCP Client)
-
-Add this to your MCP client config (`claude_desktop_config.json`, `.cursor/mcp.json`, etc.). Replace the `command` path with the absolute path to your `signoz-mcp-server` binary:
-
-```json
-{
-    "mcpServers": {
-        "signoz": {
-            "command": "/absolute/path/to/signoz-mcp-server",
-            "args": [],
-            "env": {
-                "BYLONIS_URL": "https://your-signoz-instance.com",
-                "BYLONIS_API_KEY": "your-api-key-here",
-                "LOG_LEVEL": "info"
-            }
-        }
-    }
-}
-```
-
-### HTTP Mode
-
-#### With OAuth (Multi-Tenant / Cloud)
-
-Start the server:
-
-```bash
+BYLONIS_URL=https://<tenant>.bylonis.ai \
 TRANSPORT_MODE=http \
 MCP_SERVER_PORT=8000 \
-OAUTH_ENABLED=true \
-OAUTH_TOKEN_SECRET=$(openssl rand -base64 32) \
-OAUTH_ISSUER_URL=https://your-public-mcp-url.com \
-./signoz-mcp-server
+./bylonis-mcp-server
 ```
 
-Client config — just the URL, no keys needed:
+Clients then send their key in `BYLONIS-API-KEY` (as in the snippets above). If `BYLONIS_API_KEY` is also set on the server, clients need no header. Without `BYLONIS_URL`, each request must carry the instance URL in `X-ByLonis-URL`.
 
-```json
-{
-    "mcpServers": {
-        "signoz": {
-            "url": "https://your-public-mcp-url.com/mcp"
-        }
-    }
-}
-```
+With `OAUTH_ENABLED=true` (plus `OAUTH_TOKEN_SECRET` and `OAUTH_ISSUER_URL`) clients only need the URL: they discover the OAuth endpoints, open a browser page that asks for the ByLonis instance URL and API key, and exchange them for scoped tokens.
 
-The client discovers OAuth endpoints automatically, opens a browser for credentials, and handles token exchange.
-
-#### Without OAuth (Simple Setup)
-
-The API key and SigNoz URL only need to be provided in **one** place — either on the server or on the client.
-
-**Option A — Credentials on the server** (simpler client config):
-
-```bash
-BYLONIS_URL=https://your-signoz-instance.com \
-BYLONIS_API_KEY=your-api-key \
-TRANSPORT_MODE=http \
-MCP_SERVER_PORT=8000 \
-./signoz-mcp-server
-```
-
-```json
-{
-    "mcpServers": {
-        "signoz": {
-            "url": "http://localhost:8000/mcp"
-        }
-    }
-}
-```
-
-**Option B — API key on the client** (server holds the URL, client sends the key):
-
-```bash
-BYLONIS_URL=https://your-signoz-instance.com \
-TRANSPORT_MODE=http \
-MCP_SERVER_PORT=8000 \
-./signoz-mcp-server
-```
-
-```json
-{
-    "mcpServers": {
-        "signoz": {
-            "url": "http://localhost:8000/mcp",
-            "headers": {
-                "BYLONIS-API-KEY": "your-api-key-here"
-            }
-        }
-    }
-}
-```
-
-### HTTP Probe Endpoints
-
-HTTP mode exposes unauthenticated probe endpoints. New Kubernetes deployments should use `/livez` for `livenessProbe` and `/readyz` for `readinessProbe`.
+### HTTP probe endpoints
 
 | Endpoint | Purpose |
 |----------|---------|
-| `/livez` | Shallow liveness probe. Returns `200 OK` when the server process can answer HTTP requests. It does not check dependencies. |
-| `/readyz` | Readiness probe. Returns `200 OK` only after the pod is ready to receive traffic; currently this requires the docs index to be ready. Otherwise returns `503`. |
-| `/healthz` | Legacy/generic health check kept for backward compatibility. It follows the same strict status as `/readyz`; use `/livez` for shallow liveness. |
+| `/livez` | Liveness. `200 OK` whenever the process answers HTTP. |
+| `/readyz` | Readiness. `200 OK` once the server can take traffic; with the docs tools enabled it also waits for the docs index (`503` until then). |
+| `/healthz` | Legacy alias of `/readyz`. |
 
-## What Can You Do With It?
+## What can you do with it?
 
 ```
 "Show me all available metrics"
@@ -326,14 +95,13 @@ HTTP mode exposes unauthenticated probe endpoints. New Kubernetes deployments sh
 "Search traces for the checkout service from the last hour"
 "Get details for trace ID abc123"
 "Create a dashboard with CPU and memory widgets"
-"How do I send Docker logs to SigNoz?"
 ```
 
 ## Available Tools
 
-> **SigNoz compatibility:** alert-rule tools target `/api/v2/rules/*`, which is available in SigNoz v0.120.0 and newer. Self-hosted deployments on older SigNoz versions will see HTTP 404 from the affected alert-rule tools. Notification-channel tools target the render-envelope `/api/v1/channels/*` routes introduced by SigNoz/signoz#10941, #10957, #10995, and #10997.
+> **Compatibility:** alert-rule tools target `/api/v2/rules/*` and notification-channel tools the render-envelope `/api/v1/channels/*` routes; every ByLonis release has both.
 
-> **Tool metadata:** every tool accepts `searchContext`, the user's original question/search text. It is used for MCP observability and is not forwarded to SigNoz APIs.
+> **Tool metadata:** every tool accepts `searchContext`, the user's original question/search text. It is used for MCP observability and is not forwarded to the ByLonis API.
 
 | Tool | Description |
 |------|-------------|
@@ -374,11 +142,9 @@ HTTP mode exposes unauthenticated probe endpoints. New Kubernetes deployments sh
 | `bylonis_update_notification_channel` | Update a notification channel and send a test notification |
 | `bylonis_delete_notification_channel` | Delete a notification channel by ID |
 
-For detailed usage and examples, see the [full documentation](https://signoz.io/docs/ai/signoz-mcp-server/).
-
 ### Agent Routing Guidance
 
-Use `bylonis_search_docs` for any SigNoz product question: how-to, feature usage, setup, configuration, API behavior, deployment, instrumentation, OpenTelemetry integration with SigNoz, and troubleshooting. Use live data tools for actual telemetry, alert state, dashboard contents, saved views, and tenant-specific resources. When a docs search result needs exact commands or a specific section, call `bylonis_fetch_doc`.
+When the docs tools are enabled, use `bylonis_search_docs` for product questions: how-to, feature usage, setup, configuration, API behavior, deployment, instrumentation and troubleshooting. Use live data tools for actual telemetry, alert state, dashboard contents, saved views, and tenant-specific resources. When a docs search result needs exact commands or a specific section, call `bylonis_fetch_doc`.
 
 Docs tools use the same authentication path as other MCP tools.
 
@@ -387,14 +153,14 @@ Docs tools use the same authentication path as other MCP tools.
 
 #### `bylonis_list_metrics`
 
-Search and list available metrics from SigNoz. Supports filtering by name substring, time range, and source.
+Search and list available metrics from ByLonis. Supports filtering by name substring, time range, and source.
 
 - **Parameters**:
   - `searchText` (optional) - Filter metrics by name substring (e.g., 'cpu', 'memory')
   - `limit` (optional) - Maximum number of metrics to return (default: 50)
   - `start` (optional) - Start time in unix milliseconds
   - `end` (optional) - End time in unix milliseconds
-  - `source` (optional) - Data-source filter. Use `"meter"` to list Cost Meter metrics — the usage/billing metrics SigNoz meters on (currently telemetry ingestion volume); omit for the default metrics store
+  - `source` (optional) - Data-source filter. Use `"meter"` to list Cost Meter metrics — the usage/billing metrics ByLonis meters on (currently telemetry ingestion volume); omit for the default metrics store
 
 #### `bylonis_query_metrics`
 
@@ -435,7 +201,7 @@ Lists configured alert rules from `GET /api/v2/rules`, including inactive/OK and
 Gets the rule definition for an alert (`GET /api/v2/rules/{ruleId}`).
 
 - **Parameters**: `ruleId` (required) - Alert rule ID (UUIDv7 on v2-capable servers).
-- **Note**: Response shape depends on the SigNoz server version. Post-#10997 servers return the canonical `Rule` type with `createdAt/updatedAt/createdBy/updatedBy`; older servers return `GettableRule` with `createAt/updateAt/createBy/updateBy` (no 'd').
+- **Note**: Response shape depends on the ByLonis server version. Post-#10997 servers return the canonical `Rule` type with `createdAt/updatedAt/createdBy/updatedBy`; older servers return `GettableRule` with `createAt/updateAt/createBy/updateBy` (no 'd').
 
 #### `bylonis_list_dashboards`
 
@@ -508,7 +274,7 @@ Gets alert history timeline for a specific rule.
 
 #### `bylonis_list_views`
 
-List SigNoz saved Explorer views for a given sourcePage. Supports pagination; response includes a `pagination` block with `total`, `hasMore`, and `nextOffset`.
+List ByLonis saved Explorer views for a given sourcePage. Supports pagination; response includes a `pagination` block with `total`, `hasMore`, and `nextOffset`.
 
 - **Parameters**:
   - `sourcePage` (required) - One of: `traces`, `logs`, `metrics`
@@ -525,7 +291,7 @@ Get a single saved view by UUID.
 
 #### `bylonis_search_docs`
 
-Search official SigNoz documentation with BM25 over indexed markdown content.
+Off by default (`BYLONIS_DOCS_TOOLS_ENABLED=true`). Search the bundled upstream documentation corpus with BM25 over indexed markdown content.
 
 - **Parameters**:
   - `query` (required) - Natural-language or keyword query
@@ -535,7 +301,7 @@ Search official SigNoz documentation with BM25 over indexed markdown content.
 
 #### `bylonis_fetch_doc`
 
-Fetch full markdown for one official SigNoz docs page from the local index. Accepts only `https://signoz.io/docs/...` URLs or `/docs/...` paths.
+Off by default (`BYLONIS_DOCS_TOOLS_ENABLED=true`). Fetch full markdown for one page of the bundled upstream documentation corpus. Accepts only URLs or `/docs/...` paths from that corpus.
 
 - **Parameters**:
   - `url` (required) - Docs page URL or path
@@ -578,7 +344,7 @@ Aggregate logs with count, average, sum, min, max, or percentiles, optionally gr
   - `aggregation` (required) - Aggregation function: count, count_distinct, avg, sum, min, max, p50, p75, p90, p95, p99, rate
   - `aggregateOn` (optional) - Field to aggregate on (required for all except count and rate)
   - `groupBy` (optional) - Comma-separated fields to group by (e.g., 'service.name, severity_text')
-  - `filter` (optional) - Filter expression using SigNoz search syntax
+  - `filter` (optional) - Filter expression using ByLonis search syntax
   - `service` (optional) - Shortcut filter for service name
   - `severity` (optional) - Shortcut filter for severity (DEBUG, INFO, WARN, ERROR, FATAL)
   - `orderBy` (optional) - Order expression and direction (e.g., 'count() desc')
@@ -591,7 +357,7 @@ Aggregate logs with count, average, sum, min, max, or percentiles, optionally gr
 Search logs with flexible filtering across all services.
 
 - **Parameters**:
-  - `query` (optional) - Filter expression using SigNoz search syntax (e.g., "service.name = 'payment-svc' AND http.status_code >= 400")
+  - `query` (optional) - Filter expression using ByLonis search syntax (e.g., "service.name = 'payment-svc' AND http.status_code >= 400")
   - `service` (optional) - Service name to filter by
   - `severity` (optional) - Severity filter (DEBUG, INFO, WARN, ERROR, FATAL)
   - `searchText` (optional) - Text to search for in log body (uses CONTAINS matching)
@@ -629,7 +395,7 @@ Get possible values for a specific field key for a given signal.
 Search traces/spans with flexible filtering.
 
 - **Parameters**:
-  - `query` (optional) - Filter expression using SigNoz search syntax (e.g., "service.name = 'payment-svc' AND hasError = true")
+  - `query` (optional) - Filter expression using ByLonis search syntax (e.g., "service.name = 'payment-svc' AND hasError = true")
   - `service` (optional) - Service name to filter by
   - `operation` (optional) - Operation/span name to filter by
   - `error` (optional) - Filter by error status ('true' or 'false')
@@ -647,7 +413,7 @@ Aggregate trace statistics like count, average, sum, min, max, or percentiles ov
   - `aggregation` (required) - Aggregation function: count, count_distinct, avg, sum, min, max, p50, p75, p90, p95, p99, rate
   - `aggregateOn` (optional) - Field to aggregate on (e.g., 'durationNano'). Required for all except count and rate
   - `groupBy` (optional) - Comma-separated fields to group by (e.g., 'service.name, name')
-  - `filter` (optional) - Filter expression using SigNoz search syntax
+  - `filter` (optional) - Filter expression using ByLonis search syntax
   - `service` (optional) - Shortcut filter for service name
   - `operation` (optional) - Shortcut filter for span/operation name
   - `error` (optional) - Shortcut filter for error spans ('true' or 'false')
@@ -671,13 +437,13 @@ Gets trace information including all spans and metadata.
 
 #### `bylonis_create_alert`
 
-Create a new alert rule in SigNoz via `POST /api/v2/rules`.
+Create a new alert rule in ByLonis via `POST /api/v2/rules`.
 
-- **Parameters**: JSON payload matching the SigNoz alert rule schema.
+- **Parameters**: JSON payload matching the ByLonis alert rule schema.
 - **Schema varies by `ruleType`**:
   - `threshold_rule` / `promql_rule` → **v2alpha1** (structured `condition.thresholds`, `evaluation`, `notificationSettings`).
   - `anomaly_rule` → **v1** schema: top-level `evalWindow` and `frequency`; `condition.op`/`matchType`/`target`/`algorithm`/`seasonality`; anomaly function inside `compositeQuery.queries[].spec.functions`. Omit `thresholds`, `evaluation`, `schemaVersion`.
-- **Tip**: Read MCP resources `bylonis://alert/instructions` and `bylonis://alert/examples` (the ten canonical SigNoz PR #11023 payloads plus a Cost Meter cumulative-budget example) before composing payloads. For `promql_rule`, also read `bylonis://promql/instructions` — OTel dotted metric names require the Prometheus 3.x UTF-8 quoted-selector form.
+- **Tip**: Read MCP resources `bylonis://alert/instructions` and `bylonis://alert/examples` (ten canonical payloads plus a Cost Meter cumulative-budget example) before composing payloads. For `promql_rule`, also read `bylonis://promql/instructions` — OTel dotted metric names require the Prometheus 3.x UTF-8 quoted-selector form.
 
 #### `bylonis_update_alert`
 
@@ -702,7 +468,7 @@ Delete a dashboard by UUID.
 
 #### `bylonis_list_notification_channels`
 
-List notification channels configured in SigNoz.
+List notification channels configured in ByLonis.
 
 - **Parameters**:
   - `limit` (optional) - Maximum number of channels to return (default: 50)
@@ -743,15 +509,14 @@ Delete a notification channel by ID (`DELETE /api/v1/channels/{id}`). Irreversib
 
 #### `bylonis_execute_builder_query`
 
-Executes a SigNoz Query Builder v5 query.
+Executes a ByLonis Query Builder v5 query.
 
-- **Parameters**: `query` (required) - Complete SigNoz Query Builder v5 JSON object
+- **Parameters**: `query` (required) - Complete ByLonis Query Builder v5 JSON object
 - **Query types**: the per-envelope `compositeQuery.queries[i].type` selects the spec shape:
   - `builder_query` — signal-specific spec (logs/traces/metrics) with filter, aggregations, groupBy, etc.
   - `builder_formula` — formula expression referencing other query names (e.g. `A / B * 100`).
   - `promql` — `{name, query, disabled, step?, legend?}`. PromQL for OTel metrics requires the Prometheus 3.x UTF-8 quoted-selector form `{"metric.name.with.dots"}`; read the `bylonis://promql/instructions` resource for details.
   - `clickhouse_sql` — `{name, query, disabled, legend?}`.
-- **Documentation**: See [SigNoz Query Builder v5 docs](https://signoz.io/docs/userguide/query-builder-v5/)
 
 </details>
 
@@ -759,8 +524,8 @@ Executes a SigNoz Query Builder v5 query.
 
 | Variable          | Description                                                                    | Required                            |
 | ----------------- | ------------------------------------------------------------------------------ | ----------------------------------- |
-| `BYLONIS_URL`      | SigNoz instance URL                                                            | Yes (stdio); Optional (http with OAuth) |
-| `BYLONIS_API_KEY`  | SigNoz API key (get from Settings → API Keys in the SigNoz UI) | Yes (stdio); Optional (http with OAuth) |
+| `BYLONIS_URL`      | ByLonis instance URL                                                           | Yes (stdio); Optional (http with OAuth) |
+| `BYLONIS_API_KEY`  | ByLonis service account API key (Settings → Service Accounts) | Yes (stdio); Optional (http with OAuth) |
 | `LOG_LEVEL`       | Logging level: `info`(default), `debug`, `warn`, `error`                       | No                                  |
 | `TRANSPORT_MODE`  | MCP transport mode: `stdio`(default) or `http`                                 | No                                  |
 | `MCP_SERVER_PORT` | Port for HTTP transport mode                                                   | Yes only when `TRANSPORT_MODE=http` |
@@ -774,8 +539,8 @@ Executes a SigNoz Query Builder v5 query.
 | `OAUTH_ACCESS_TOKEN_TTL_MINUTES` | Access token lifetime in minutes (default: 60)                  | No                                  |
 | `OAUTH_REFRESH_TOKEN_TTL_MINUTES` | Refresh token lifetime in minutes (default: 1440 / 24h)       | No                                  |
 | `OAUTH_AUTH_CODE_TTL_SECONDS` | Authorization code lifetime in seconds (default: 600 / 10min)      | No                                  |
-| `BYLONIS_CUSTOM_HEADERS` | Extra HTTP headers added to every API request, useful when SigNoz is behind a reverse proxy requiring auth (e.g. `CF-Access-Client-Id:id.access,CF-Access-Client-Secret:secret`). Format: `Key1:Value1,Key2:Value2` | No |
-| `BYLONIS_INSTANCE_URL_ALLOWLIST` | Multi-tenant (http) only: comma-separated allowlist of SigNoz backend hosts the server will proxy to. Entries are exact hosts (`signoz.example.com`) or wildcards (`*.us.signoz.cloud`, which matches any subdomain ending in `.us.signoz.cloud`); a scheme/port/path accidentally included in an entry is tolerated and reduced to the bare host. When set, SigNoz instance URLs that do not match are refused at every ingress: the OAuth setup form and `X-ByLonis-URL` header (or the deprecated `X-SigNoz-URL`) return HTTP 403, the OAuth token endpoint (incl. existing refresh tokens) returns `invalid_grant`, and `/mcp` requests via an OAuth token return 403. All increment a `disallowed_signoz_url`-tagged failure metric for alerting (not logged per-request, to avoid noise from misconfigured/looping clients), and the rejection message points SigNoz Cloud users to their region's MCP URL (`mcp.<region>.signoz.cloud`) with a docs link. Empty/unset allows any host. The operator's own `BYLONIS_URL` is exempt. | No |
+| `BYLONIS_CUSTOM_HEADERS` | Extra HTTP headers added to every API request, useful when ByLonis is behind a reverse proxy requiring auth (e.g. `CF-Access-Client-Id:id.access,CF-Access-Client-Secret:secret`). Format: `Key1:Value1,Key2:Value2` | No |
+| `BYLONIS_INSTANCE_URL_ALLOWLIST` | Multi-tenant (http) only: comma-separated allowlist of ByLonis hosts the server will proxy to. Entries are exact hosts (`houston.bylonis.ai`) or wildcards (`*.bylonis.ai`, which matches any subdomain); a scheme/port/path included by mistake is reduced to the bare host. When set, non-matching instance URLs are refused at every ingress: the OAuth form and `X-ByLonis-URL` header (or the deprecated `X-ByLonis-URL`) get HTTP 403, the OAuth token endpoint (including existing refresh tokens) returns `invalid_grant`, and `/mcp` requests with an OAuth token get 403. Each rejection increments a failure metric tagged `disallowed_bylonis_url`, and the message tells the user to use the MCP URL shown in Settings → MCP Server of their instance. Empty/unset allows any host. The operator's own `BYLONIS_URL` is exempt. | No |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP gRPC endpoint for the MCP server's own traces and metrics. Internal telemetry export is disabled when no OTLP endpoint/exporter is configured. For plaintext collectors, use an `http://` endpoint such as `http://localhost:4317`. | No |
 | `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | Trace-specific OTLP gRPC endpoint; overrides `OTEL_EXPORTER_OTLP_ENDPOINT` for traces. | No |
 | `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` | Metrics-specific OTLP gRPC endpoint; overrides `OTEL_EXPORTER_OTLP_ENDPOINT` for metrics. | No |
@@ -784,29 +549,14 @@ Executes a SigNoz Query Builder v5 query.
 
 The MCP server does not run an OTLP log exporter; logs are emitted as JSON to stderr. `OTEL_LOGS_EXPORTER` is therefore not used.
 
-## Claude Desktop Extension
-
-### Building the Bundle
-
-Requires **Node.js**. See [Anthropic MCPB](https://github.com/anthropics/mcpb) for details.
-
-```bash
-make bundle
-```
-
-### Installing
-
-1. Open **Claude Desktop → Settings → Developer → Edit Config → Add bundle.mcpb**
-2. Select `./bundle/bundle.mcpb`
-3. Enter your `BYLONIS_URL`, `BYLONIS_API_KEY`, and optionally `LOG_LEVEL`
-4. Restart Claude Desktop
-
 ## Architecture
 
 For a detailed overview of request flow, component interactions, and design decisions, see [docs/architecture.md](docs/architecture.md).
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development workflow, required docs/manifest sync for MCP changes, and PR checklist.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and PR checklist.
 
-**Made with ❤️ for the observability community**
+## License
+
+Apache License 2.0; see [LICENSE](LICENSE) and [NOTICE](NOTICE).

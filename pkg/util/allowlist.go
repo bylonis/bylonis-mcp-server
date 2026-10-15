@@ -1,23 +1,19 @@
 package util
 
 import (
-	"fmt"
 	"net"
 	"net/url"
 	"strings"
 )
 
-// MCPDocsURL is linked in allowlist rejection messages.
-const MCPDocsURL = "https://signoz.io/docs/ai/signoz-mcp-server/"
-
-// InstanceURLAllowlist restricts which SigNoz backend hosts a multi-tenant
+// InstanceURLAllowlist restricts which ByLonis backend hosts a multi-tenant
 // deployment will proxy to (see ParseInstanceURLAllowlist). An empty allowlist
 // permits every host.
 type InstanceURLAllowlist struct {
 	// exact holds lowercased hostnames that must match in full.
 	exact map[string]struct{}
-	// suffixes holds dot-anchored suffixes (e.g. ".us.signoz.cloud") derived
-	// from "*.us.signoz.cloud" patterns. A host matches when it ends with the
+	// suffixes holds dot-anchored suffixes (e.g. ".bylonis.ai") derived
+	// from "*.bylonis.ai" patterns. A host matches when it ends with the
 	// suffix and has at least one label in front of it.
 	suffixes []string
 }
@@ -25,10 +21,10 @@ type InstanceURLAllowlist struct {
 // ParseInstanceURLAllowlist parses a comma-separated list of host patterns into a
 // InstanceURLAllowlist. Each non-empty entry is either:
 //
-//   - an exact hostname, e.g. "signoz.example.com"; or
-//   - a wildcard "*.suffix", e.g. "*.us.signoz.cloud", matching any host ending
-//     in ".suffix" across labels ("*.signoz.cloud" matches
-//     "tough-gecko.us.signoz.cloud"); the bare apex "us.signoz.cloud" is not.
+//   - an exact hostname, e.g. "bylonis.example.com"; or
+//   - a wildcard "*.suffix", e.g. "*.bylonis.ai", matching any host ending
+//     in ".suffix" across labels ("*.bylonis.ai" matches
+//     "houston.eu.bylonis.ai"); the bare apex "bylonis.ai" is not.
 //
 // Matching is host-only and case-insensitive; a pasted scheme/port/path in an
 // entry is stripped to the bare host.
@@ -112,11 +108,10 @@ func stripToHostPattern(pattern string) string {
 	return pattern
 }
 
-// InstanceURLNotPermittedMessage is the rejection message for a SigNoz URL the
-// allowlist refuses: SigNoz Cloud users should use their region's MCP URL and
-// self-hosted users should run their own MCP. Links to the docs.
+// InstanceURLNotPermittedMessage is the rejection message for a ByLonis URL the
+// allowlist refuses: the user should connect to the MCP URL of their own
+// instance, shown in its Settings → MCP Server page.
 func InstanceURLNotPermittedMessage() string {
-	return fmt.Sprintf("This SigNoz instance is not served by this MCP endpoint. SigNoz Cloud users must use their "+
-		"region's MCP URL (https://mcp.<region>.signoz.cloud/mcp); self-hosted users should run the SigNoz MCP "+
-		"server themselves. Docs: %s", MCPDocsURL)
+	return "This ByLonis instance is not served by this MCP endpoint. Use the MCP URL shown in " +
+		"Settings → MCP Server of your ByLonis instance."
 }
