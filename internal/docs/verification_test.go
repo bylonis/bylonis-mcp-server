@@ -114,10 +114,10 @@ func TestForcedFullRefresh(t *testing.T) {
 	require.Contains(t, snapshot.Pages[0].BodyMarkdown, "Docker Compose")
 
 	metrics := collectDocsMetrics(t, reader)
-	require.Equal(t, int64(1), int64GaugeValue(t, metrics, "signoz_docs_index_doc_count"))
-	require.Equal(t, int64(2), int64GaugeValue(t, metrics, "signoz_docs_index_generation"))
-	require.Equal(t, approximateCorpusSizeBytes(snapshot), int64GaugeValue(t, metrics, "signoz_docs_index_size_bytes"))
-	require.Less(t, float64GaugeValue(t, metrics, "signoz_docs_index_age_seconds"), 10.0)
+	require.Equal(t, int64(1), int64GaugeValue(t, metrics, "bylonis_docs_index_doc_count"))
+	require.Equal(t, int64(2), int64GaugeValue(t, metrics, "bylonis_docs_index_generation"))
+	require.Equal(t, approximateCorpusSizeBytes(snapshot), int64GaugeValue(t, metrics, "bylonis_docs_index_size_bytes"))
+	require.Less(t, float64GaugeValue(t, metrics, "bylonis_docs_index_age_seconds"), 10.0)
 }
 
 func TestSingleflightSerialization(t *testing.T) {
@@ -188,11 +188,11 @@ func TestRecordDocsIndexMetrics(t *testing.T) {
 	require.True(t, reg.RecordMetrics(context.Background(), meters))
 
 	metrics := collectDocsMetrics(t, reader)
-	require.Equal(t, int64(len(snapshot.Pages)), int64GaugeValue(t, metrics, "signoz_docs_index_doc_count"))
-	require.Equal(t, int64(2), int64GaugeValue(t, metrics, "signoz_docs_index_generation"))
-	require.Equal(t, approximateCorpusSizeBytes(snapshot), int64GaugeValue(t, metrics, "signoz_docs_index_size_bytes"))
+	require.Equal(t, int64(len(snapshot.Pages)), int64GaugeValue(t, metrics, "bylonis_docs_index_doc_count"))
+	require.Equal(t, int64(2), int64GaugeValue(t, metrics, "bylonis_docs_index_generation"))
+	require.Equal(t, approximateCorpusSizeBytes(snapshot), int64GaugeValue(t, metrics, "bylonis_docs_index_size_bytes"))
 
-	age := float64GaugeValue(t, metrics, "signoz_docs_index_age_seconds")
+	age := float64GaugeValue(t, metrics, "bylonis_docs_index_age_seconds")
 	require.GreaterOrEqual(t, age, 2*time.Hour.Seconds())
 	require.Less(t, age, 2*time.Hour.Seconds()+10)
 }
@@ -501,7 +501,7 @@ func newDocsTestMeters(t *testing.T) (*sdkmetric.ManualReader, *otelpkg.Meters) 
 func docsRefreshMetricValue(t *testing.T, reader *sdkmetric.ManualReader, outcome string) int64 {
 	t.Helper()
 	rm := collectDocsMetrics(t, reader)
-	sum, ok := oteltest.FindInt64SumMetric(rm, "signoz_docs_refresh_total")
+	sum, ok := oteltest.FindInt64SumMetric(rm, "bylonis_docs_refresh_total")
 	require.True(t, ok)
 	for _, dp := range sum.DataPoints {
 		if attrValue(dp.Attributes, "outcome") == outcome {

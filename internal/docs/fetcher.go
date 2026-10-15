@@ -201,7 +201,7 @@ func defaultUserAgent() string {
 	if ver == "" {
 		ver = "dev"
 	}
-	return fmt.Sprintf("signoz-mcp-server/%s (+https://github.com/bylonis/bylonis-mcp-server; docs-indexer)", ver)
+	return fmt.Sprintf("bylonis-mcp-server/%s (+https://github.com/bylonis/bylonis-mcp-server; docs-indexer)", ver)
 }
 
 func RemoteHost(remoteAddr string) string {

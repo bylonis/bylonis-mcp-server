@@ -458,7 +458,7 @@ func TestDoRequest_RetryLogsDebugThenWarn(t *testing.T) {
 		case "Retryable status, will retry":
 			assert.Equal(t, "DEBUG", rec["level"])
 			sawRetryDebug = true
-		case "SigNoz request returned unexpected status":
+		case "ByLonis request returned unexpected status":
 			assert.Equal(t, "WARN", rec["level"])
 			assert.Equal(t, true, rec["retryable"])
 			assert.Equal(t, true, rec["retries_exhausted"])
@@ -502,7 +502,7 @@ func TestDoRequest_SucceedsAfterRetryWithoutRetriesExhaustedLog(t *testing.T) {
 		switch rec["msg"] {
 		case "Retryable status, will retry":
 			sawRetryDebug = true
-		case "SigNoz request returned unexpected status":
+		case "ByLonis request returned unexpected status":
 			t.Fatalf("unexpected terminal warn log on eventual success: %v", rec)
 		}
 		if _, ok := rec["retries_exhausted"]; ok {
@@ -540,7 +540,7 @@ func TestDoRequest_NonRetryableStatusOmitsRetriesExhausted(t *testing.T) {
 		if rec["msg"] == "Retryable status, will retry" {
 			sawRetryDebug = true
 		}
-		if rec["msg"] != "SigNoz request returned unexpected status" {
+		if rec["msg"] != "ByLonis request returned unexpected status" {
 			continue
 		}
 		assert.Equal(t, "WARN", rec["level"])

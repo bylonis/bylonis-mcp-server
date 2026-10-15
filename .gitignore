@@ -8,7 +8,7 @@
 *__debug_*
 *.so
 *.dylib
-signoz-mcp-server
+bylonis-mcp-server
 
 # Test binary, built with `go test -c`
 *.test

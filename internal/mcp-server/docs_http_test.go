@@ -40,13 +40,38 @@ func TestReadinessAndHealthEndpointsTrackDocsIndex(t *testing.T) {
 		}
 	})
 
-	t.Run("not ready while docs index is placeholder", func(t *testing.T) {
+	t.Run("ready without docs index when docs tools are disabled", func(t *testing.T) {
 		logger := logpkg.New("error")
 		cfg := &config.Config{
 			TransportMode:   "http",
 			Port:            "0",
 			ClientCacheSize: 8,
 			ClientCacheTTL:  time.Minute,
+		}
+		h := tools.NewHandler(logger, cfg)
+		m := NewMCPServer(logger, h, cfg, nil, nil)
+		s := server.NewMCPServer("BylonisMCP", version.Version, server.WithToolCapabilities(false), server.WithRecovery())
+
+		handler := m.buildHTTP(s).Handler
+		for _, path := range []string{"/readyz", "/healthz"} {
+			t.Run(path, func(t *testing.T) {
+				req := httptest.NewRequest(http.MethodGet, path, nil)
+				rr := httptest.NewRecorder()
+				handler.ServeHTTP(rr, req)
+				require.Equal(t, http.StatusOK, rr.Code)
+				require.Equal(t, "ok", rr.Body.String())
+			})
+		}
+	})
+
+	t.Run("not ready while docs index is placeholder", func(t *testing.T) {
+		logger := logpkg.New("error")
+		cfg := &config.Config{
+			TransportMode:    "http",
+			Port:             "0",
+			ClientCacheSize:  8,
+			ClientCacheTTL:   time.Minute,
+			DocsToolsEnabled: true,
 		}
 		h := tools.NewHandler(logger, cfg)
 		ctx, cancel := context.WithCancel(context.Background())

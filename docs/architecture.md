@@ -1,4 +1,4 @@
-# SigNoz MCP Server — Architecture
+# ByLonis MCP Server — Architecture
 
 ## System Overview
 
@@ -47,7 +47,7 @@ subgraph HTTPPath["HTTP Transport — Multi Tenant"]
     APIKEY -->|No + env set| ENVKEY["Use config.APIKey"]
     APIKEY -->|No + no env| DENY["401 Unauthorized"]
 
-    AUTH --> URLCHECK{"SigNoz URL source?"}
+    AUTH --> URLCHECK{"ByLonis URL source?"}
     URLCHECK -->|OAuth token| FROMTOKEN["Already extracted<br/>from decrypted token"]
     URLCHECK -->|X-ByLonis-URL header| NORMALIZE["normalizeSigNozURL"]
     URLCHECK -->|env set| ENVURL["Use config.URL"]
@@ -77,8 +77,8 @@ subgraph OAuthFlow["OAuth 2.1 Flow (Stateless)"]
     DISC --> REGCLIENT["POST /oauth/register<br/>{client_name, redirect_uris}"]
     REGCLIENT --> ENCID["client_id = encrypt(redirect_uris, name)"]
     ENCID --> AUTHPAGE["GET /oauth/authorize<br/>Browser opens, user sees form"]
-    AUTHPAGE --> SUBMIT["POST /oauth/authorize<br/>User submits SigNoz URL + API key"]
-    SUBMIT --> VALIDATE["Normalize SigNoz URL and validate<br/>credentials against SigNoz API"]
+    AUTHPAGE --> SUBMIT["POST /oauth/authorize<br/>User submits ByLonis URL + API key"]
+    SUBMIT --> VALIDATE["Normalize ByLonis URL and validate<br/>credentials against ByLonis API"]
     VALIDATE -->|success| ENCCODE["auth_code = encrypt(api_key, signoz_url,<br/>client_id, redirect_uri, code_challenge)"]
     VALIDATE -->|invalid URL / rejected creds / unreachable instance| AUTHPAGEERR["Re-render authorize page<br/>with inline error"]
     ENCCODE --> REDIRECT["302 Redirect to client<br/>with ?code=encrypted"]
@@ -103,7 +103,7 @@ subgraph GetClient["GetClient — Unified for Both Transports"]
 
     HASH --> LOOKUP{"clientCache LRU hit?"}
     LOOKUP -->|Yes| HIT["Return cached client"]
-    LOOKUP -->|No| CREATE["Create new SigNoz client and cache it"]
+    LOOKUP -->|No| CREATE["Create new ByLonis client and cache it"]
 
     CREATE --> HIT
 end
@@ -112,12 +112,12 @@ subgraph Cache["Bounded Cache (expirable LRU)"]
     LRU_C["clientCache<br/>maxSize: 256, TTL: 30min"]
 end
 
-subgraph APICall["SigNoz API Call"]
-    CLIENT["SigNoz Client<br/>(otelhttp instrumented)"]
+subgraph APICall["ByLonis API Call"]
+    CLIENT["ByLonis Client<br/>(otelhttp instrumented)"]
     CLIENT --> APIREQ["HTTP Request with BYLONIS-API-KEY header"]
-    APIREQ --> S1["SigNoz Instance 1"]
-    APIREQ --> S2["SigNoz Instance 2"]
-    APIREQ --> SN["SigNoz Instance N"]
+    APIREQ --> S1["ByLonis Instance 1"]
+    APIREQ --> S2["ByLonis Instance 2"]
+    APIREQ --> SN["ByLonis Instance N"]
 end
 
 TOOL_S --> TOOL
@@ -133,7 +133,7 @@ The Streamable HTTP transport (`/mcp`) runs fully stateless: the server is built
 `WithStateLess(true)`, so it issues no `Mcp-Session-Id` and registers no session state for
 POST requests. (An open GET listening stream still holds transient SDK-level stream state for
 its lifetime, which is harmless here — see below.) Every request is self-contained — auth
-credentials and the SigNoz URL are resolved per request in `authMiddleware` (from the OAuth
+credentials and the ByLonis URL are resolved per request in `authMiddleware` (from the OAuth
 token, headers, or env), tools and resources are static, and the server uses no sampling or
 server→client messaging.
 
@@ -169,4 +169,4 @@ Since tokens are self-contained encrypted blobs, any server instance with the sa
 
 ### Backward Compatibility
 
-The auth middleware tries OAuth token decryption first. If decryption fails (e.g., the Bearer token is a plain SigNoz API key), it falls back to the legacy `Authorization` header + `X-ByLonis-URL` header approach (`X-SigNoz-URL` is still accepted until v1.1). Existing integrations continue to work without changes.
+The auth middleware tries OAuth token decryption first. If decryption fails (e.g., the Bearer token is a plain ByLonis API key), it falls back to the legacy `Authorization` header + `X-ByLonis-URL` header approach (`X-ByLonis-URL` is still accepted until v1.1). Existing integrations continue to work without changes.
