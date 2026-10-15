@@ -2,7 +2,7 @@ package dashboardbuilder
 
 import "encoding/json"
 
-// DashboardData is the structured representation of a SigNoz dashboard's "data" field.
+// DashboardData is the structured representation of a ByLonis dashboard's "data" field.
 // It corresponds to the TypeScript DashboardData interface on the frontend.
 // Public dashboard fields (timeRangeEnabled, defaultTimeRange, publicPath) are
 // deliberately excluded — dashboards default to private.
@@ -152,13 +152,13 @@ type PanelMapEntry struct {
 }
 
 // Threshold represents a visual threshold on a chart.
-// Fields match the SigNoz frontend schema (types.Threshold).
+// Fields match the ByLonis frontend schema (types.Threshold).
 //
-// thresholdFormat: only "Text" or "Background" are accepted by SigNoz.
+// thresholdFormat: only "Text" or "Background" are accepted by ByLonis.
 //   - "Text"       colors the threshold value label.
 //   - "Background" tints the panel area when the operator+value condition holds.
 //
-// SigNoz does NOT support a Grafana-style "Line" marker on timeseries panels.
+// ByLonis does NOT support a Grafana-style "Line" marker on timeseries panels.
 //
 // thresholdOperator: one of ">", "<", ">=", "<=", "=".
 type Threshold struct {

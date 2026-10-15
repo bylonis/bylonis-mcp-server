@@ -359,8 +359,8 @@ HTTP mode exposes unauthenticated probe endpoints. New Kubernetes deployments sh
 | `bylonis_get_service_top_operations` | Get top operations for a service |
 | `bylonis_list_views` | List saved Explorer views for a sourcePage (traces/logs/metrics) |
 | `bylonis_get_view` | Get a saved view by UUID |
-| `bylonis_search_docs` | Search official SigNoz docs for product, setup, instrumentation, config, API, deployment, or troubleshooting questions |
-| `bylonis_fetch_doc` | Fetch full markdown for one official SigNoz docs page or heading |
+| `bylonis_search_docs` | Off by default (`BYLONIS_DOCS_TOOLS_ENABLED`). Search the upstream project docs for product, setup, instrumentation, config, API, deployment, or troubleshooting questions |
+| `bylonis_fetch_doc` | Off by default (`BYLONIS_DOCS_TOOLS_ENABLED`). Fetch full markdown for one upstream docs page or heading |
 | `bylonis_create_view` | Create a new saved Explorer view |
 | `bylonis_update_view` | Replace an existing saved view (full-body PUT) |
 | `bylonis_delete_view` | Delete a saved view by UUID |
@@ -559,7 +559,7 @@ Fetch full markdown for one official SigNoz docs page from the local index. Acce
   - `heading` (optional) - Heading anchor ID or heading text
   - `searchContext` - User's original question
 
-#### `signoz://docs/sitemap`
+#### `bylonis://docs/sitemap`
 
 Read-only MCP resource containing the indexed docs sitemap used by the docs search and fetch tools.
 
@@ -568,7 +568,7 @@ Read-only MCP resource containing the indexed docs sitemap used by the docs sear
 Create a new saved Explorer view.
 
 - **Parameters**: JSON payload matching the `SavedView` schema.
-- **Tip**: Read MCP resources `signoz://view/instructions` and `signoz://view/examples` before composing payloads.
+- **Tip**: Read MCP resources `bylonis://view/instructions` and `bylonis://view/examples` before composing payloads.
 
 #### `bylonis_update_view`
 
@@ -577,7 +577,7 @@ Replace an existing saved view (full-body PUT).
 - **Parameters**:
   - `viewId` (required) - UUID of the view to replace
   - `view` (required) - Full `SavedView` object (`name`, `sourcePage`, `compositeQuery`, plus any of `category`, `tags`, `extraData`)
-- **Tip**: Read MCP resources `signoz://view/instructions` and `signoz://view/examples` before composing payloads. Call `bylonis_get_view` first, pass its `data` object under `view` with whichever fields changed. Partial bodies wipe unspecified fields.
+- **Tip**: Read MCP resources `bylonis://view/instructions` and `bylonis://view/examples` before composing payloads. Call `bylonis_get_view` first, pass its `data` object under `view` with whichever fields changed. Partial bodies wipe unspecified fields.
 
 #### `bylonis_delete_view`
 
@@ -694,7 +694,7 @@ Create a new alert rule in SigNoz via `POST /api/v2/rules`.
 - **Schema varies by `ruleType`**:
   - `threshold_rule` / `promql_rule` → **v2alpha1** (structured `condition.thresholds`, `evaluation`, `notificationSettings`).
   - `anomaly_rule` → **v1** schema: top-level `evalWindow` and `frequency`; `condition.op`/`matchType`/`target`/`algorithm`/`seasonality`; anomaly function inside `compositeQuery.queries[].spec.functions`. Omit `thresholds`, `evaluation`, `schemaVersion`.
-- **Tip**: Read MCP resources `signoz://alert/instructions` and `signoz://alert/examples` (the ten canonical SigNoz PR #11023 payloads plus a Cost Meter cumulative-budget example) before composing payloads. For `promql_rule`, also read `signoz://promql/instructions` — OTel dotted metric names require the Prometheus 3.x UTF-8 quoted-selector form.
+- **Tip**: Read MCP resources `bylonis://alert/instructions` and `bylonis://alert/examples` (the ten canonical SigNoz PR #11023 payloads plus a Cost Meter cumulative-budget example) before composing payloads. For `promql_rule`, also read `bylonis://promql/instructions` — OTel dotted metric names require the Prometheus 3.x UTF-8 quoted-selector form.
 
 #### `bylonis_update_alert`
 
@@ -766,7 +766,7 @@ Executes a SigNoz Query Builder v5 query.
 - **Query types**: the per-envelope `compositeQuery.queries[i].type` selects the spec shape:
   - `builder_query` — signal-specific spec (logs/traces/metrics) with filter, aggregations, groupBy, etc.
   - `builder_formula` — formula expression referencing other query names (e.g. `A / B * 100`).
-  - `promql` — `{name, query, disabled, step?, legend?}`. PromQL for OTel metrics requires the Prometheus 3.x UTF-8 quoted-selector form `{"metric.name.with.dots"}`; read the `signoz://promql/instructions` resource for details.
+  - `promql` — `{name, query, disabled, step?, legend?}`. PromQL for OTel metrics requires the Prometheus 3.x UTF-8 quoted-selector form `{"metric.name.with.dots"}`; read the `bylonis://promql/instructions` resource for details.
   - `clickhouse_sql` — `{name, query, disabled, legend?}`.
 - **Documentation**: See [SigNoz Query Builder v5 docs](https://signoz.io/docs/userguide/query-builder-v5/)
 
@@ -782,6 +782,7 @@ Executes a SigNoz Query Builder v5 query.
 | `TRANSPORT_MODE`  | MCP transport mode: `stdio`(default) or `http`                                 | No                                  |
 | `MCP_SERVER_PORT` | Port for HTTP transport mode                                                   | Yes only when `TRANSPORT_MODE=http` |
 | `MCP_MAX_REQUEST_BYTES` | Max inbound MCP HTTP request body size in bytes (default: `4194304` / 4 MiB). Bounds memory from a single oversized request. | No |
+| `BYLONIS_DOCS_TOOLS_ENABLED` | Register `bylonis_search_docs` and `bylonis_fetch_doc` (default: `false`). Their corpus is the upstream documentation, so they stay off until ByLonis publishes its own docs; when off, the docs index is not loaded or refreshed | No |
 | `BYLONIS_DOCS_REFRESH_INTERVAL` | Runtime docs sitemap refresh interval (Go duration, default: `6h`) | No |
 | `BYLONIS_DOCS_FULL_REFRESH_INTERVAL` | Runtime full docs refresh interval (Go duration, default: `24h`) | No |
 | `OAUTH_ENABLED`   | Enable OAuth 2.1 authentication flow (`true`/`false`)                          | No (default: `false`)               |
@@ -791,7 +792,7 @@ Executes a SigNoz Query Builder v5 query.
 | `OAUTH_REFRESH_TOKEN_TTL_MINUTES` | Refresh token lifetime in minutes (default: 1440 / 24h)       | No                                  |
 | `OAUTH_AUTH_CODE_TTL_SECONDS` | Authorization code lifetime in seconds (default: 600 / 10min)      | No                                  |
 | `BYLONIS_CUSTOM_HEADERS` | Extra HTTP headers added to every API request, useful when SigNoz is behind a reverse proxy requiring auth (e.g. `CF-Access-Client-Id:id.access,CF-Access-Client-Secret:secret`). Format: `Key1:Value1,Key2:Value2` | No |
-| `BYLONIS_INSTANCE_URL_ALLOWLIST` | Multi-tenant (http) only: comma-separated allowlist of SigNoz backend hosts the server will proxy to. Entries are exact hosts (`signoz.example.com`) or wildcards (`*.us.signoz.cloud`, which matches any subdomain ending in `.us.signoz.cloud`); a scheme/port/path accidentally included in an entry is tolerated and reduced to the bare host. When set, SigNoz instance URLs that do not match are refused at every ingress: the OAuth setup form and `X-SigNoz-URL` header return HTTP 403, the OAuth token endpoint (incl. existing refresh tokens) returns `invalid_grant`, and `/mcp` requests via an OAuth token return 403. All increment a `disallowed_signoz_url`-tagged failure metric for alerting (not logged per-request, to avoid noise from misconfigured/looping clients), and the rejection message points SigNoz Cloud users to their region's MCP URL (`mcp.<region>.signoz.cloud`) with a docs link. Empty/unset allows any host. The operator's own `BYLONIS_URL` is exempt. | No |
+| `BYLONIS_INSTANCE_URL_ALLOWLIST` | Multi-tenant (http) only: comma-separated allowlist of SigNoz backend hosts the server will proxy to. Entries are exact hosts (`signoz.example.com`) or wildcards (`*.us.signoz.cloud`, which matches any subdomain ending in `.us.signoz.cloud`); a scheme/port/path accidentally included in an entry is tolerated and reduced to the bare host. When set, SigNoz instance URLs that do not match are refused at every ingress: the OAuth setup form and `X-ByLonis-URL` header (or the deprecated `X-SigNoz-URL`) return HTTP 403, the OAuth token endpoint (incl. existing refresh tokens) returns `invalid_grant`, and `/mcp` requests via an OAuth token return 403. All increment a `disallowed_signoz_url`-tagged failure metric for alerting (not logged per-request, to avoid noise from misconfigured/looping clients), and the rejection message points SigNoz Cloud users to their region's MCP URL (`mcp.<region>.signoz.cloud`) with a docs link. Empty/unset allows any host. The operator's own `BYLONIS_URL` is exempt. | No |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP gRPC endpoint for the MCP server's own traces and metrics. Internal telemetry export is disabled when no OTLP endpoint/exporter is configured. For plaintext collectors, use an `http://` endpoint such as `http://localhost:4317`. | No |
 | `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | Trace-specific OTLP gRPC endpoint; overrides `OTEL_EXPORTER_OTLP_ENDPOINT` for traces. | No |
 | `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` | Metrics-specific OTLP gRPC endpoint; overrides `OTEL_EXPORTER_OTLP_ENDPOINT` for metrics. | No |

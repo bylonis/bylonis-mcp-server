@@ -23,8 +23,8 @@ func (h *Handler) RegisterDocsHandlers(s *server.MCPServer) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
-		mcp.WithDescription("Search official SigNoz documentation with BM25 over full markdown content. Use this for ANY SigNoz product question: how-to, feature usage, setup, config, API, deployment, instrumentation, OpenTelemetry integration with SigNoz, and troubleshooting. Call before data tools for ambiguous how-to questions, and after data tools when live telemetry results are confusing. Do not use for fetching actual telemetry, live alert state, or dashboard contents."),
-		mcp.WithString("query", mcp.Required(), mcp.Description("Natural-language or keyword query to search in official SigNoz docs.")),
+		mcp.WithDescription("Search the documentation of the upstream open-source project ByLonis derives from, with BM25 over full markdown content. Use this for product questions: how-to, feature usage, setup, config, API, deployment, instrumentation, OpenTelemetry integration, and troubleshooting. Tell the user the answer comes from upstream documentation and may differ from ByLonis. Call before data tools for ambiguous how-to questions, and after data tools when live telemetry results are confusing. Do not use for fetching actual telemetry, live alert state, or dashboard contents."),
+		mcp.WithString("query", mcp.Required(), mcp.Description("Natural-language or keyword query to search in the upstream docs.")),
 		mcp.WithNumber("limit", mcp.Description("Maximum results to return. Default 10, max 25.")),
 		mcp.WithString("section_slug", mcp.Description(`Optional exact top-level docs section filter, for example "setup", "logs-management", "apm-distributed-tracing", "metrics", "alerts", "dashboards", "signoz-apis", "querying", or "collection-agents".`)),
 	)
@@ -34,7 +34,7 @@ func (h *Handler) RegisterDocsHandlers(s *server.MCPServer) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
-		mcp.WithDescription("Fetch full markdown for one official SigNoz documentation page from the local docs index. Use after bylonis_search_docs when a result needs detail, exact commands, prerequisites, or a specific section. Accepts only signoz.io/docs URLs or /docs/... paths."),
+		mcp.WithDescription("Fetch full markdown for one upstream documentation page from the local docs index. Use after bylonis_search_docs when a result needs detail, exact commands, prerequisites, or a specific section. Accepts only signoz.io/docs URLs or /docs/... paths."),
 		mcp.WithString("url", mcp.Required(), mcp.Description("Full https://signoz.io/docs/... URL or /docs/... path.")),
 		mcp.WithString("heading", mcp.Description(`Optional heading anchor ID or heading text, for example "prerequisites" or "## Prerequisites".`)),
 	)
@@ -42,8 +42,8 @@ func (h *Handler) RegisterDocsHandlers(s *server.MCPServer) {
 
 	sitemap := mcp.NewResource(
 		docsindex.DocsSitemapURI,
-		"SigNoz Docs Sitemap",
-		mcp.WithResourceDescription("Indexed SigNoz docs sitemap used by bylonis_search_docs and bylonis_fetch_doc."),
+		"Upstream Docs Sitemap",
+		mcp.WithResourceDescription("Indexed upstream docs sitemap used by bylonis_search_docs and bylonis_fetch_doc."),
 		mcp.WithMIMEType("text/markdown"),
 	)
 	s.AddResource(sitemap, h.handleDocsSitemap)

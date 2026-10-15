@@ -1,20 +1,19 @@
 // Package promql exposes the canonical PromQL writing guide served as the
-// signoz://promql/instructions MCP resource. The guide is consumed by both
+// bylonis://promql/instructions MCP resource. The guide is consumed by both
 // promql_rule alerts and PromQL dashboard widgets, so it lives in its own
 // package rather than under pkg/dashboard.
 package promql
 
-// Instructions is the text served as the signoz://promql/instructions MCP
-// resource. Cross-referenced from signoz://alert/instructions, the
+// Instructions is the text served as the bylonis://promql/instructions MCP
+// resource. Cross-referenced from bylonis://alert/instructions, the
 // bylonis_create_alert / bylonis_update_alert / bylonis_execute_builder_query
 // tool descriptions, and the dashboard widgets-instructions resource.
 const Instructions = `
-SigNoz PromQL Guide
-Source: https://signoz.io/docs/userguide/write-a-prom-query-with-new-format/
+ByLonis PromQL Guide
 ================================================================================
 CRITICAL RULES
 ================================================================================
-When writing PromQL queries in SigNoz, you MUST follow these rules:
+When writing PromQL queries in ByLonis, you MUST follow these rules:
 1. Metric names with dots MUST be quoted and wrapped in curly braces
 2. Label names with dots MUST be quoted
 3. Metric name MUST be the first parameter inside curly braces (without a label operator)
@@ -109,8 +108,8 @@ Correct Versions:
 ================================================================================
 PROMETHEUS 3.X UTF-8 QUOTED SELECTOR (OTEL METRIC NAMES WITH DOTS)
 ================================================================================
-OTel metrics in SigNoz are stored with their original dotted names (e.g. payment_latency_ms.bucket,
-http.server.duration.bucket). Standard Prometheus name forms do NOT resolve these in SigNoz's PromQL
+OTel metrics in ByLonis are stored with their original dotted names (e.g. payment_latency_ms.bucket,
+http.server.duration.bucket). Standard Prometheus name forms do NOT resolve these in ByLonis's PromQL
 layer. The canonical way to reference dotted names is the Prometheus 3.x UTF-8 quoted selector
 inside curly braces: {"metric.name.with.dots"}.
 
@@ -123,7 +122,7 @@ instant vectors, rate(), sum(), histogram_quantile(), etc).
 Forms that DO NOT work for dotted OTel names:
   Form                    | Example                                              | Result
   ------------------------|------------------------------------------------------|-----------------------------------------------
-  Underscored conversion  | rate(payment_latency_ms_bucket[5m])                  | no data — SigNoz does not rename to underscores
+  Underscored conversion  | rate(payment_latency_ms_bucket[5m])                  | no data — ByLonis does not rename to underscores
   __name__ selector       | rate({__name__="payment_latency_ms.bucket"}[5m])     | no data — dots rejected inside the value
   Bare dotted name        | rate(payment_latency_ms.bucket[5m])                  | no data — dot is not a legal identifier char
 
@@ -152,7 +151,7 @@ freely within the same call:
 
 Vector matching operators follow the same rule:
 
-  # from SigNoz PR #11023 — consumer-group lag (max lag end offset - committed offset)
+  # from upstream PR #11023 — consumer-group lag (max lag end offset - committed offset)
   (
     max by(topic, partition, "deployment.environment") (kafka_log_end_offset)
     - on(topic, partition, "deployment.environment") group_right
@@ -187,5 +186,5 @@ SUMMARY
 Always use the new format for consistency and OpenTelemetry compatibility.
 Key takeaway: Wrap everything in curly braces, quote anything with dots, metric name goes first.
 For dotted OTel names use the Prometheus 3.x UTF-8 quoted selector form {"metric.name.with.dots"} —
-no other form resolves in SigNoz's PromQL layer.
+no other form resolves in ByLonis's PromQL layer.
 `

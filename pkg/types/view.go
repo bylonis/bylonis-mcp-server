@@ -2,7 +2,7 @@ package types
 
 import "encoding/json"
 
-// SavedView mirrors the SigNoz server SavedView model
+// SavedView mirrors the ByLonis server SavedView model
 // (pkg/query-service/model/v3/v3.go). Used for responses and internal
 // wire formatting.
 type SavedView struct {

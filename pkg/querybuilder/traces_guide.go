@@ -1,7 +1,7 @@
 package querybuilder
 
 const TracesQueryBuilderGuide = `
-=== SIGNOZ QUERY BUILDER V5 — TRACES GUIDE ===
+=== BYLONIS QUERY BUILDER V5 — TRACES GUIDE ===
 
 == FILTER EXPRESSION FORMAT ==
 
@@ -55,7 +55,7 @@ OTel resource attributes set by the SDK/collector on the originating entity:
   k8s.pod.name              string — Kubernetes pod name
   k8s.node.name             string — Kubernetes node name
   k8s.cluster.name          string — Kubernetes cluster name
-  signoz.deployment.tier    string — custom deployment tier tag
+  app.deployment.tier       string — custom deployment tier tag
   host.name                 string — host name
 
 selectFields entry (fieldContext: "resource" required):

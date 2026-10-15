@@ -25,7 +25,7 @@
 - New tool `signoz_query_metrics` to be a high-level wrapper over `signoz_execute_builder_query`
 - Always call `signoz_list_metrics` first to get type/temporality/isMonotonic before querying
 - Aggregation validation and smart defaults driven by metric type metadata
-- MCP resource `signoz://metrics-aggregation-guide` to serve the full rules guide (keeps tool description concise)
+- MCP resource `bylonis://metrics-aggregation-guide` to serve the full rules guide (keeps tool description concise)
 - MetricAggregation struct needed in `pkg/types/querybuilder.go`
 - `BuildMetricsQueryPayload` helper to be added alongside existing `BuildLogsQueryPayload` / `BuildTracesQueryPayload`
 

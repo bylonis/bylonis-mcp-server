@@ -19,12 +19,12 @@ func (h *Handler) RegisterMetricsHandlers(s *server.MCPServer) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
-		mcp.WithDescription("Search and list available metrics from SigNoz. Supports filtering by name substring, time range, and source. Use searchText to find metrics by name."),
+		mcp.WithDescription("Search and list available metrics from ByLonis. Supports filtering by name substring, time range, and source. Use searchText to find metrics by name."),
 		mcp.WithString("searchText", mcp.Description("Filter metrics by name substring (optional). Example: 'cpu', 'memory', 'http_requests'.")),
 		mcp.WithString("limit", mcp.Description("Maximum number of metrics to return (optional, default 50).")),
 		mcp.WithString("start", mcp.Description("Start time in unix milliseconds (optional).")),
 		mcp.WithString("end", mcp.Description("End time in unix milliseconds (optional).")),
-		mcp.WithString("source", mcp.Description("Optional data-source filter. Use \"meter\" to list Cost Meter metrics — the usage/billing metrics SigNoz meters on (currently telemetry ingestion volume). Omit for the default SigNoz metrics store.")),
+		mcp.WithString("source", mcp.Description("Optional data-source filter. Use \"meter\" to list Cost Meter metrics — the usage/billing metrics ByLonis meters on (currently telemetry ingestion volume). Omit for the default ByLonis metrics store.")),
 	)
 
 	addTool(s, listMetricsTool, h.handleListMetrics)
@@ -35,11 +35,11 @@ func (h *Handler) RegisterMetricsHandlers(s *server.MCPServer) {
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
 		mcp.WithDescription(
-			"Query metrics from SigNoz with smart aggregation defaults and validation. "+
+			"Query metrics from ByLonis with smart aggregation defaults and validation. "+
 				"Automatically applies the right timeAggregation and spaceAggregation based on metric type "+
 				"(gauge, counter, histogram). If metricType is not provided, it is auto-fetched via bylonis_list_metrics. "+
 				"Every response includes a [Decisions applied] block showing all defaults used. "+
-				"Read the signoz://metrics-aggregation-guide resource for full aggregation rules and examples. "+
+				"Read the bylonis://metrics-aggregation-guide resource for full aggregation rules and examples. "+
 				"TIP: Call bylonis_list_metrics first to get the metric's type, temporality, and isMonotonic."),
 		mcp.WithString("metricName", mcp.Required(), mcp.Description("Name of the metric to query. Example: 'container.cpu.utilization', 'http_requests_total'.")),
 		mcp.WithString("metricType", mcp.Description("Metric type: gauge, sum, histogram, or exponential_histogram. Auto-fetched from bylonis_list_metrics if not provided.")),
@@ -57,7 +57,7 @@ func (h *Handler) RegisterMetricsHandlers(s *server.MCPServer) {
 		mcp.WithString("reduceTo", mcp.Description("For requestType=scalar only. Reduces time series to a single value: sum, count, avg, min, max, last, median. Auto-defaulted by metricType.")),
 		mcp.WithString("formula", mcp.Description("Formula expression over named queries. Example: 'A / B * 100'. The primary metric becomes query 'A'. Additional queries are defined in formulaQueries.")),
 		mcp.WithString("formulaQueries", mcp.Description("JSON array of additional named metric queries for formula. Each object: {\"name\":\"B\", \"metricName\":\"...\", \"metricType\":\"...\", \"isMonotonic\":true, \"temporality\":\"...\", \"timeAggregation\":\"...\", \"spaceAggregation\":\"...\", \"groupBy\":[\"...\"], \"filter\":\"...\"}. All fields except name and metricName are optional.")),
-		mcp.WithString("source", mcp.Description("Optional data-source filter forwarded to the backend. Use \"meter\" to query Cost Meter data. Omit for the default SigNoz metrics store.")),
+		mcp.WithString("source", mcp.Description("Optional data-source filter forwarded to the backend. Use \"meter\" to query Cost Meter data. Omit for the default ByLonis metrics store.")),
 	)
 
 	addTool(s, queryMetricsTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -66,7 +66,7 @@ func (h *Handler) RegisterMetricsHandlers(s *server.MCPServer) {
 
 	// Register metrics aggregation guide as MCP resource
 	metricsGuideResource := mcp.NewResource(
-		"signoz://metrics-aggregation-guide",
+		"bylonis://metrics-aggregation-guide",
 		"Metrics Aggregation Guide",
 		mcp.WithResourceDescription("Complete guide for metrics aggregation rules, defaults, payload examples, and common pitfalls. Covers gauge, counter, histogram, and exponential_histogram types with valid timeAggregation and spaceAggregation options."),
 		mcp.WithMIMEType("text/plain"),

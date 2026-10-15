@@ -40,6 +40,10 @@ type Config struct {
 	AnalyticsEnabled bool
 	SegmentKey       string
 
+	// DocsToolsEnabled registers bylonis_search_docs and bylonis_fetch_doc. Their
+	// corpus is the upstream documentation site, so they stay off until ByLonis
+	// publishes its own docs.
+	DocsToolsEnabled        bool
 	DocsRefreshInterval     time.Duration
 	DocsFullRefreshInterval time.Duration
 
@@ -69,6 +73,7 @@ const (
 	OAuthRefreshTTLMinutes  = "OAUTH_REFRESH_TOKEN_TTL_MINUTES"
 	OAuthAuthCodeTTLSeconds = "OAUTH_AUTH_CODE_TTL_SECONDS"
 
+	DocsToolsEnabledEnv        = "BYLONIS_DOCS_TOOLS_ENABLED"
 	DocsRefreshIntervalEnv     = "BYLONIS_DOCS_REFRESH_INTERVAL"
 	DocsFullRefreshIntervalEnv = "BYLONIS_DOCS_FULL_REFRESH_INTERVAL"
 
@@ -147,6 +152,7 @@ func LoadConfig() (*Config, error) {
 		InstanceURLAllowlist:    instanceURLAllowlist,
 		AnalyticsEnabled:        getEnvBool(AnalyticsEnabledEnv, false),
 		SegmentKey:              getEnv(SegmentKeyEnv, ""),
+		DocsToolsEnabled:        getEnvBool(DocsToolsEnabledEnv, false),
 		DocsRefreshInterval:     docsRefreshInterval,
 		DocsFullRefreshInterval: docsFullRefreshInterval,
 		MaxRequestBytes:         getEnvInt(MaxRequestBytesEnv, defaultMaxRequestBytes),

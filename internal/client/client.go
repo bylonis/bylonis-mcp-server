@@ -30,7 +30,20 @@ const (
 	APIKeyHeader = "BYLONIS-API-KEY"
 	// DeprecatedAPIKeyHeader is still accepted from MCP clients until v1.1.
 	DeprecatedAPIKeyHeader = "SIGNOZ-API-KEY"
-	ContentType            = "Content-Type"
+	// URLHeader lets an MCP client choose the ByLonis instance URL per request.
+	URLHeader = "X-ByLonis-URL"
+	// DeprecatedURLHeader is still accepted from MCP clients until v1.1.
+	DeprecatedURLHeader = "X-SigNoz-URL"
+
+	// Caller correlation headers (e.g. sent by an AI assistant). The
+	// X-SigNoz-* names are still accepted from MCP clients until v1.1.
+	ClientSourceHeader                   = "X-ByLonis-Client-Source"
+	DeprecatedClientSourceHeader         = "X-SigNoz-Client-Source"
+	AssistantThreadIDHeader              = "X-ByLonis-Assistant-Thread-Id"
+	DeprecatedAssistantThreadIDHeader    = "X-SigNoz-Assistant-Thread-Id"
+	AssistantExecutionIDHeader           = "X-ByLonis-Assistant-Execution-Id"
+	DeprecatedAssistantExecutionIDHeader = "X-SigNoz-Assistant-Execution-Id"
+	ContentType                          = "Content-Type"
 
 	// DefaultQueryTimeout is used for read-only API calls.
 	DefaultQueryTimeout = 600 * time.Second

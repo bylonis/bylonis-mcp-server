@@ -37,7 +37,7 @@ pkg/metricsrules/
 ```
 
 Validation lives in code (not prompts) → correctness guaranteed regardless of LLM behavior.
-MCP resource `signoz://metrics-aggregation-guide` keeps tool description concise.
+MCP resource `bylonis://metrics-aggregation-guide` keeps tool description concise.
 
 ## Payload Examples (embedded in guide.go)
 
@@ -165,7 +165,7 @@ MCP resource `signoz://metrics-aggregation-guide` keeps tool description concise
 
 ### `internal/handler/tools/handler.go`
 - `signoz_query_metrics` tool registration with all 16 parameters
-- `signoz://metrics-aggregation-guide` MCP resource registration
+- `bylonis://metrics-aggregation-guide` MCP resource registration
 
 ### `manifest.json`
 - Added `signoz_query_metrics` entry
@@ -224,4 +224,4 @@ Valid values: latest, sum, avg, min, max, count, count_distinct
 6. MCP: with metricType="gauge", timeAggregation="rate" → descriptive validation error
 7. MCP: with metricType="sum", isMonotonic="true" → defaults to rate/sum
 8. MCP: with formula="A/B*100" + formulaQueries → formula result
-9. Read `signoz://metrics-aggregation-guide` → full guide renders
+9. Read `bylonis://metrics-aggregation-guide` → full guide renders

@@ -1,5 +1,5 @@
-// Package alert provides validation and normalization for SigNoz alert rule
-// payloads before they are sent to the SigNoz API.
+// Package alert provides validation and normalization for ByLonis alert rule
+// payloads before they are sent to the ByLonis API.
 package alert
 
 import (
@@ -29,7 +29,7 @@ var (
 		"clickhouse_sql": true,
 	}
 
-	// validCompareOps mirrors SigNoz pkg/types/ruletypes/compare.go.
+	// validCompareOps mirrors ByLonis pkg/types/ruletypes/compare.go.
 	// All numeric, literal, short, and symbolic aliases are accepted.
 	validCompareOps = map[string]bool{
 		// above
@@ -48,7 +48,7 @@ var (
 		"7": true, "outside_bounds": true,
 	}
 
-	// validMatchTypes mirrors SigNoz pkg/types/ruletypes/match.go.
+	// validMatchTypes mirrors ByLonis pkg/types/ruletypes/match.go.
 	validMatchTypes = map[string]bool{
 		"1": true, "at_least_once": true,
 		"2": true, "all_the_times": true,
@@ -58,7 +58,7 @@ var (
 	}
 
 	// validQueryEnvelopeTypes covers every composite-query envelope accepted
-	// by SigNoz qbtypes.QueryEnvelope.
+	// by ByLonis qbtypes.QueryEnvelope.
 	validQueryEnvelopeTypes = map[string]bool{
 		"builder_query":          true,
 		"builder_formula":        true,
@@ -110,7 +110,7 @@ func (v *ValidationError) Error() string {
 }
 
 // ValidateFromMap validates an alert rule from a map[string]any (MCP tool arguments),
-// applies defaults, and returns clean JSON bytes ready for the SigNoz API.
+// applies defaults, and returns clean JSON bytes ready for the ByLonis API.
 func ValidateFromMap(m map[string]any) ([]byte, error) {
 	jsonBytes, err := json.Marshal(m)
 	if err != nil {

@@ -289,34 +289,9 @@ func NewMCPServer(log *slog.Logger, handler *tools.Handler, cfg *config.Config, 
 	}
 }
 
-func (m *MCPServer) Run(ctx context.Context) error {
-	// Middleware order matters: mcp-go applies tool-handler middlewares in
-	// reverse-slice order, so the first-appended wraps outermost. Register
-	// loggingMiddleware FIRST so it wraps recovery — when a tool panics,
-	// recovery converts it to an error that bubbles back to loggingMiddleware
-	// via the normal return path, so mcp.tool.calls{is_error=true} and the
-	// codes.Error span status actually get recorded.
-	s := server.NewMCPServer("BylonisMCP", version.Version,
-		server.WithLogging(),
-		server.WithToolCapabilities(false),
-		server.WithInstructions(instructions.ServerInstructions),
-		server.WithHooks(m.buildHooks()),
-		server.WithToolHandlerMiddleware(m.loggingMiddleware()),
-		server.WithRecovery(),
-	)
-
-	m.logger.InfoContext(ctx, "Starting SigNoz MCP Server",
-		slog.String("server_name", "BylonisMCPServer"),
-		slog.String("transport_mode", m.config.TransportMode))
-
-	// Short-circuit if shutdown already signaled. The async docs-index build
-	// below would otherwise continue to run after Run() returns; tests rely
-	// on a 2 s exit bound.
-	if err := ctx.Err(); err != nil {
-		m.logger.InfoContext(ctx, "Shutdown signaled before startup; exiting early")
-		return nil
-	}
-
+// startDocsIndex registers the docs index the docs tools read and builds it in
+// the background. It only runs when the docs tools are enabled.
+func (m *MCPServer) startDocsIndex(ctx context.Context) error {
 	// Register a placeholder IndexRegistry up-front so the docs tool handlers
 	// have a non-nil *IndexRegistry to reference. Ready() reports false until
 	// the async corpus build below calls Swap() with a real snapshot, so docs
@@ -371,8 +346,12 @@ func (m *MCPServer) Run(ctx context.Context) error {
 			}()
 		}
 	}()
+	return nil
+}
 
-	// Register all handlers
+// registerHandlers adds every tool, resource and prompt the server exposes.
+// The docs tools are only added when they are enabled.
+func (m *MCPServer) registerHandlers(s *server.MCPServer) {
 	m.handler.RegisterMetricsHandlers(s)
 	m.handler.RegisterFieldsHandlers(s)
 	m.handler.RegisterAlertsHandlers(s)
@@ -381,13 +360,50 @@ func (m *MCPServer) Run(ctx context.Context) error {
 	m.handler.RegisterQueryBuilderV5Handlers(s)
 	m.handler.RegisterLogsHandlers(s)
 	m.handler.RegisterViewHandlers(s)
-	m.handler.RegisterDocsHandlers(s)
+	if m.config.DocsToolsEnabled {
+		m.handler.RegisterDocsHandlers(s)
+	}
 	m.handler.RegisterTracesHandlers(s)
 	m.handler.RegisterNotificationChannelHandlers(s)
 	m.handler.RegisterResourceTemplates(s)
-
-	// Register prompts
 	prompts.RegisterPrompts(s.AddPrompt)
+}
+
+func (m *MCPServer) Run(ctx context.Context) error {
+	// Middleware order matters: mcp-go applies tool-handler middlewares in
+	// reverse-slice order, so the first-appended wraps outermost. Register
+	// loggingMiddleware FIRST so it wraps recovery — when a tool panics,
+	// recovery converts it to an error that bubbles back to loggingMiddleware
+	// via the normal return path, so mcp.tool.calls{is_error=true} and the
+	// codes.Error span status actually get recorded.
+	s := server.NewMCPServer("BylonisMCP", version.Version,
+		server.WithLogging(),
+		server.WithToolCapabilities(false),
+		server.WithInstructions(instructions.ServerInstructions),
+		server.WithHooks(m.buildHooks()),
+		server.WithToolHandlerMiddleware(m.loggingMiddleware()),
+		server.WithRecovery(),
+	)
+
+	m.logger.InfoContext(ctx, "Starting ByLonis MCP Server",
+		slog.String("server_name", "BylonisMCPServer"),
+		slog.String("transport_mode", m.config.TransportMode))
+
+	// Short-circuit if shutdown already signaled. The async docs-index build
+	// below would otherwise continue to run after Run() returns; tests rely
+	// on a 2 s exit bound.
+	if err := ctx.Err(); err != nil {
+		m.logger.InfoContext(ctx, "Shutdown signaled before startup; exiting early")
+		return nil
+	}
+
+	if m.config.DocsToolsEnabled {
+		if err := m.startDocsIndex(ctx); err != nil {
+			return err
+		}
+	}
+
+	m.registerHandlers(s)
 
 	m.logger.InfoContext(ctx, "All handlers registered successfully")
 
@@ -1120,6 +1136,18 @@ func (m *MCPServer) runStdio(ctx context.Context, s *server.MCPServer) error {
 	return nil
 }
 
+// headerWithAlias returns the value of header, or of its deprecated alias when
+// header is absent; deprecated reports whether the alias was used.
+func headerWithAlias(r *http.Request, header, alias string) (value string, deprecated bool) {
+	if v := r.Header.Get(header); v != "" {
+		return v, false
+	}
+	if v := r.Header.Get(alias); v != "" {
+		return v, true
+	}
+	return "", false
+}
+
 func isJWTToken(token string) bool {
 	return strings.Count(token, ".") == 2 && strings.HasPrefix(token, "eyJ")
 }
@@ -1238,15 +1266,20 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 		// 401/early-reject paths) propagates them. Values are advisory and
 		// flow into every log/span/event, so they are normalized
 		// (trim + length-cap) before being stashed.
-		clientSource := util.NormalizeCallerCorrelationValue(r.Header.Get("X-SigNoz-Client-Source"))
+		// X-SigNoz-* names are accepted until v1.1; the X-ByLonis-* one wins.
+		rawClientSource, oldClientSource := headerWithAlias(r, signozclient.ClientSourceHeader, signozclient.DeprecatedClientSourceHeader)
+		rawThreadID, oldThreadID := headerWithAlias(r, signozclient.AssistantThreadIDHeader, signozclient.DeprecatedAssistantThreadIDHeader)
+		rawExecutionID, oldExecutionID := headerWithAlias(r, signozclient.AssistantExecutionIDHeader, signozclient.DeprecatedAssistantExecutionIDHeader)
+
+		clientSource := util.NormalizeCallerCorrelationValue(rawClientSource)
 		if clientSource == "" {
 			clientSource = util.ClientSourceUserClient
 		}
 		ctx = util.SetClientSource(ctx, clientSource)
-		if threadID := util.NormalizeCallerCorrelationValue(r.Header.Get("X-SigNoz-Assistant-Thread-Id")); threadID != "" {
+		if threadID := util.NormalizeCallerCorrelationValue(rawThreadID); threadID != "" {
 			ctx = util.SetAssistantThreadID(ctx, threadID)
 		}
-		if executionID := util.NormalizeCallerCorrelationValue(r.Header.Get("X-SigNoz-Assistant-Execution-Id")); executionID != "" {
+		if executionID := util.NormalizeCallerCorrelationValue(rawExecutionID); executionID != "" {
 			ctx = util.SetAssistantExecutionID(ctx, executionID)
 		}
 
@@ -1254,10 +1287,23 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 		// still queryable by caller.
 		if rootSpan := trace.SpanFromContext(ctx); rootSpan.IsRecording() {
 			rootSpan.SetAttributes(otelpkg.AppendCallerCorrelation(ctx, nil)...)
+			if oldClientSource || oldThreadID || oldExecutionID {
+				rootSpan.SetAttributes(attribute.Bool("mcp.deprecated_correlation_header", true))
+			}
 		}
 
-		// Extract X-SigNoz-URL custom header (takes precedence over JWT audience)
-		customURL := r.Header.Get("X-SigNoz-URL")
+		// Extract the instance URL header (takes precedence over JWT audience).
+		// X-SigNoz-URL is accepted until v1.1; when both are sent, X-ByLonis-URL wins.
+		customURLHeader := signozclient.URLHeader
+		customURL := r.Header.Get(signozclient.URLHeader)
+		if customURL == "" {
+			if customURL = r.Header.Get(signozclient.DeprecatedURLHeader); customURL != "" {
+				customURLHeader = signozclient.DeprecatedURLHeader
+				// Mark the trace (not the logs, to avoid per-request noise) so clients
+				// still on the deprecated header can be found before v1.1.
+				trace.SpanFromContext(ctx).SetAttributes(attribute.Bool("mcp.deprecated_url_header", true))
+			}
+		}
 
 		// Check for auth credentials from headers.
 		// Clients can provide either:
@@ -1378,14 +1424,14 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Determine final URL with precedence: X-SigNoz-URL header > config URL
+		// Determine final URL with precedence: instance URL header > config URL
 		if customURL != "" {
 			trimmed := strings.TrimSuffix(customURL, "/")
 			normalized, err := util.NormalizeSigNozURL(trimmed)
 			if err != nil {
-				m.logAuthFailure(ctx, r, http.StatusBadRequest, authFailureInvalidSignozURL, authMode, "Invalid X-SigNoz-URL header",
+				m.logAuthFailure(ctx, r, http.StatusBadRequest, authFailureInvalidSignozURL, authMode, "Invalid "+customURLHeader+" header",
 					slog.String("url", customURL), logpkg.ErrAttr(err))
-				http.Error(w, fmt.Sprintf("Invalid X-SigNoz-URL: %v", err), http.StatusBadRequest)
+				http.Error(w, fmt.Sprintf("Invalid %s: %v", customURLHeader, err), http.StatusBadRequest)
 				return
 			}
 			// Set the SigNoz URL on ctx first so an allowlist rejection is attributed.
@@ -1398,7 +1444,7 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 			signozURL = m.config.URL
 			m.logger.DebugContext(ctx, "Using URL from environment config", slog.String("mcp.tenant_url", signozURL))
 		} else {
-			m.logAuthFailure(ctx, r, http.StatusBadRequest, authFailureMissingSignozURL, authMode, "No SigNoz URL found in X-SigNoz-URL header or environment")
+			m.logAuthFailure(ctx, r, http.StatusBadRequest, authFailureMissingSignozURL, authMode, "No ByLonis URL found in "+signozclient.URLHeader+" header or environment")
 			http.Error(w, "SigNoz instance URL is required", http.StatusBadRequest)
 			return
 		}

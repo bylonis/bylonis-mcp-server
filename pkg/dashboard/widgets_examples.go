@@ -1,7 +1,7 @@
 package dashboard
 
 const WidgetExamples = `
-=== SIGNOZ DASHBOARD CREATION GUIDELINES ===
+=== BYLONIS DASHBOARD CREATION GUIDELINES ===
 
 CRITICAL: Use NEW Query Builder Format ONLY DO NOT mix old and new query builder formats in the same dashboard.
 
@@ -65,7 +65,7 @@ INCORRECT (write):
   filters.items[0].key = {key: k8s.node.name, type: ""}                              # missing dataType, malformed id
   filters.items[0].key = {key: k8s.node.name, dataType: string, id: "k8s.node.name"}  # id missing --<dataType>--<type> suffix
 
-Canonical id form is <key>--<dataType>--<type> (trailing "--" is correct when type is empty). The SigNoz edit modal reverse-maps the key back to the autocomplete dropdown by this id; a malformed id makes the filter row fail to hydrate even though the list/graph renders fine (it uses the top-level filter.expression string).
+Canonical id form is <key>--<dataType>--<type> (trailing "--" is correct when type is empty). The ByLonis edit modal reverse-maps the key back to the autocomplete dropdown by this id; a malformed id makes the filter row fail to hydrate even though the list/graph renders fine (it uses the top-level filter.expression string).
 
 For variable references on IN filters, always send value as a plain string like "$var", not a single-element array like ["$var"]. The array form causes the form row to misrender.
 
@@ -195,7 +195,7 @@ Existence Check: filter: expression: llm.model_name EXISTS
 
 filters: op: AND items: - key: key: service.name dataType: string op: IN value: $service_name - key: key: has_error op: = value: true
 
-NOTE: You can use BOTH filter.expression AND filters.items together for compatibility. When you do, they MUST stay consistent: every key.key in filters.items must appear in filter.expression. The MCP server REJECTS dashboards where a filter item's key is missing from the expression — even though the SigNoz backend would accept the payload. Rationale: the list/graph renderer reads filter.expression directly, while the edit-modal's expression-reconstruction path walks filters.items[]. A mismatch causes the two to execute different queries, silently dropping predicates in the list view and breaking edit-modal hydration. If the two must differ intentionally, send only one side (leave filter.expression empty OR leave filters.items unset).
+NOTE: You can use BOTH filter.expression AND filters.items together for compatibility. When you do, they MUST stay consistent: every key.key in filters.items must appear in filter.expression. The MCP server REJECTS dashboards where a filter item's key is missing from the expression — even though the ByLonis backend would accept the payload. Rationale: the list/graph renderer reads filter.expression directly, while the edit-modal's expression-reconstruction path walks filters.items[]. A mismatch causes the two to execute different queries, silently dropping predicates in the list view and breaking edit-modal hydration. If the two must differ intentionally, send only one side (leave filter.expression empty OR leave filters.items unset).
 
 ERROR: Invalid operators cause filter errors. ERROR: Missing $ prefix for variables causes literal string matching. ERROR: Typo in field names causes no data.
 
@@ -938,15 +938,15 @@ Example: Model Distribution (from Azure OpenAI API)
 
 --- row Widgets ---
 
-Example: Machine (from Fly.io — Fly App (SigNoz))
+Example: Machine (from Fly.io — Fly App (ByLonis))
   panelTypes: row
   title: Machine
 
-Example: TCP (from Fly.io — Fly App (SigNoz))
+Example: TCP (from Fly.io — Fly App (ByLonis))
   panelTypes: row
   title: TCP
 
-Example: Memory (from Fly.io — Fly App (SigNoz))
+Example: Memory (from Fly.io — Fly App (ByLonis))
   panelTypes: row
   title: Memory
 

@@ -16,30 +16,29 @@ import (
 func (h *Handler) RegisterQueryBuilderV5Handlers(s *server.MCPServer) {
 	h.logger.Debug("Registering query builder v5 handlers")
 
-	// SigNoz Query Builder v5 tool - LLM builds structured query JSON and executes it
+	// ByLonis Query Builder v5 tool - LLM builds structured query JSON and executes it
 	executeQuery := mcp.NewTool("bylonis_execute_builder_query",
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
 		mcp.WithDescription(
-			"Execute a SigNoz Query Builder v5 query.\n\n"+
-				"REQUIRED: Read signoz://traces/query-builder-guide BEFORE building any query. "+
+			"Execute a ByLonis Query Builder v5 query.\n\n"+
+				"REQUIRED: Read bylonis://traces/query-builder-guide BEFORE building any query. "+
 				"It documents filter expression syntax, correct field names (camelCase vs dot notation), "+
 				"and complete working examples.\n\n"+
-				"When compositeQuery.queryType=\"promql\" ALSO read signoz://promql/instructions — "+
+				"When compositeQuery.queryType=\"promql\" ALSO read bylonis://promql/instructions — "+
 				"OTel metric names with dots MUST use the Prometheus 3.x UTF-8 quoted-selector form ({\"metric.name.with.dots\"}). "+
-				"Underscored / __name__ / bare-dotted forms silently return no data.\n\n"+
-				"See docs: https://signoz.io/docs/userguide/query-builder-v5/",
+				"Underscored / __name__ / bare-dotted forms silently return no data.",
 		),
-		mcp.WithObject("query", mcp.Required(), mcp.Description("Complete SigNoz Query Builder v5 JSON object with schemaVersion, start, end, requestType, compositeQuery, formatOptions, and variables")),
+		mcp.WithObject("query", mcp.Required(), mcp.Description("Complete ByLonis Query Builder v5 JSON object with schemaVersion, start, end, requestType, compositeQuery, formatOptions, and variables")),
 	)
 
 	addTool(s, executeQuery, h.handleExecuteBuilderQuery)
 
 	tracesQueryBuilderGuide := mcp.NewResource(
-		"signoz://traces/query-builder-guide",
+		"bylonis://traces/query-builder-guide",
 		"Traces Query Builder Guide",
-		mcp.WithResourceDescription("SigNoz Query Builder v5 traces guide: filter expression syntax (string, not structured object), built-in span column names (camelCase, no fieldContext), resource/tag attribute naming (dot notation + fieldContext), and complete working examples for raw, aggregation, and time series queries."),
+		mcp.WithResourceDescription("ByLonis Query Builder v5 traces guide: filter expression syntax (string, not structured object), built-in span column names (camelCase, no fieldContext), resource/tag attribute naming (dot notation + fieldContext), and complete working examples for raw, aggregation, and time series queries."),
 		mcp.WithMIMEType("text/plain"),
 	)
 

@@ -4,7 +4,7 @@
 Done
 
 ## Context
-The `signoz_execute_builder_query` tool description advertises PromQL support and points callers at `signoz://promql/instructions`, but the typed `QueryPayload` in `pkg/types/querybuilder.go` can only model builder queries. The handler in `internal/handler/tools/query_builder.go` unmarshals the incoming JSON into that typed payload, validates it, and re-marshals — silently dropping any PromQL `query` string and the (misleading) `compositeQuery.queryType` field. Callers following the documented shape get empty results with no error.
+The `signoz_execute_builder_query` tool description advertises PromQL support and points callers at `bylonis://promql/instructions`, but the typed `QueryPayload` in `pkg/types/querybuilder.go` can only model builder queries. The handler in `internal/handler/tools/query_builder.go` unmarshals the incoming JSON into that typed payload, validates it, and re-marshals — silently dropping any PromQL `query` string and the (misleading) `compositeQuery.queryType` field. Callers following the documented shape get empty results with no error.
 
 Beyond fixing the data loss, the tool description itself is wrong: the SigNoz core v5 `CompositeQuery` strictly rejects unknown fields and does not accept `compositeQuery.queryType`. The query type discriminator lives on each `QueryEnvelope.type` (e.g. `"promql"`, `"clickhouse_sql"`, `"builder_query"`).
 
@@ -55,7 +55,7 @@ This requires changing `Spec`'s static type from `QuerySpec` to `any`. All in-pa
 ### 3. Tool description fix (internal/handler/tools/query_builder.go)
 
 - Drop the `compositeQuery.queryType="promql"` phrasing.
-- Replace with: "For PromQL, set the per-query `type: \"promql\"` and put the expression in `spec.query`. ALSO read signoz://promql/instructions — …"
+- Replace with: "For PromQL, set the per-query `type: \"promql\"` and put the expression in `spec.query`. ALSO read bylonis://promql/instructions — …"
 - Same swap for ClickHouse SQL: mention `type: \"clickhouse_sql\"` with `spec.query`.
 
 ### 4. Audit Spec consumers

@@ -27,7 +27,7 @@ The SigNoz API's `/api/v5/query_range` accepts a `source` field (value `"meter"`
 - Add `TestBuildMetricsQueryPayloadJSON_AppliesSource` — covers the `signoz_query_metrics` build path directly: source lands on every `builder_query` spec, never on `builder_formula`, and is omitted when empty.
 
 ### 6. `pkg/metricsrules/guide.go` (agent-facing discoverability)
-- Add a "Cost Meter (Telemetry Ingestion Volume)" section to the `signoz://metrics-aggregation-guide` resource: explains the `source: "meter"` field placement, lists the six real meter metrics with units, and includes a working example payload so an agent can discover and use Cost Meter queries.
+- Add a "Cost Meter (Telemetry Ingestion Volume)" section to the `bylonis://metrics-aggregation-guide` resource: explains the `source: "meter"` field placement, lists the six real meter metrics with units, and includes a working example payload so an agent can discover and use Cost Meter queries.
 
 ### `signoz_execute_builder_query`
 No new parameter needed. `QuerySpec.Source` captures `source` from within the user's spec object automatically through the typed round-trip.

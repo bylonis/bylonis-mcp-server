@@ -1,7 +1,7 @@
 package alert
 
-// Instructions is the MCP resource content for signoz://alert/instructions.
-const Instructions = `# SigNoz Alert Rule — Instructions
+// Instructions is the MCP resource content for bylonis://alert/instructions.
+const Instructions = `# ByLonis Alert Rule — Instructions
 
 ## Overview
 An alert rule monitors a signal (metrics, logs, traces, or exceptions) and fires when a condition is met.
@@ -12,8 +12,8 @@ Schemas supported:
 - **v1** for anomaly_rule — top-level evalWindow/frequency with condition.op/matchType/target/algorithm/seasonality. No thresholds block.
 
 ## CRITICAL: Before Creating an Alert
-1. ALWAYS read signoz://alert/examples for complete working payloads (the canonical SigNoz PR #11023 examples plus a Cost Meter cumulative-budget example).
-2. Use bylonis_get_alert on an existing alert to study the exact structure your SigNoz instance expects.
+1. ALWAYS read bylonis://alert/examples for complete working payloads (the canonical upstream PR #11023 examples plus a Cost Meter cumulative-budget example).
+2. Use bylonis_get_alert on an existing alert to study the exact structure your ByLonis instance expects.
 3. Use bylonis_get_field_keys to discover available attributes for filters and groupBy.
 4. NOTIFICATION CHANNELS: If the user explicitly names a channel, use it directly. Otherwise, do NOT guess channel names — call bylonis_create_alert without channels first, it returns available channels. Present the list to the user, let them choose, then retry with their selection. If no suitable channel exists, use bylonis_create_notification_channel to create one first.
 
@@ -77,9 +77,9 @@ The envelope type must match compositeQuery.queryType:
 - disabled: false
 
 ### PromQL for OTel dotted metric names
-Alerts with ruleType=promql_rule on OpenTelemetry metrics must use the Prometheus 3.x UTF-8 quoted-selector form for any name containing a dot. The forms that look natural but return no data in SigNoz:
+Alerts with ruleType=promql_rule on OpenTelemetry metrics must use the Prometheus 3.x UTF-8 quoted-selector form for any name containing a dot. The forms that look natural but return no data in ByLonis:
 
-- Underscored conversion: rate(payment_latency_ms_bucket[5m]) — SigNoz does NOT rename dots to underscores.
+- Underscored conversion: rate(payment_latency_ms_bucket[5m]) — ByLonis does NOT rename dots to underscores.
 - __name__ selector: rate({__name__="payment_latency_ms.bucket"}[5m]) — dots are rejected inside that value.
 - Bare dotted name: rate(payment_latency_ms.bucket[5m]) — dot is not a legal identifier char.
 
@@ -93,7 +93,7 @@ The same rule applies to dotted label names in by(...) and in matchers:
     rate({"payment_latency_ms.bucket", "deployment.environment"="prod"}[5m])
   )
 
-For the full guide (syntax, examples by metric type, anti-pattern table, pre-flight checklist for histogram alerts) read signoz://promql/instructions. Always read it before writing a promql_rule query.
+For the full guide (syntax, examples by metric type, anti-pattern table, pre-flight checklist for histogram alerts) read bylonis://promql/instructions. Always read it before writing a promql_rule query.
 
 ### Formula query spec (envelope type=builder_formula)
 - name: formula identifier (F1, F2, …)
@@ -199,7 +199,7 @@ condition.thresholds defines one or more routing tiers. Each tier can route to d
 - **channels**: notification channel names for this tier. Discover via bylonis_list_notification_channels. Ignored when notificationSettings.usePolicy is true.
 
 ### Choosing targetUnit
-- Set targetUnit when the threshold value is in a different unit from the query series. Example: the series emits nanoseconds (compositeQuery.unit="ns") but you want to threshold at "5 seconds" — set target=5, targetUnit="s". SigNoz converts during evaluation.
+- Set targetUnit when the threshold value is in a different unit from the query series. Example: the series emits nanoseconds (compositeQuery.unit="ns") but you want to threshold at "5 seconds" — set target=5, targetUnit="s". ByLonis converts during evaluation.
 - If compositeQuery.unit is empty and targetUnit is set, the validator propagates targetUnit onto compositeQuery.unit — you can therefore omit compositeQuery.unit on single-threshold rules.
 - Formulas that compute ratios (e.g. (A/B) * 100) already emit percent — set compositeQuery.unit="percent" and give the threshold a bare numeric target (no targetUnit).
 
@@ -327,7 +327,7 @@ Required fields:
 - **Scoring**: anomaly_score = |actual_value − predicted_value| / stddev(current_season). The alert fires when this score satisfies the condition.op / condition.target comparison (e.g. op="above", target=3 ≈ "score above 3 standard deviations").
 - **evalWindow** should span at least one seasonal cycle so the predictor has enough history (≥24h for daily seasonality, ≥7d for weekly).
 
-See signoz://alert/examples → "metric_anomaly" for a complete payload.
+See bylonis://alert/examples → "metric_anomaly" for a complete payload.
 
 ## Absent-data alerting
 Set condition.alertOnAbsent=true to fire when no series is returned. condition.absentFor is in **minutes** (equivalent to consecutive evaluation cycles when frequency is 1m). Example: absentFor=15 fires after 15 minutes of no data.
@@ -345,27 +345,16 @@ Set condition.alertOnAbsent=true to fire when no series is returned. condition.a
 
 anomaly_rule: none of the above defaults are applied automatically — you must supply evalWindow, frequency, and the condition fields yourself.
 
-## Further Reading
-User-facing docs. Cite these back to the user when they want to understand a concept in depth:
-- Metrics alerts — https://signoz.io/docs/alerts-management/metrics-based-alerts
-- Log alerts — https://signoz.io/docs/alerts-management/log-based-alerts
-- Trace alerts — https://signoz.io/docs/alerts-management/trace-based-alerts
-- Exception alerts — https://signoz.io/docs/alerts-management/exceptions-based-alerts
-- Anomaly alerts — https://signoz.io/docs/alerts-management/anomaly-based-alerts
-- Routing policies — https://signoz.io/docs/alerts-management/routing-policy
-- Planned maintenance — https://signoz.io/docs/alerts-management/planned-maintenance
-- Notification channel setup — https://signoz.io/docs/setup-alerts-notification
-- Alerts history — https://signoz.io/docs/alerts-management/alerts-history
 `
 
-// Examples is the MCP resource content for signoz://alert/examples.
-// The examples below mirror the canonical payloads in SigNoz PR #11023, plus a Cost Meter example
-// (pkg/apiserver/signozapiserver/ruler_examples.go). Keep this list in sync
+// Examples is the MCP resource content for bylonis://alert/examples.
+// The examples below mirror the canonical payloads in upstream PR #11023, plus a Cost Meter example
+// (pkg/apiserver/bylonisapiserver/ruler_examples.go). Keep this list in sync
 // with upstream when that file changes.
-const Examples = `# SigNoz Alert Rule — Examples (mirrors SigNoz PR #11023)
+const Examples = `# ByLonis Alert Rule — Examples (mirrors upstream PR #11023)
 
-These examples mirror the canonical payloads in SigNoz PR #11023
-(pkg/apiserver/signozapiserver/ruler_examples.go). Threshold and PromQL rules
+These examples mirror the canonical payloads in upstream PR #11023
+(pkg/apiserver/bylonisapiserver/ruler_examples.go). Threshold and PromQL rules
 use v2alpha1; the anomaly example uses the v1 shape.
 
 ## 1. metric_threshold_single — metric threshold, single builder query
@@ -496,7 +485,7 @@ Computes disk utilization as (1 - available/capacity) * 100 by combining two dis
 ` + "```" + `
 
 ## 3. metric_promql — PromQL rule
-PromQL expression instead of the builder. Dotted OTEL resource attributes are quoted ("deployment.environment"); non-dotted ones (topic, partition, group) stay bare. Useful for queries that combine series with group_right or other Prometheus operators. The envelope type is "promql" — not "builder_query". Read signoz://promql/instructions for the full dotted-name / vector-matching guide.
+PromQL expression instead of the builder. Dotted OTEL resource attributes are quoted ("deployment.environment"); non-dotted ones (topic, partition, group) stay bare. Useful for queries that combine series with group_right or other Prometheus operators. The envelope type is "promql" — not "builder_query". Read bylonis://promql/instructions for the full dotted-name / vector-matching guide.
 
 ` + "```" + `json
 {
@@ -707,7 +696,7 @@ Two disabled log count queries (A = errors, B = total) combined via a builder_fo
 ` + "```" + `
 
 ## 7. traces_threshold_latency — traces p99 with unit conversion (ns → s)
-Builder query against the traces signal with p99(duration_nano). The series unit is ns, but the threshold target is in seconds (targetUnit: "s") — SigNoz converts during evaluation.
+Builder query against the traces signal with p99(duration_nano). The series unit is ns, but the threshold target is in seconds (targetUnit: "s") — ByLonis converts during evaluation.
 
 ` + "```" + `json
 {
@@ -1012,7 +1001,7 @@ Fires when today's total log ingestion exceeds 10 GiB. The query targets Cost Me
 ## Key Notes
 1. Metrics signal → object aggregation shape ({metricName, timeAggregation, spaceAggregation}). Logs/traces → expression shape ({expression: "count()"}).
 2. selectedQueryName should reference the query or formula that determines the alert.
-3. Use bylonis_get_alert to inspect existing alerts for the exact format your SigNoz version expects.
+3. Use bylonis_get_alert to inspect existing alerts for the exact format your ByLonis version expects.
 4. Channel names in thresholds.spec[].channels must match exactly the names from bylonis_list_notification_channels.
 5. For threshold_rule/promql_rule, schemaVersion/evaluation/notificationSettings are auto-generated if omitted. For anomaly_rule, supply evalWindow/frequency at the top level and op/matchType/target/algorithm/seasonality under condition — no thresholds block, no auto-generated evaluation.
 6. absentFor is in minutes (= consecutive evaluation cycles when frequency is 1m).

@@ -99,9 +99,9 @@ Register MCP prompts for common observability tasks:
 ### 3.1 Resource Templates
 Add dynamic resources using URI templates:
 
-- `signoz://service/{name}/overview` — fetches service health, top operations, error rate
-- `signoz://alert/{ruleId}/summary` — fetches alert config + recent history
-- `signoz://dashboard/{uuid}/summary` — fetches dashboard metadata + widget list
+- `bylonis://service/{name}/overview` — fetches service health, top operations, error rate
+- `bylonis://alert/{ruleId}/summary` — fetches alert config + recent history
+- `bylonis://dashboard/{uuid}/summary` — fetches dashboard metadata + widget list
 
 These are more useful than static guides because they provide live data.
 

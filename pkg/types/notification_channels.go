@@ -2,7 +2,7 @@ package types
 
 import "encoding/json"
 
-// Receiver is the top-level structure sent to SigNoz's /api/v1/channels
+// Receiver is the top-level structure sent to ByLonis's /api/v1/channels
 // and /api/v1/testChannel endpoints. Only one of the *_configs fields
 // should be populated per receiver.
 type Receiver struct {
@@ -16,7 +16,7 @@ type Receiver struct {
 }
 
 // MarshalReceiver serialises a Receiver to JSON bytes suitable for the
-// SigNoz API request body.
+// ByLonis API request body.
 func MarshalReceiver(r Receiver) ([]byte, error) {
 	return json.Marshal(r)
 }

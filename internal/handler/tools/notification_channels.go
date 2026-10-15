@@ -31,7 +31,7 @@ func (h *Handler) RegisterNotificationChannelHandlers(s *server.MCPServer) {
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
 		mcp.WithDescription(
-			"List all notification channels configured in SigNoz.\n\n"+
+			"List all notification channels configured in ByLonis.\n\n"+
 				"Returns channel id, name, type (slack, webhook, pagerduty, email, opsgenie, msteams), "+
 				"configuration details, and timestamps.\n\n"+
 				"Use this tool to discover existing channels before creating new ones or to verify channel configurations.\n\n"+
@@ -48,7 +48,7 @@ func (h *Handler) RegisterNotificationChannelHandlers(s *server.MCPServer) {
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
 		mcp.WithDescription(
-			"Create a notification channel in SigNoz and send a test notification to verify it works.\n\n"+
+			"Create a notification channel in ByLonis and send a test notification to verify it works.\n\n"+
 				"SUPPORTED TYPES: slack, webhook, pagerduty, email, opsgenie, msteams\n\n"+
 				"REQUIRED FIELDS BY TYPE:\n"+
 				"- slack: name, slack_api_url (Slack incoming webhook URL)\n"+
@@ -103,7 +103,7 @@ func (h *Handler) RegisterNotificationChannelHandlers(s *server.MCPServer) {
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
 		mcp.WithDescription(
-			"Update an existing notification channel in SigNoz and send a test notification to verify it works.\n\n"+
+			"Update an existing notification channel in ByLonis and send a test notification to verify it works.\n\n"+
 				"IMPORTANT: This replaces the full channel configuration. All fields must be provided, not just the ones being changed.\n\n"+
 				"SUPPORTED TYPES: slack, webhook, pagerduty, email, opsgenie, msteams\n\n"+
 				"REQUIRED FIELDS:\n"+
@@ -250,7 +250,7 @@ func (h *Handler) handleListNotificationChannels(ctx context.Context, req mcp.Ca
 	// Summarize each channel to essential fields only (id, name, type, timestamps).
 	// The raw "data" field contains the full config (webhook URLs, API keys, templates)
 	// which bloats the response beyond token limits. Name lives on the top-level
-	// Channel field; if absent (older SigNoz), fall back to the nested data.name.
+	// Channel field; if absent (older ByLonis), fall back to the nested data.name.
 	summarized := make([]any, 0, len(data))
 	for _, item := range data {
 		ch, ok := item.(map[string]any)

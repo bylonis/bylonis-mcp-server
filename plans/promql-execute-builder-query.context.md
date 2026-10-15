@@ -6,7 +6,7 @@
 GitHub issue:
 > `signoz_execute_builder_query` silently drops PromQL queries despite advertising support.
 >
-> The tool description claims support for PromQL via `compositeQuery.queryType="promql"` and references `signoz://promql/instructions`, but the typed `QueryPayload` has no field for a PromQL expression. The unmarshal → validate → re-marshal round trip silently drops the PromQL string before the request reaches the backend.
+> The tool description claims support for PromQL via `compositeQuery.queryType="promql"` and references `bylonis://promql/instructions`, but the typed `QueryPayload` has no field for a PromQL expression. The unmarshal → validate → re-marshal round trip silently drops the PromQL string before the request reaches the backend.
 
 ## Reference Links
 - Issue: https://github.com/SigNoz/signoz-mcp-server/issues/179

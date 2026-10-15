@@ -1,7 +1,7 @@
 // Package dashboardbuilder provides validation, transformation, and a fluent builder
-// API for constructing SigNoz dashboard payloads. It is designed to be imported by
+// API for constructing ByLonis dashboard payloads. It is designed to be imported by
 // external repositories (e.g., an MCP server) that programmatically create dashboards
-// via the SigNoz API.
+// via the ByLonis API.
 //
 // Dashboards default to private — public dashboard fields are deliberately excluded.
 // Variables default to DYNAMIC type when no type is specified.
@@ -138,7 +138,7 @@ func (b *DashboardBuilder) Build() (*DashboardData, error) {
 	return b.data, nil
 }
 
-// BuildMap is Build + ToMap for direct use with the SigNoz API.
+// BuildMap is Build + ToMap for direct use with the ByLonis API.
 func (b *DashboardBuilder) BuildMap() (map[string]any, error) {
 	d, err := b.Build()
 	if err != nil {
