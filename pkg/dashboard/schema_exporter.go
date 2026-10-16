@@ -59,10 +59,8 @@ var essentialTables = map[string][]string{
 		"distributed_exp_hist",
 	},
 	"bylonis_traces": {
-		"signoz_index_v3",
-		"distributed_signoz_index_v3",
-		"signoz_spans",
-		"distributed_signoz_spans",
+		"bylonis_index_v3",
+		"distributed_bylonis_index_v3",
 		"traces_v3_resource",
 		"distributed_traces_v3_resource",
 		"tag_attributes_v2",
@@ -71,12 +69,23 @@ var essentialTables = map[string][]string{
 		"distributed_dependency_graph_minutes_v2",
 		"trace_summary",
 		"distributed_trace_summary",
-		"signoz_error_index_v2",
-		"distributed_signoz_error_index_v2",
+		"bylonis_error_index_v2",
+		"distributed_bylonis_error_index_v2",
 		"top_level_operations",
 		"distributed_top_level_operations",
 		"span_attributes_keys",
 		"distributed_span_attributes_keys",
+	},
+}
+
+// renamedTables maps upstream table names to the names ByLonis uses: migration 1011
+// of bylonis-otel-collector renames them in ClickHouse (bylonis/bylonis#108).
+var renamedTables = map[string]map[string]string{
+	"bylonis_traces": {
+		"signoz_index_v3":                   "bylonis_index_v3",
+		"distributed_signoz_index_v3":       "distributed_bylonis_index_v3",
+		"signoz_error_index_v2":             "bylonis_error_index_v2",
+		"distributed_signoz_error_index_v2": "distributed_bylonis_error_index_v2",
 	},
 }
 
@@ -142,6 +151,7 @@ func exportSchema(buf *bytes.Buffer, database string, migrations []schemamigrato
 		}
 	}
 
+	renameTables(database, tables)
 	filteredTables := filterEssentialTables(database, tables)
 
 	outputSummary(buf, database, filteredTables)
@@ -171,6 +181,16 @@ func applyOperation(tables map[string]*TableSchema, op schemamigrator.Operation)
 				}
 			}
 			table.Columns = newColumns
+		}
+	}
+}
+
+func renameTables(database string, tables map[string]*TableSchema) {
+	for from, to := range renamedTables[database] {
+		if table, exists := tables[from]; exists {
+			delete(tables, from)
+			table.Name = to
+			tables[to] = table
 		}
 	}
 }

@@ -466,7 +466,7 @@ Resource Filter Template (CTE):
         AND seen_at_ts_bucket_start BETWEEN $start_timestamp - 1800 AND $end_timestamp
   )
   SELECT ...
-  FROM bylonis_traces.distributed_signoz_index_v3
+  FROM bylonis_traces.distributed_bylonis_index_v3
   WHERE resource_fingerprint GLOBAL IN __resource_filter
     AND timestamp BETWEEN {{.start_datetime}} AND {{.end_datetime}}
     AND ts_bucket_start BETWEEN $start_timestamp - 1800 AND $end_timestamp
@@ -482,7 +482,7 @@ Basic Count Per Minute:
   WITH __resource_filter AS (...)
   SELECT toStartOfInterval(timestamp, INTERVAL 1 MINUTE) AS ts,
          toFloat64(count()) AS value
-  FROM bylonis_traces.distributed_signoz_index_v3
+  FROM bylonis_traces.distributed_bylonis_index_v3
   WHERE resource_fingerprint GLOBAL IN __resource_filter
     AND timestamp BETWEEN {{.start_datetime}} AND {{.end_datetime}}
     AND ts_bucket_start BETWEEN $start_timestamp - 1800 AND $end_timestamp
@@ -492,7 +492,7 @@ Basic Count Per Minute:
 Custom Interval (100ms):
   SELECT fromUnixTimestamp64Milli(intDiv(toUnixTimestamp64Milli(timestamp), 100) * 100) AS interval,
          toFloat64(count()) AS count
-  FROM bylonis_traces.distributed_signoz_index_v3
+  FROM bylonis_traces.distributed_bylonis_index_v3
   WHERE resource_string_service$$name='frontend'
     AND duration_nano >= 50*exp10(6)  -- 50ms
     AND timestamp BETWEEN {{.start_datetime}} AND {{.end_datetime}}
@@ -504,7 +504,7 @@ Group By Standard Attribute:
   SELECT toStartOfInterval(timestamp, INTERVAL 1 MINUTE) AS interval,
          attributes_string['http.method'] AS method,
          toFloat64(avg(durationNano)) AS value
-  FROM bylonis_traces.distributed_signoz_index_v3
+  FROM bylonis_traces.distributed_bylonis_index_v3
   WHERE attributes_string['http.method'] != ''
     AND timestamp > now() - INTERVAL 30 MINUTE
     AND ts_bucket_start >= toUInt64(toUnixTimestamp(now() - toIntervalMinute(30))) - 1800
@@ -519,7 +519,7 @@ Average from Timeseries:
   FROM (
       SELECT toStartOfInterval(timestamp, INTERVAL 1 MINUTE) AS ts,
              toFloat64(avg(duration_nano)) AS value
-      FROM bylonis_traces.distributed_signoz_index_v3
+      FROM bylonis_traces.distributed_bylonis_index_v3
       WHERE resource_fingerprint GLOBAL IN __resource_filter
         AND timestamp BETWEEN {{.start_datetime}} AND {{.end_datetime}}
         AND ts_bucket_start BETWEEN $start_timestamp - 1800 AND $end_timestamp
@@ -535,7 +535,7 @@ Group By with Table Format:
   SELECT now() as ts,
          http_method,
          toFloat64(avg(duration_nano)) AS avg_duration_nano
-  FROM bylonis_traces.distributed_signoz_index_v3
+  FROM bylonis_traces.distributed_bylonis_index_v3
   WHERE resource_fingerprint GLOBAL IN __resource_filter
     AND timestamp BETWEEN {{.start_datetime}} AND {{.end_datetime}}
     AND ts_bucket_start BETWEEN $start_timestamp - 1800 AND $end_timestamp
@@ -553,7 +553,7 @@ Extract Span Event Attributes:
          toFloat64(count()) AS count,
          arrayJoin(arrayMap(x -> JSONExtractString(JSONExtractString(x, 'attributeMap'), 'customer_id'),
                             filteredEvents)) AS customer_id
-  FROM bylonis_traces.distributed_signoz_index_v3
+  FROM bylonis_traces.distributed_bylonis_index_v3
   WHERE not empty(filteredEvents)
     AND timestamp > toUnixTimestamp(now() - INTERVAL 30 MINUTE)
     AND ts_bucket_start >= toUInt64(toUnixTimestamp(now() - toIntervalMinute(30))) - 1800
@@ -572,7 +572,7 @@ Latency Between Spans in Trace:
                  traceID,
                  minIf(timestamp, resource_string_service$$name='driver' AND name='/driver.DriverService/FindNearest') AS startTime1,
                  minIf(timestamp, resource_string_service$$name='route' AND name='HTTP GET /route') AS startTime2
-          FROM bylonis_traces.distributed_signoz_index_v3
+          FROM bylonis_traces.distributed_bylonis_index_v3
           WHERE timestamp BETWEEN {{.start_datetime}} AND {{.end_datetime}}
             AND ts_bucket_start BETWEEN {{.start_timestamp}} - 1800 AND {{.end_timestamp}}
             AND resource_string_service$$name IN ('driver', 'route')

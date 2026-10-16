@@ -19,10 +19,7 @@ import (
 
 // brandingAllowed lists the "signoz" occurrences that may reach the assistant,
 // each because it names something real that ByLonis still uses.
-var brandingAllowed = []*regexp.Regexp{
-	// ClickHouse trace tables, renamed together with the tables (bylonis/bylonis#108).
-	regexp.MustCompile(`(distributed_)?signoz_(index_v3|spans|error_index_v2)`),
-}
+var brandingAllowed = []*regexp.Regexp{}
 
 func newBrandingTestServer(t *testing.T, docsTools bool) *server.MCPServer {
 	t.Helper()
