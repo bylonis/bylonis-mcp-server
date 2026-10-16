@@ -147,7 +147,7 @@ func TestQueryPayloadRoundTrip_PreservesPromQLWithStepString(t *testing.T) {
 }
 
 func TestQueryPayloadRoundTrip_PreservesClickHouseSQL(t *testing.T) {
-	const sql = `SELECT count() FROM bylonis_traces.signoz_index_v3 WHERE service.name = 'frontend'`
+	const sql = `SELECT count() FROM bylonis_traces.bylonis_index_v3 WHERE service.name = 'frontend'`
 	input := `{
 		"schemaVersion":"v1",
 		"start":1700000000,

@@ -334,7 +334,7 @@ func (h *Handler) registerDashboardResources(s *server.MCPServer) {
 	clickhouseTracesSchemaResource := mcp.NewResource(
 		"bylonis://dashboard/clickhouse-schema-for-traces",
 		"ClickHouse Traces Schema",
-		mcp.WithResourceDescription("ClickHouse schema for signoz_index_v3, signoz_spans, signoz_error_index_v2, traces_v3_resource, dependency_graph_minutes_v2, trace_summary, top_level_operations and their distributed counterparts. requires dashboard instructions at bylonis://dashboard/instructions"),
+		mcp.WithResourceDescription("ClickHouse schema for bylonis_index_v3, bylonis_error_index_v2, traces_v3_resource, dependency_graph_minutes_v2, trace_summary, top_level_operations and their distributed counterparts. requires dashboard instructions at bylonis://dashboard/instructions"),
 		mcp.WithMIMEType("text/plain"),
 	)
 
