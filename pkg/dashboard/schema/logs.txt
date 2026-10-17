@@ -1,0 +1,148 @@
+
+=== LOGS SCHEMA ===
+
+Database: bylonis_logs
+
+Total Tables: 6
+
+Local Tables
+
+Table: logs_v2
+
+- Engine: MergeTree
+- Total Columns: 19
+- Total Indexes: 11
+
+Columns:
+- ts_bucket_start: UInt64
+- resource_fingerprint: String
+- timestamp: UInt64
+- observed_timestamp: UInt64
+- id: String
+- trace_id: String
+- span_id: String
+- trace_flags: UInt32
+- severity_text: LowCardinality(String)
+- severity_number: UInt8
+- body: String
+- attributes_string: Map(LowCardinality(String), String)
+- attributes_number: Map(LowCardinality(String), Float64)
+- attributes_bool: Map(LowCardinality(String), Bool)
+- resources_string: Map(LowCardinality(String), String)
+- scope_name: String
+- scope_version: String
+- scope_string: Map(LowCardinality(String), String)
+- resource: JSON(max_dynamic_paths=100)
+
+Indexes:
+- id_minmax (id) - Type: minmax
+- severity_number_idx (severity_number) - Type: set(25)
+- severity_text_idx (severity_text) - Type: set(25)
+- trace_flags_idx (trace_flags) - Type: bloom_filter
+- body_idx (lower(body)) - Type: ngrambf_v1(4, 60000, 5, 0)
+- scope_name_idx (scope_name) - Type: tokenbf_v1(10240, 3, 0)
+- attributes_string_idx_key (mapKeys(attributes_string)) - Type: tokenbf_v1(1024, 2, 0)
+- attributes_string_idx_val (mapValues(attributes_string)) - Type: ngrambf_v1(4, 5000, 2, 0)
+- attributes_number_idx_key (mapKeys(attributes_number)) - Type: tokenbf_v1(1024, 2, 0)
+- attributes_number_idx_val (mapValues(attributes_number)) - Type: bloom_filter
+- attributes_bool_idx_key (mapKeys(attributes_bool)) - Type: tokenbf_v1(1024, 2, 0)
+
+---
+
+Table: logs_v2_resource
+
+- Engine: ReplacingMergeTree
+- Total Columns: 3
+- Total Indexes: 2
+
+Columns:
+- labels: String
+- fingerprint: String
+- seen_at_ts_bucket_start: Int64
+
+Indexes:
+- idx_labels (lower(labels)) - Type: ngrambf_v1(4, 1024, 3, 0)
+- idx_labels_v1 (labels) - Type: ngrambf_v1(4, 1024, 3, 0)
+
+---
+
+Table: tag_attributes_v2
+
+- Engine: ReplacingMergeTree
+- Total Columns: 6
+- Total Indexes: 2
+
+Columns:
+- unix_milli: Int64
+- tag_key: String
+- tag_type: LowCardinality(String)
+- tag_data_type: LowCardinality(String)
+- string_value: String
+- number_value: Nullable(Float64)
+
+Indexes:
+- string_value_index (string_value) - Type: ngrambf_v1(4, 1024, 3, 0)
+- number_value_index (number_value) - Type: minmax
+
+---
+
+Distributed Tables
+
+Table: distributed_logs_v2
+
+- Engine: Distributed
+- Total Columns: 19
+- Total Indexes: 0
+
+Columns:
+- ts_bucket_start: UInt64
+- resource_fingerprint: String
+- timestamp: UInt64
+- observed_timestamp: UInt64
+- id: String
+- trace_id: String
+- span_id: String
+- trace_flags: UInt32
+- severity_text: LowCardinality(String)
+- severity_number: UInt8
+- body: String
+- attributes_string: Map(LowCardinality(String), String)
+- attributes_number: Map(LowCardinality(String), Float64)
+- attributes_bool: Map(LowCardinality(String), Bool)
+- resources_string: Map(LowCardinality(String), String)
+- scope_name: String
+- scope_version: String
+- scope_string: Map(LowCardinality(String), String)
+- resource: JSON(max_dynamic_paths=100)
+
+---
+
+Table: distributed_logs_v2_resource
+
+- Engine: Distributed
+- Total Columns: 3
+- Total Indexes: 0
+
+Columns:
+- labels: String
+- fingerprint: String
+- seen_at_ts_bucket_start: Int64
+
+---
+
+Table: distributed_tag_attributes_v2
+
+- Engine: Distributed
+- Total Columns: 6
+- Total Indexes: 0
+
+Columns:
+- unix_milli: Int64
+- tag_key: String
+- tag_type: LowCardinality(String)
+- tag_data_type: LowCardinality(String)
+- string_value: String
+- number_value: Nullable(Float64)
+
+---
+
