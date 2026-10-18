@@ -40,13 +40,6 @@ type Config struct {
 	AnalyticsEnabled bool
 	SegmentKey       string
 
-	// DocsToolsEnabled registers bylonis_search_docs and bylonis_fetch_doc. Their
-	// corpus is the upstream documentation site, so they stay off until ByLonis
-	// publishes its own docs.
-	DocsToolsEnabled        bool
-	DocsRefreshInterval     time.Duration
-	DocsFullRefreshInterval time.Duration
-
 	// MaxRequestBytes caps the size of an inbound MCP HTTP request body.
 	MaxRequestBytes int
 }
@@ -73,10 +66,6 @@ const (
 	OAuthRefreshTTLMinutes  = "OAUTH_REFRESH_TOKEN_TTL_MINUTES"
 	OAuthAuthCodeTTLSeconds = "OAUTH_AUTH_CODE_TTL_SECONDS"
 
-	DocsToolsEnabledEnv        = "BYLONIS_DOCS_TOOLS_ENABLED"
-	DocsRefreshIntervalEnv     = "BYLONIS_DOCS_REFRESH_INTERVAL"
-	DocsFullRefreshIntervalEnv = "BYLONIS_DOCS_FULL_REFRESH_INTERVAL"
-
 	MaxRequestBytesEnv = "MCP_MAX_REQUEST_BYTES"
 
 	// envPrefix is the prefix of the ByLonis env vars above; legacyEnvPrefix,
@@ -89,8 +78,6 @@ const (
 	defaultAccessTTLMinutes      = 60    // 1 hour
 	defaultRefreshTTLMinutes     = 43200 // 30 days
 	defaultAuthCodeTTLSeconds    = 600
-	defaultDocsRefreshInterval   = 6 * time.Hour
-	defaultDocsFullRefreshPeriod = 24 * time.Hour
 	// defaultMaxRequestBytes bounds inbound MCP request bodies; 4 MiB is far
 	// above any legitimate tool-call payload (incl. dashboard imports).
 	defaultMaxRequestBytes = 4 << 20 // 4 MiB
@@ -105,14 +92,6 @@ func LoadConfig() (*Config, error) {
 	accessTTLMinutes := getEnvInt(OAuthAccessTTLMinutes, defaultAccessTTLMinutes)
 	refreshTTLMinutes := getEnvInt(OAuthRefreshTTLMinutes, defaultRefreshTTLMinutes)
 	authCodeTTLSeconds := getEnvInt(OAuthAuthCodeTTLSeconds, defaultAuthCodeTTLSeconds)
-	docsRefreshInterval := getEnvDuration(DocsRefreshIntervalEnv, defaultDocsRefreshInterval)
-	docsFullRefreshInterval := getEnvDuration(DocsFullRefreshIntervalEnv, defaultDocsFullRefreshPeriod)
-	if docsFullRefreshInterval < docsRefreshInterval {
-		log.Printf("WARN: %s (%s) is shorter than %s (%s); falling back to defaults",
-			DocsFullRefreshIntervalEnv, docsFullRefreshInterval, DocsRefreshIntervalEnv, docsRefreshInterval)
-		docsRefreshInterval = defaultDocsRefreshInterval
-		docsFullRefreshInterval = defaultDocsFullRefreshPeriod
-	}
 
 	// Parse custom headers from BYLONIS_CUSTOM_HEADERS env var (format: "Key1:Value1,Key2:Value2")
 	customHeaders := make(map[string]string)
@@ -135,27 +114,24 @@ func LoadConfig() (*Config, error) {
 	}
 
 	return &Config{
-		URL:                     url,
-		APIKey:                  getEnv(SignozApiKey, ""),
-		LogLevel:                getEnv(LogLevel, "info"),
-		TransportMode:           getEnv(TransportMode, "stdio"),
-		Port:                    getEnv(MCPPort, "8000"),
-		OAuthEnabled:            getEnvBool(OAuthEnabledEnv, false),
-		OAuthTokenSecret:        getEnv(OAuthTokenSecretEnv, ""),
-		OAuthIssuerURL:          strings.TrimSuffix(getEnv(OAuthIssuerURLEnv, ""), "/"),
-		AccessTokenTTL:          time.Duration(accessTTLMinutes) * time.Minute,
-		RefreshTokenTTL:         time.Duration(refreshTTLMinutes) * time.Minute,
-		AuthCodeTTL:             time.Duration(authCodeTTLSeconds) * time.Second,
-		ClientCacheSize:         cacheSize,
-		ClientCacheTTL:          time.Duration(cacheTTLMinutes) * time.Minute,
-		CustomHeaders:           customHeaders,
-		InstanceURLAllowlist:    instanceURLAllowlist,
-		AnalyticsEnabled:        getEnvBool(AnalyticsEnabledEnv, false),
-		SegmentKey:              getEnv(SegmentKeyEnv, ""),
-		DocsToolsEnabled:        getEnvBool(DocsToolsEnabledEnv, false),
-		DocsRefreshInterval:     docsRefreshInterval,
-		DocsFullRefreshInterval: docsFullRefreshInterval,
-		MaxRequestBytes:         getEnvInt(MaxRequestBytesEnv, defaultMaxRequestBytes),
+		URL:                  url,
+		APIKey:               getEnv(SignozApiKey, ""),
+		LogLevel:             getEnv(LogLevel, "info"),
+		TransportMode:        getEnv(TransportMode, "stdio"),
+		Port:                 getEnv(MCPPort, "8000"),
+		OAuthEnabled:         getEnvBool(OAuthEnabledEnv, false),
+		OAuthTokenSecret:     getEnv(OAuthTokenSecretEnv, ""),
+		OAuthIssuerURL:       strings.TrimSuffix(getEnv(OAuthIssuerURLEnv, ""), "/"),
+		AccessTokenTTL:       time.Duration(accessTTLMinutes) * time.Minute,
+		RefreshTokenTTL:      time.Duration(refreshTTLMinutes) * time.Minute,
+		AuthCodeTTL:          time.Duration(authCodeTTLSeconds) * time.Second,
+		ClientCacheSize:      cacheSize,
+		ClientCacheTTL:       time.Duration(cacheTTLMinutes) * time.Minute,
+		CustomHeaders:        customHeaders,
+		InstanceURLAllowlist: instanceURLAllowlist,
+		AnalyticsEnabled:     getEnvBool(AnalyticsEnabledEnv, false),
+		SegmentKey:           getEnv(SegmentKeyEnv, ""),
+		MaxRequestBytes:      getEnvInt(MaxRequestBytesEnv, defaultMaxRequestBytes),
 	}, nil
 }
 
@@ -204,16 +180,6 @@ func getEnvBool(key string, defaultValue bool) bool {
 		if parsed, err := strconv.ParseBool(value); err == nil {
 			return parsed
 		}
-	}
-	return defaultValue
-}
-
-func getEnvDuration(key string, defaultValue time.Duration) time.Duration {
-	if value := lookupEnv(key); value != "" {
-		if parsed, err := time.ParseDuration(value); err == nil && parsed > 0 {
-			return parsed
-		}
-		log.Printf("WARN: invalid duration for %s=%q; using %s", key, value, defaultValue)
 	}
 	return defaultValue
 }

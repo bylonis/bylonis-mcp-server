@@ -21,13 +21,12 @@ import (
 // each because it names something real that ByLonis still uses.
 var brandingAllowed = []*regexp.Regexp{}
 
-func newBrandingTestServer(t *testing.T, docsTools bool) *server.MCPServer {
+func newBrandingTestServer(t *testing.T) *server.MCPServer {
 	t.Helper()
 
 	cfg := &config.Config{
-		ClientCacheSize:  8,
-		ClientCacheTTL:   5 * time.Minute,
-		DocsToolsEnabled: docsTools,
+		ClientCacheSize: 8,
+		ClientCacheTTL:  5 * time.Minute,
 	}
 	log := logpkg.New("error")
 	m := &MCPServer{logger: log, config: cfg, handler: tools.NewHandler(log, cfg), analytics: noopanalytics.New()}
@@ -64,7 +63,7 @@ func callMCP(t *testing.T, s *server.MCPServer, method string) string {
 // the assistant — instructions, tools, resources, resource templates and
 // prompts — with the default configuration.
 func TestNothingTheAssistantReadsSaysSigNoz(t *testing.T) {
-	s := newBrandingTestServer(t, false)
+	s := newBrandingTestServer(t)
 	signoz := regexp.MustCompile(`(?i)signoz`)
 
 	for _, method := range []string{"initialize", "tools/list", "resources/list", "resources/templates/list", "prompts/list"} {
@@ -75,17 +74,6 @@ func TestNothingTheAssistantReadsSaysSigNoz(t *testing.T) {
 		for _, loc := range signoz.FindAllStringIndex(text, -1) {
 			from, to := max(loc[0]-60, 0), min(loc[1]+60, len(text))
 			t.Errorf("%s mentions signoz: …%s…", method, text[from:to])
-		}
-	}
-}
-
-func TestDocsToolsOnlyWhenEnabled(t *testing.T) {
-	for _, enabled := range []bool{false, true} {
-		tools := newBrandingTestServer(t, enabled).ListTools()
-		for _, name := range []string{"bylonis_search_docs", "bylonis_fetch_doc"} {
-			if _, ok := tools[name]; ok != enabled {
-				t.Errorf("docs tools enabled=%v: %s registered=%v", enabled, name, ok)
-			}
 		}
 	}
 }

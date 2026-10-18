@@ -26,8 +26,3 @@ build: fmt goimports
 test:
 	@echo "🧪 Running all tests..."
 	@go test -v ./...
-
-docs-index:
-	@echo "📚 Rebuilding embedded SigNoz docs corpus (fail-loud if signoz.io/docs/sitemap.md is unreachable)..."
-	@go run ./cmd/build-docs-index
-	@echo "✅ corpus.gob.gz + corpus.manifest.json regenerated. Diff the manifest and commit both files."

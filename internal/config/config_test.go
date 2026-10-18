@@ -2,7 +2,6 @@ package config
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -101,14 +100,13 @@ func TestValidateConfig_StdioRequiresConfiguredCredentials(t *testing.T) {
 func TestLoadConfigLegacySignozEnv(t *testing.T) {
 	t.Setenv("SIGNOZ_URL", "http://legacy:8080/")
 	t.Setenv("SIGNOZ_API_KEY", "legacy-key")
-	t.Setenv("SIGNOZ_DOCS_REFRESH_INTERVAL", "2h")
 
 	cfg, err := LoadConfig()
 	if err != nil {
 		t.Fatalf("LoadConfig: %v", err)
 	}
-	if cfg.URL != "http://legacy:8080" || cfg.APIKey != "legacy-key" || cfg.DocsRefreshInterval != 2*time.Hour {
-		t.Fatalf("legacy SIGNOZ_ vars not read: url=%q key=%q docs=%s", cfg.URL, cfg.APIKey, cfg.DocsRefreshInterval)
+	if cfg.URL != "http://legacy:8080" || cfg.APIKey != "legacy-key" {
+		t.Fatalf("legacy SIGNOZ_ vars not read: url=%q key=%q", cfg.URL, cfg.APIKey)
 	}
 }
 
