@@ -48,3 +48,15 @@ jobs:
 
       - name: build
         run: go build -o /dev/null ./cmd/server
+
+      # The embedded ClickHouse schema must match the collector migrations it is
+      # generated from (tools/genschema, a separate module: it links the AGPL
+      # collector, the server binary does not).
+      - name: clickhouse schema up to date
+        working-directory: tools/genschema
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+          go vet .
+          go run . ../../pkg/dashboard/schema
+          git diff --exit-code -- ../../pkg/dashboard/schema

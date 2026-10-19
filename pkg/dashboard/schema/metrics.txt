@@ -1,0 +1,237 @@
+
+=== METRICS SCHEMA ===
+
+Database: bylonis_metrics
+
+Total Tables: 10
+
+Local Tables
+
+Table: exp_hist
+
+- Engine: MergeTree
+- Total Columns: 12
+- Total Indexes: 0
+
+Columns:
+- env: LowCardinality(String) - Default: 'default'
+- temporality: LowCardinality(String) - Default: 'Unspecified'
+- metric_name: LowCardinality(String)
+- fingerprint: UInt64
+- unix_milli: Int64
+- count: UInt64
+- sum: Float64
+- min: Float64
+- max: Float64
+- sketch: AggregateFunction(quantilesDD(0.01, 0.5, 0.75, 0.9, 0.95, 0.99), UInt64)
+- flags: UInt32 - Default: 0
+- inserted_at_unix_milli: Int64
+
+---
+
+Table: samples_v4
+
+- Engine: MergeTree
+- Total Columns: 8
+- Total Indexes: 0
+
+Columns:
+- env: LowCardinality(String) - Default: 'default'
+- temporality: LowCardinality(String) - Default: 'Unspecified'
+- metric_name: LowCardinality(String)
+- fingerprint: UInt64
+- unix_milli: Int64
+- value: Float64
+- flags: UInt32 - Default: 0
+- inserted_at_unix_milli: Int64
+
+---
+
+Table: time_series_v4
+
+- Engine: ReplacingMergeTree
+- Total Columns: 15
+- Total Indexes: 0
+
+Columns:
+- env: LowCardinality(String) - Default: 'default'
+- temporality: LowCardinality(String) - Default: 'Unspecified'
+- metric_name: LowCardinality(String)
+- description: LowCardinality(String) - Default: ''
+- unit: LowCardinality(String) - Default: ''
+- type: LowCardinality(String) - Default: ''
+- is_monotonic: Bool - Default: false
+- fingerprint: UInt64
+- unix_milli: Int64
+- labels: String
+- attrs: Map(LowCardinality(String), String) - Default: map()
+- scope_attrs: Map(LowCardinality(String), String) - Default: map()
+- resource_attrs: Map(LowCardinality(String), String) - Default: map()
+- __normalized: Bool - Default: true
+- inserted_at_unix_milli: Int64
+
+---
+
+Table: time_series_v4_1day
+
+- Engine: ReplacingMergeTree
+- Total Columns: 14
+- Total Indexes: 0
+
+Columns:
+- env: LowCardinality(String) - Default: 'default'
+- temporality: LowCardinality(String) - Default: 'Unspecified'
+- metric_name: LowCardinality(String)
+- description: LowCardinality(String) - Default: ''
+- unit: LowCardinality(String) - Default: ''
+- type: LowCardinality(String) - Default: ''
+- is_monotonic: Bool - Default: false
+- fingerprint: UInt64
+- unix_milli: Int64
+- labels: String
+- attrs: Map(LowCardinality(String), String) - Default: map()
+- scope_attrs: Map(LowCardinality(String), String) - Default: map()
+- resource_attrs: Map(LowCardinality(String), String) - Default: map()
+- __normalized: Bool - Default: true
+
+---
+
+Table: time_series_v4_6hrs
+
+- Engine: ReplacingMergeTree
+- Total Columns: 14
+- Total Indexes: 0
+
+Columns:
+- env: LowCardinality(String) - Default: 'default'
+- temporality: LowCardinality(String) - Default: 'Unspecified'
+- metric_name: LowCardinality(String)
+- description: LowCardinality(String) - Default: ''
+- unit: LowCardinality(String) - Default: ''
+- type: LowCardinality(String) - Default: ''
+- is_monotonic: Bool - Default: false
+- fingerprint: UInt64
+- unix_milli: Int64
+- labels: String
+- attrs: Map(LowCardinality(String), String) - Default: map()
+- scope_attrs: Map(LowCardinality(String), String) - Default: map()
+- resource_attrs: Map(LowCardinality(String), String) - Default: map()
+- __normalized: Bool - Default: true
+
+---
+
+Distributed Tables
+
+Table: distributed_exp_hist
+
+- Engine: Distributed
+- Total Columns: 12
+- Total Indexes: 0
+
+Columns:
+- env: LowCardinality(String) - Default: 'default'
+- temporality: LowCardinality(String) - Default: 'Unspecified'
+- metric_name: LowCardinality(String)
+- fingerprint: UInt64
+- unix_milli: Int64
+- count: UInt64
+- sum: Float64
+- min: Float64
+- max: Float64
+- sketch: AggregateFunction(quantilesDD(0.01, 0.5, 0.75, 0.9, 0.95, 0.99), UInt64)
+- flags: UInt32 - Default: 0
+- inserted_at_unix_milli: Int64
+
+---
+
+Table: distributed_samples_v4
+
+- Engine: Distributed
+- Total Columns: 8
+- Total Indexes: 0
+
+Columns:
+- env: LowCardinality(String) - Default: 'default'
+- temporality: LowCardinality(String) - Default: 'Unspecified'
+- metric_name: LowCardinality(String)
+- fingerprint: UInt64
+- unix_milli: Int64
+- value: Float64
+- flags: UInt32 - Default: 0
+- inserted_at_unix_milli: Int64
+
+---
+
+Table: distributed_time_series_v4
+
+- Engine: Distributed
+- Total Columns: 15
+- Total Indexes: 0
+
+Columns:
+- env: LowCardinality(String) - Default: 'default'
+- temporality: LowCardinality(String) - Default: 'Unspecified'
+- metric_name: LowCardinality(String)
+- description: LowCardinality(String) - Default: ''
+- unit: LowCardinality(String) - Default: ''
+- type: LowCardinality(String) - Default: ''
+- is_monotonic: Bool - Default: false
+- fingerprint: UInt64
+- unix_milli: Int64
+- labels: String
+- attrs: Map(LowCardinality(String), String) - Default: map()
+- scope_attrs: Map(LowCardinality(String), String) - Default: map()
+- resource_attrs: Map(LowCardinality(String), String) - Default: map()
+- __normalized: Bool - Default: true
+- inserted_at_unix_milli: Int64
+
+---
+
+Table: distributed_time_series_v4_1day
+
+- Engine: Distributed
+- Total Columns: 14
+- Total Indexes: 0
+
+Columns:
+- env: LowCardinality(String) - Default: 'default'
+- temporality: LowCardinality(String) - Default: 'Unspecified'
+- metric_name: LowCardinality(String)
+- description: LowCardinality(String) - Default: ''
+- unit: LowCardinality(String) - Default: ''
+- type: LowCardinality(String) - Default: ''
+- is_monotonic: Bool - Default: false
+- fingerprint: UInt64
+- unix_milli: Int64
+- labels: String
+- attrs: Map(LowCardinality(String), String) - Default: map()
+- scope_attrs: Map(LowCardinality(String), String) - Default: map()
+- resource_attrs: Map(LowCardinality(String), String) - Default: map()
+- __normalized: Bool - Default: true
+
+---
+
+Table: distributed_time_series_v4_6hrs
+
+- Engine: Distributed
+- Total Columns: 14
+- Total Indexes: 0
+
+Columns:
+- env: LowCardinality(String) - Default: 'default'
+- temporality: LowCardinality(String) - Default: 'Unspecified'
+- metric_name: LowCardinality(String)
+- description: LowCardinality(String) - Default: ''
+- unit: LowCardinality(String) - Default: ''
+- type: LowCardinality(String) - Default: ''
+- is_monotonic: Bool - Default: false
+- fingerprint: UInt64
+- unix_milli: Int64
+- labels: String
+- attrs: Map(LowCardinality(String), String) - Default: map()
+- scope_attrs: Map(LowCardinality(String), String) - Default: map()
+- resource_attrs: Map(LowCardinality(String), String) - Default: map()
+- __normalized: Bool - Default: true
+
+---
+
