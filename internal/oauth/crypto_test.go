@@ -15,13 +15,13 @@ func TestEncryptDecryptTokenRoundTrip(t *testing.T) {
 		t.Fatalf("EncryptToken() error = %v", err)
 	}
 
-	apiKey, signozURL, clientID, gotExpiresAt, err := DecryptToken(token, secret)
+	apiKey, bylonisURL, clientID, gotExpiresAt, err := DecryptToken(token, secret)
 	if err != nil {
 		t.Fatalf("DecryptToken() error = %v", err)
 	}
 
-	if apiKey != "api-key" || signozURL != "https://tenant.example.com" || clientID != "client-1" {
-		t.Fatalf("unexpected payload: apiKey=%q signozURL=%q clientID=%q", apiKey, signozURL, clientID)
+	if apiKey != "api-key" || bylonisURL != "https://tenant.example.com" || clientID != "client-1" {
+		t.Fatalf("unexpected payload: apiKey=%q bylonisURL=%q clientID=%q", apiKey, bylonisURL, clientID)
 	}
 	if !gotExpiresAt.Equal(expiresAt) {
 		t.Fatalf("DecryptToken() expiresAt = %v, want %v", gotExpiresAt, expiresAt)
@@ -147,5 +147,41 @@ func TestDecryptTokenRejectsAuthorizationCodeBlob(t *testing.T) {
 	_, _, _, _, err = DecryptToken(code, secret)
 	if !errors.Is(err, ErrInvalidToken) {
 		t.Fatalf("DecryptToken() error = %v, want %v", err, ErrInvalidToken)
+	}
+}
+
+// Tokens issued before v1.0 carried the instance URL as signoz_url; they must
+// be rejected so the client authorizes again.
+func TestDecryptRejectsTokensWithoutBylonisURL(t *testing.T) {
+	secret := []byte("0123456789abcdef0123456789abcdef")
+	legacy := map[string]any{
+		"api_key":    "api-key",
+		"signoz_url": "https://tenant.example.com",
+		"client_id":  "client-1",
+		"expires_at": time.Now().UTC().Add(time.Hour),
+	}
+
+	access, err := encryptTypedBlob(blobTypeAccessToken, legacy, secret)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, _, err := DecryptToken(access, secret); !errors.Is(err, ErrInvalidToken) {
+		t.Fatalf("DecryptToken(legacy) error = %v, want ErrInvalidToken", err)
+	}
+
+	refresh, err := encryptTypedBlob(blobTypeRefreshToken, legacy, secret)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, _, err := DecryptRefreshToken(refresh, secret); !errors.Is(err, ErrInvalidToken) {
+		t.Fatalf("DecryptRefreshToken(legacy) error = %v, want ErrInvalidToken", err)
+	}
+
+	code, err := encryptTypedBlob(blobTypeAuthorizationCode, legacy, secret)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, _, _, _, _, err := DecryptAuthorizationCode(code, secret); !errors.Is(err, ErrInvalidToken) {
+		t.Fatalf("DecryptAuthorizationCode(legacy) error = %v, want ErrInvalidToken", err)
 	}
 }

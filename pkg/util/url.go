@@ -6,10 +6,10 @@ import (
 	"strings"
 )
 
-// NormalizeSigNozURL validates that rawURL is safe to use as a SigNoz backend
+// NormalizeByLonisURL validates that rawURL is safe to use as a ByLonis backend
 // target and returns the canonical origin form (scheme://host[:port]).
 // It only allows origin URLs and strips default ports for stable cache keys.
-func NormalizeSigNozURL(rawURL string) (string, error) {
+func NormalizeByLonisURL(rawURL string) (string, error) {
 	parsed, err := url.Parse(strings.TrimSpace(rawURL))
 	if err != nil {
 		return "", fmt.Errorf("malformed URL: %w", err)
@@ -57,10 +57,10 @@ func NormalizeSigNozURL(rawURL string) (string, error) {
 	return origin, nil
 }
 
-// NormalizeSigNozURLFormInput normalizes URLs entered by humans in auth forms. It
+// NormalizeByLonisURLFormInput normalizes URLs entered by humans in auth forms. It
 // accepts protocol-less hosts by assuming HTTPS and strips path/query/fragment
 // suffixes before delegating to the strict origin validator.
-func NormalizeSigNozURLFormInput(rawURL string) (string, error) {
+func NormalizeByLonisURLFormInput(rawURL string) (string, error) {
 	trimmed := strings.TrimSpace(rawURL)
 	if trimmed == "" {
 		return "", fmt.Errorf("URL is required")
@@ -87,7 +87,7 @@ func NormalizeSigNozURLFormInput(rawURL string) (string, error) {
 	parsed.ForceQuery = false
 	parsed.Fragment = ""
 
-	return NormalizeSigNozURL(parsed.String())
+	return NormalizeByLonisURL(parsed.String())
 }
 
 func hasExplicitScheme(rawURL string) bool {

@@ -15,6 +15,11 @@ import (
 var (
 	ErrExpiredToken = errors.New("oauth token expired")
 	ErrInvalidToken = errors.New("invalid oauth token")
+
+	// errMissingURL rejects payloads without bylonis_url, such as tokens
+	// issued before v1.0 (they carried signoz_url): the client must authorize
+	// again.
+	errMissingURL = fmt.Errorf("token payload has no bylonis_url: %w", ErrInvalidToken)
 )
 
 const (
@@ -25,10 +30,10 @@ const (
 )
 
 type encryptedTokenPayload struct {
-	APIKey    string    `json:"api_key"`
-	SignozURL string    `json:"signoz_url"`
-	ClientID  string    `json:"client_id"`
-	ExpiresAt time.Time `json:"expires_at"`
+	APIKey     string    `json:"api_key"`
+	ByLonisURL string    `json:"bylonis_url"`
+	ClientID   string    `json:"client_id"`
+	ExpiresAt  time.Time `json:"expires_at"`
 }
 
 type encryptedClientIDPayload struct {
@@ -39,7 +44,7 @@ type encryptedClientIDPayload struct {
 
 type encryptedAuthorizationCodePayload struct {
 	APIKey              string    `json:"api_key"`
-	SignozURL           string    `json:"signoz_url"`
+	ByLonisURL          string    `json:"bylonis_url"`
 	ClientID            string    `json:"client_id"`
 	RedirectURI         string    `json:"redirect_uri"`
 	CodeChallenge       string    `json:"code_challenge"`
@@ -48,32 +53,35 @@ type encryptedAuthorizationCodePayload struct {
 }
 
 type encryptedRefreshTokenPayload struct {
-	APIKey    string    `json:"api_key"`
-	SignozURL string    `json:"signoz_url"`
-	ClientID  string    `json:"client_id"`
-	ExpiresAt time.Time `json:"expires_at"`
+	APIKey     string    `json:"api_key"`
+	ByLonisURL string    `json:"bylonis_url"`
+	ClientID   string    `json:"client_id"`
+	ExpiresAt  time.Time `json:"expires_at"`
 }
 
-func EncryptToken(apiKey, signozURL, clientID string, expiresAt time.Time, secret []byte) (string, error) {
+func EncryptToken(apiKey, bylonisURL, clientID string, expiresAt time.Time, secret []byte) (string, error) {
 	return encryptTypedBlob(blobTypeAccessToken, encryptedTokenPayload{
-		APIKey:    apiKey,
-		SignozURL: signozURL,
-		ClientID:  clientID,
-		ExpiresAt: expiresAt.UTC(),
+		APIKey:     apiKey,
+		ByLonisURL: bylonisURL,
+		ClientID:   clientID,
+		ExpiresAt:  expiresAt.UTC(),
 	}, secret)
 }
 
-func DecryptToken(token string, secret []byte) (apiKey, signozURL, clientID string, expiresAt time.Time, err error) {
+func DecryptToken(token string, secret []byte) (apiKey, bylonisURL, clientID string, expiresAt time.Time, err error) {
 	var payload encryptedTokenPayload
 	if err := decryptTypedBlob(token, blobTypeAccessToken, secret, &payload); err != nil {
 		return "", "", "", time.Time{}, err
 	}
-
-	if time.Now().UTC().After(payload.ExpiresAt) {
-		return payload.APIKey, payload.SignozURL, payload.ClientID, payload.ExpiresAt, ErrExpiredToken
+	if payload.ByLonisURL == "" {
+		return "", "", "", time.Time{}, errMissingURL
 	}
 
-	return payload.APIKey, payload.SignozURL, payload.ClientID, payload.ExpiresAt, nil
+	if time.Now().UTC().After(payload.ExpiresAt) {
+		return payload.APIKey, payload.ByLonisURL, payload.ClientID, payload.ExpiresAt, ErrExpiredToken
+	}
+
+	return payload.APIKey, payload.ByLonisURL, payload.ClientID, payload.ExpiresAt, nil
 }
 
 func EncryptClientID(redirectURIs []string, clientName string, createdAt time.Time, secret []byte) (string, error) {
@@ -92,10 +100,10 @@ func DecryptClientID(clientID string, secret []byte) (redirectURIs []string, cli
 	return payload.RedirectURIs, payload.ClientName, payload.CreatedAt, nil
 }
 
-func EncryptAuthorizationCode(apiKey, signozURL, clientID, redirectURI, codeChallenge, codeChallengeMethod string, expiresAt time.Time, secret []byte) (string, error) {
+func EncryptAuthorizationCode(apiKey, bylonisURL, clientID, redirectURI, codeChallenge, codeChallengeMethod string, expiresAt time.Time, secret []byte) (string, error) {
 	return encryptTypedBlob(blobTypeAuthorizationCode, encryptedAuthorizationCodePayload{
 		APIKey:              apiKey,
-		SignozURL:           signozURL,
+		ByLonisURL:          bylonisURL,
 		ClientID:            clientID,
 		RedirectURI:         redirectURI,
 		CodeChallenge:       codeChallenge,
@@ -104,35 +112,41 @@ func EncryptAuthorizationCode(apiKey, signozURL, clientID, redirectURI, codeChal
 	}, secret)
 }
 
-func DecryptAuthorizationCode(code string, secret []byte) (apiKey, signozURL, clientID, redirectURI, codeChallenge, codeChallengeMethod string, expiresAt time.Time, err error) {
+func DecryptAuthorizationCode(code string, secret []byte) (apiKey, bylonisURL, clientID, redirectURI, codeChallenge, codeChallengeMethod string, expiresAt time.Time, err error) {
 	var payload encryptedAuthorizationCodePayload
 	if err := decryptTypedBlob(code, blobTypeAuthorizationCode, secret, &payload); err != nil {
 		return "", "", "", "", "", "", time.Time{}, err
 	}
-	if time.Now().UTC().After(payload.ExpiresAt) {
-		return payload.APIKey, payload.SignozURL, payload.ClientID, payload.RedirectURI, payload.CodeChallenge, payload.CodeChallengeMethod, payload.ExpiresAt, ErrExpiredToken
+	if payload.ByLonisURL == "" {
+		return "", "", "", "", "", "", time.Time{}, errMissingURL
 	}
-	return payload.APIKey, payload.SignozURL, payload.ClientID, payload.RedirectURI, payload.CodeChallenge, payload.CodeChallengeMethod, payload.ExpiresAt, nil
+	if time.Now().UTC().After(payload.ExpiresAt) {
+		return payload.APIKey, payload.ByLonisURL, payload.ClientID, payload.RedirectURI, payload.CodeChallenge, payload.CodeChallengeMethod, payload.ExpiresAt, ErrExpiredToken
+	}
+	return payload.APIKey, payload.ByLonisURL, payload.ClientID, payload.RedirectURI, payload.CodeChallenge, payload.CodeChallengeMethod, payload.ExpiresAt, nil
 }
 
-func EncryptRefreshToken(apiKey, signozURL, clientID string, expiresAt time.Time, secret []byte) (string, error) {
+func EncryptRefreshToken(apiKey, bylonisURL, clientID string, expiresAt time.Time, secret []byte) (string, error) {
 	return encryptTypedBlob(blobTypeRefreshToken, encryptedRefreshTokenPayload{
-		APIKey:    apiKey,
-		SignozURL: signozURL,
-		ClientID:  clientID,
-		ExpiresAt: expiresAt.UTC(),
+		APIKey:     apiKey,
+		ByLonisURL: bylonisURL,
+		ClientID:   clientID,
+		ExpiresAt:  expiresAt.UTC(),
 	}, secret)
 }
 
-func DecryptRefreshToken(token string, secret []byte) (apiKey, signozURL, clientID string, expiresAt time.Time, err error) {
+func DecryptRefreshToken(token string, secret []byte) (apiKey, bylonisURL, clientID string, expiresAt time.Time, err error) {
 	var payload encryptedRefreshTokenPayload
 	if err := decryptTypedBlob(token, blobTypeRefreshToken, secret, &payload); err != nil {
 		return "", "", "", time.Time{}, err
 	}
-	if time.Now().UTC().After(payload.ExpiresAt) {
-		return payload.APIKey, payload.SignozURL, payload.ClientID, payload.ExpiresAt, ErrExpiredToken
+	if payload.ByLonisURL == "" {
+		return "", "", "", time.Time{}, errMissingURL
 	}
-	return payload.APIKey, payload.SignozURL, payload.ClientID, payload.ExpiresAt, nil
+	if time.Now().UTC().After(payload.ExpiresAt) {
+		return payload.APIKey, payload.ByLonisURL, payload.ClientID, payload.ExpiresAt, ErrExpiredToken
+	}
+	return payload.APIKey, payload.ByLonisURL, payload.ClientID, payload.ExpiresAt, nil
 }
 
 func encryptTypedBlob(blobType byte, payload any, secret []byte) (string, error) {

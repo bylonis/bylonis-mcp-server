@@ -7,7 +7,7 @@ import (
 	"github.com/bylonis/bylonis-mcp-server/pkg/types"
 )
 
-// Client defines the interface for interacting with the SigNoz API.
+// Client defines the interface for interacting with the ByLonis API.
 // Handler code depends on this interface, enabling mock-based unit testing.
 type Client interface {
 	GetAnalyticsIdentity(ctx context.Context) (*AnalyticsIdentity, error)

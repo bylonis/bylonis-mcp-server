@@ -12,7 +12,7 @@ func TestAuthorizePageDoesNotMentionSigNoz(t *testing.T) {
 	var buf bytes.Buffer
 	data := authorizeTemplateData{
 		ClientName:   "Example client",
-		SignozURL:    "https://houston.bylonis.ai",
+		ByLonisURL:   "https://houston.bylonis.ai",
 		ErrorMessage: "Enter your ByLonis API key to continue.",
 	}
 	if err := authorizePageTemplate.Execute(&buf, data); err != nil {

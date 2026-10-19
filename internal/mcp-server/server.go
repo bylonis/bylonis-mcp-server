@@ -15,7 +15,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	signozclient "github.com/bylonis/bylonis-mcp-server/internal/client"
+	bylonisclient "github.com/bylonis/bylonis-mcp-server/internal/client"
 	"github.com/bylonis/bylonis-mcp-server/internal/config"
 	"github.com/bylonis/bylonis-mcp-server/internal/handler/tools"
 	"github.com/bylonis/bylonis-mcp-server/internal/oauth"
@@ -117,7 +117,7 @@ func cloneAttrs(src map[string]any) map[string]any {
 	return dst
 }
 
-func (m *MCPServer) mergeIdentityAttrs(identity *signozclient.AnalyticsIdentity, attrs map[string]any) map[string]any {
+func (m *MCPServer) mergeIdentityAttrs(identity *bylonisclient.AnalyticsIdentity, attrs map[string]any) map[string]any {
 	merged := cloneAttrs(attrs)
 	if identity == nil {
 		return merged
@@ -135,7 +135,7 @@ func (m *MCPServer) mergeIdentityAttrs(identity *signozclient.AnalyticsIdentity,
 	return merged
 }
 
-func (m *MCPServer) resolveIdentity(ctx context.Context) (*signozclient.AnalyticsIdentity, error) {
+func (m *MCPServer) resolveIdentity(ctx context.Context) (*bylonisclient.AnalyticsIdentity, error) {
 	if m.handler == nil {
 		return nil, errors.New("analytics identity resolution requires a handler")
 	}
@@ -210,13 +210,13 @@ func (m *MCPServer) identifyAndTrackAsync(ctx context.Context, event string, tra
 // trackOAuthEvent seeds tenant credentials on ctx so the async identity
 // lookup can run even though the OAuth HTTP request carried them in form
 // fields or an encrypted grant, not in util-context.
-func (m *MCPServer) trackOAuthEvent(ctx context.Context, event, apiKey, signozURL string, props map[string]any) {
+func (m *MCPServer) trackOAuthEvent(ctx context.Context, event, apiKey, bylonisURL string, props map[string]any) {
 	if apiKey != "" {
 		ctx = util.SetAPIKey(ctx, apiKey)
-		ctx = util.SetAuthHeader(ctx, signozclient.APIKeyHeader)
+		ctx = util.SetAuthHeader(ctx, bylonisclient.APIKeyHeader)
 	}
-	if signozURL != "" {
-		ctx = util.SetSigNozURL(ctx, signozURL)
+	if bylonisURL != "" {
+		ctx = util.SetByLonisURL(ctx, bylonisURL)
 	}
 	if m.meters != nil {
 		attrs := []attribute.KeyValue{attribute.String("event", event)}
@@ -238,8 +238,8 @@ func (m *MCPServer) detachedAnalyticsContext(parent context.Context) (context.Co
 	if authHeader, ok := util.GetAuthHeader(parent); ok && authHeader != "" {
 		ctx = util.SetAuthHeader(ctx, authHeader)
 	}
-	if signozURL, ok := util.GetSigNozURL(parent); ok && signozURL != "" {
-		ctx = util.SetSigNozURL(ctx, signozURL)
+	if bylonisURL, ok := util.GetByLonisURL(parent); ok && bylonisURL != "" {
+		ctx = util.SetByLonisURL(ctx, bylonisURL)
 	}
 	if searchContext, ok := util.GetSearchContext(parent); ok && searchContext != "" {
 		ctx = util.SetSearchContext(ctx, searchContext)
@@ -618,8 +618,8 @@ func (m *MCPServer) startMethodSpan(ctx context.Context, method mcp.MCPMethod) (
 	attrs := []attribute.KeyValue{
 		otelpkg.MCPMethodKey.String(string(method)),
 	}
-	if signozURL, ok := util.GetSigNozURL(ctx); ok && signozURL != "" {
-		attrs = append(attrs, otelpkg.MCPTenantURLKey.String(signozURL))
+	if bylonisURL, ok := util.GetByLonisURL(ctx); ok && bylonisURL != "" {
+		attrs = append(attrs, otelpkg.MCPTenantURLKey.String(bylonisURL))
 	}
 	attrs = otelpkg.AppendCallerCorrelation(ctx, attrs)
 
@@ -791,12 +791,12 @@ func (m *MCPServer) buildHooks() *server.Hooks {
 			sessionID = session.SessionID()
 		}
 
-		if signozURL, ok := util.GetSigNozURL(ctx); ok && signozURL != "" {
+		if bylonisURL, ok := util.GetByLonisURL(ctx); ok && bylonisURL != "" {
 			traits := map[string]any{
-				analytics.AttrTenantURL: signozURL,
+				analytics.AttrTenantURL: bylonisURL,
 			}
 			props := map[string]any{
-				analytics.AttrTenantURL: signozURL,
+				analytics.AttrTenantURL: bylonisURL,
 			}
 			if sessionID != "" {
 				props[analytics.AttrSessionID] = sessionID
@@ -816,9 +816,9 @@ func (m *MCPServer) buildHooks() *server.Hooks {
 	hooks.AddOnRegisterSession(func(ctx context.Context, _ server.ClientSession) {
 		m.logger.InfoContext(ctx, "mcp session registered")
 
-		if signozURL, ok := util.GetSigNozURL(ctx); ok && signozURL != "" {
+		if bylonisURL, ok := util.GetByLonisURL(ctx); ok && bylonisURL != "" {
 			traits := map[string]any{
-				analytics.AttrTenantURL: signozURL,
+				analytics.AttrTenantURL: bylonisURL,
 			}
 			m.identifyAsync(ctx, traits)
 		}
@@ -827,9 +827,9 @@ func (m *MCPServer) buildHooks() *server.Hooks {
 		m.logger.InfoContext(ctx, "mcp session unregistered")
 	})
 	hooks.AddAfterGetPrompt(func(ctx context.Context, id any, message *mcp.GetPromptRequest, result *mcp.GetPromptResult) {
-		if signozURL, ok := util.GetSigNozURL(ctx); ok && signozURL != "" {
+		if bylonisURL, ok := util.GetByLonisURL(ctx); ok && bylonisURL != "" {
 			props := map[string]any{
-				analytics.AttrTenantURL:  signozURL,
+				analytics.AttrTenantURL:  bylonisURL,
 				analytics.AttrPromptName: message.Params.Name,
 			}
 			if session := server.ClientSessionFromContext(ctx); session != nil && session.SessionID() != "" {
@@ -840,9 +840,9 @@ func (m *MCPServer) buildHooks() *server.Hooks {
 		}
 	})
 	hooks.AddAfterReadResource(func(ctx context.Context, id any, message *mcp.ReadResourceRequest, result *mcp.ReadResourceResult) {
-		if signozURL, ok := util.GetSigNozURL(ctx); ok && signozURL != "" {
+		if bylonisURL, ok := util.GetByLonisURL(ctx); ok && bylonisURL != "" {
 			props := map[string]any{
-				analytics.AttrTenantURL:   signozURL,
+				analytics.AttrTenantURL:   bylonisURL,
 				analytics.AttrResourceURI: message.Params.URI,
 			}
 			if session := server.ClientSessionFromContext(ctx); session != nil && session.SessionID() != "" {
@@ -958,9 +958,9 @@ func (m *MCPServer) loggingMiddleware() server.ToolHandlerMiddleware {
 			}
 
 			// Analytics: track tool call
-			if signozURL, ok := util.GetSigNozURL(ctx); ok && signozURL != "" {
+			if bylonisURL, ok := util.GetByLonisURL(ctx); ok && bylonisURL != "" {
 				props := map[string]any{
-					analytics.AttrTenantURL:   signozURL,
+					analytics.AttrTenantURL:   bylonisURL,
 					analytics.AttrToolName:    req.Params.Name,
 					analytics.AttrToolIsError: isErr,
 					analytics.AttrDurationMs:  time.Since(start).Milliseconds(),
@@ -1050,8 +1050,8 @@ func (m *MCPServer) runStdio(ctx context.Context, s *server.MCPServer) error {
 	stdio := server.NewStdioServer(s)
 	stdio.SetContextFunc(func(ctx context.Context) context.Context {
 		ctx = util.SetAPIKey(ctx, m.config.APIKey)
-		ctx = util.SetAuthHeader(ctx, signozclient.APIKeyHeader)
-		ctx = util.SetSigNozURL(ctx, m.config.URL)
+		ctx = util.SetAuthHeader(ctx, bylonisclient.APIKeyHeader)
+		ctx = util.SetByLonisURL(ctx, m.config.URL)
 		// Stdio has no HTTP headers; seed the default so client_source is
 		// always populated.
 		ctx = util.SetClientSource(ctx, util.ClientSourceUserClient)
@@ -1064,50 +1064,36 @@ func (m *MCPServer) runStdio(ctx context.Context, s *server.MCPServer) error {
 	return nil
 }
 
-// headerWithAlias returns the value of header, or of its deprecated alias when
-// header is absent; deprecated reports whether the alias was used.
-func headerWithAlias(r *http.Request, header, alias string) (value string, deprecated bool) {
-	if v := r.Header.Get(header); v != "" {
-		return v, false
-	}
-	if v := r.Header.Get(alias); v != "" {
-		return v, true
-	}
-	return "", false
-}
-
 func isJWTToken(token string) bool {
 	return strings.Count(token, ".") == 2 && strings.HasPrefix(token, "eyJ")
 }
 
 const (
-	authModeNone         = "none"
-	authModeAPIKeyHeader = "api-key-header"
-	// a client still on the SIGNOZ-API-KEY header, accepted until v1.1
-	authModeDeprecatedAPIKeyHeader = "signoz-api-key-header"
-	authModeAuthorizationAPIKey    = "authorization-api-key"
-	authModeAuthorizationBearer    = "authorization-bearer"
-	authModeAuthorizationJWT       = "authorization-jwt"
-	authModeOAuthAccessToken       = "oauth-access-token"
-	authModeConfigAPIKey           = "config-api-key"
+	authModeNone                = "none"
+	authModeAPIKeyHeader        = "api-key-header"
+	authModeAuthorizationAPIKey = "authorization-api-key"
+	authModeAuthorizationBearer = "authorization-bearer"
+	authModeAuthorizationJWT    = "authorization-jwt"
+	authModeOAuthAccessToken    = "oauth-access-token"
+	authModeConfigAPIKey        = "config-api-key"
 
-	authFailureExpiredOAuthToken   = "expired_oauth_token"
-	authFailureInvalidOAuthToken   = "invalid_oauth_token"
-	authFailureInvalidSignozURL    = "invalid_bylonis_url"
-	authFailureMissingCredential   = "missing_credentials"
-	authFailureMissingSignozURL    = "missing_bylonis_url"
-	authFailureDisallowedSignozURL = "disallowed_bylonis_url"
+	authFailureExpiredOAuthToken    = "expired_oauth_token"
+	authFailureInvalidOAuthToken    = "invalid_oauth_token"
+	authFailureInvalidByLonisURL    = "invalid_bylonis_url"
+	authFailureMissingCredential    = "missing_credentials"
+	authFailureMissingByLonisURL    = "missing_bylonis_url"
+	authFailureDisallowedByLonisURL = "disallowed_bylonis_url"
 )
 
 // enforceInstanceURLAllowlist rejects a client-supplied ByLonis URL not in
 // BYLONIS_INSTANCE_URL_ALLOWLIST, returning false after writing the 403 + auth
-// failure. signozURL must already be on ctx so the failure carries mcp.tenant_url.
-func (m *MCPServer) enforceInstanceURLAllowlist(ctx context.Context, w http.ResponseWriter, r *http.Request, signozURL, authMode string) bool {
-	if m.config.InstanceURLAllowlist.AllowsURL(signozURL) {
+// failure. bylonisURL must already be on ctx so the failure carries mcp.tenant_url.
+func (m *MCPServer) enforceInstanceURLAllowlist(ctx context.Context, w http.ResponseWriter, r *http.Request, bylonisURL, authMode string) bool {
+	if m.config.InstanceURLAllowlist.AllowsURL(bylonisURL) {
 		return true
 	}
-	m.logAuthFailure(ctx, r, http.StatusForbidden, authFailureDisallowedSignozURL, authMode,
-		"Tenant ByLonis URL is not permitted by the server allowlist", slog.String("mcp.tenant_url", signozURL))
+	m.logAuthFailure(ctx, r, http.StatusForbidden, authFailureDisallowedByLonisURL, authMode,
+		"Tenant ByLonis URL is not permitted by the server allowlist", slog.String("mcp.tenant_url", bylonisURL))
 	http.Error(w, util.InstanceURLNotPermittedMessage(), http.StatusForbidden)
 	return false
 }
@@ -1168,7 +1154,7 @@ func (m *MCPServer) logAuthFailure(ctx context.Context, r *http.Request, status 
 
 	// Allowlist rejections are recorded on the metric and span only; the
 	// per-request log would be noisy for a misconfigured/looping client.
-	if reason == authFailureDisallowedSignozURL {
+	if reason == authFailureDisallowedByLonisURL {
 		return
 	}
 
@@ -1194,10 +1180,9 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 		// 401/early-reject paths) propagates them. Values are advisory and
 		// flow into every log/span/event, so they are normalized
 		// (trim + length-cap) before being stashed.
-		// X-SigNoz-* names are accepted until v1.1; the X-ByLonis-* one wins.
-		rawClientSource, oldClientSource := headerWithAlias(r, signozclient.ClientSourceHeader, signozclient.DeprecatedClientSourceHeader)
-		rawThreadID, oldThreadID := headerWithAlias(r, signozclient.AssistantThreadIDHeader, signozclient.DeprecatedAssistantThreadIDHeader)
-		rawExecutionID, oldExecutionID := headerWithAlias(r, signozclient.AssistantExecutionIDHeader, signozclient.DeprecatedAssistantExecutionIDHeader)
+		rawClientSource := r.Header.Get(bylonisclient.ClientSourceHeader)
+		rawThreadID := r.Header.Get(bylonisclient.AssistantThreadIDHeader)
+		rawExecutionID := r.Header.Get(bylonisclient.AssistantExecutionIDHeader)
 
 		clientSource := util.NormalizeCallerCorrelationValue(rawClientSource)
 		if clientSource == "" {
@@ -1215,49 +1200,31 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 		// still queryable by caller.
 		if rootSpan := trace.SpanFromContext(ctx); rootSpan.IsRecording() {
 			rootSpan.SetAttributes(otelpkg.AppendCallerCorrelation(ctx, nil)...)
-			if oldClientSource || oldThreadID || oldExecutionID {
-				rootSpan.SetAttributes(attribute.Bool("mcp.deprecated_correlation_header", true))
-			}
 		}
 
 		// Extract the instance URL header (takes precedence over JWT audience).
-		// X-SigNoz-URL is accepted until v1.1; when both are sent, X-ByLonis-URL wins.
-		customURLHeader := signozclient.URLHeader
-		customURL := r.Header.Get(signozclient.URLHeader)
-		if customURL == "" {
-			if customURL = r.Header.Get(signozclient.DeprecatedURLHeader); customURL != "" {
-				customURLHeader = signozclient.DeprecatedURLHeader
-				// Mark the trace (not the logs, to avoid per-request noise) so clients
-				// still on the deprecated header can be found before v1.1.
-				trace.SpanFromContext(ctx).SetAttributes(attribute.Bool("mcp.deprecated_url_header", true))
-			}
-		}
+		customURL := r.Header.Get(bylonisclient.URLHeader)
 
 		// Check for auth credentials from headers.
 		// Clients can provide either:
-		//   - BYLONIS-API-KEY: <pat-token>   (SIGNOZ-API-KEY until v1.1)
+		//   - BYLONIS-API-KEY: <pat-token>   (SIGNOZ-API-KEY is no longer accepted)
 		//   - Authorization: Bearer <token>  (JWT, PAT)
 		//   - Authorization: <token>         (legacy)
-		headerAuthMode := authModeAPIKeyHeader
-		signozAPIKey := r.Header.Get(signozclient.APIKeyHeader)
-		if signozAPIKey == "" {
-			signozAPIKey = r.Header.Get(signozclient.DeprecatedAPIKeyHeader)
-			headerAuthMode = authModeDeprecatedAPIKeyHeader
-		}
+		bylonisAPIKey := r.Header.Get(bylonisclient.APIKeyHeader)
 		authHeader := r.Header.Get("Authorization")
 
 		var apiKey string
-		var signozURL string
+		var bylonisURL string
 		var usedOAuthToken bool
 		authMode := authModeNone
 
-		if signozAPIKey != "" {
+		if bylonisAPIKey != "" {
 			// Explicit PAT via the API key header — forward as-is.
-			apiKey = strings.TrimPrefix(signozAPIKey, "Bearer ")
-			authMode = headerAuthMode
+			apiKey = strings.TrimPrefix(bylonisAPIKey, "Bearer ")
+			authMode = authModeAPIKeyHeader
 
 			ctx = util.SetAPIKey(ctx, apiKey)
-			ctx = util.SetAuthHeader(ctx, signozclient.APIKeyHeader)
+			ctx = util.SetAuthHeader(ctx, bylonisclient.APIKeyHeader)
 		} else if authHeader != "" {
 			token := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
 			if customURL != "" {
@@ -1272,25 +1239,25 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 					apiKey = token
 					authMode = authModeAuthorizationAPIKey
 					ctx = util.SetAPIKey(ctx, apiKey)
-					ctx = util.SetAuthHeader(ctx, signozclient.APIKeyHeader)
+					ctx = util.SetAuthHeader(ctx, bylonisclient.APIKeyHeader)
 				}
 			} else if m.config.OAuthEnabled {
 				decryptedAPIKey, decryptedURL, _, _, err := oauth.DecryptToken(token, []byte(m.config.OAuthTokenSecret))
 				switch {
 				case err == nil:
 					apiKey = decryptedAPIKey
-					signozURL = decryptedURL
+					bylonisURL = decryptedURL
 					usedOAuthToken = true
 					authMode = authModeOAuthAccessToken
 					ctx = util.SetAPIKey(ctx, apiKey)
-					ctx = util.SetAuthHeader(ctx, signozclient.APIKeyHeader)
+					ctx = util.SetAuthHeader(ctx, bylonisclient.APIKeyHeader)
 				case errors.Is(err, oauth.ErrExpiredToken):
 					authMode = authModeOAuthAccessToken
 					// The token is expired but was once server-issued, so the
 					// embedded URL is a trusted tenant value. Decorate the
 					// otelhttp root span so the 401 trace carries mcp.tenant_url.
 					if decryptedURL != "" {
-						ctx = util.SetSigNozURL(ctx, decryptedURL)
+						ctx = util.SetByLonisURL(ctx, decryptedURL)
 						if attr, ok := otelpkg.TenantURLAttr(ctx); ok {
 							trace.SpanFromContext(ctx).SetAttributes(attr)
 						}
@@ -1312,14 +1279,14 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 					apiKey = token
 					authMode = authModeAuthorizationAPIKey
 					ctx = util.SetAPIKey(ctx, apiKey)
-					ctx = util.SetAuthHeader(ctx, signozclient.APIKeyHeader)
+					ctx = util.SetAuthHeader(ctx, bylonisclient.APIKeyHeader)
 					m.logger.DebugContext(ctx, "Bearer token did not match OAuth token format, falling back to raw API key")
 				}
 			} else {
 				apiKey = token
 				authMode = authModeAuthorizationAPIKey
 				ctx = util.SetAPIKey(ctx, apiKey)
-				ctx = util.SetAuthHeader(ctx, signozclient.APIKeyHeader)
+				ctx = util.SetAuthHeader(ctx, bylonisclient.APIKeyHeader)
 			}
 
 		} else if m.config.APIKey != "" {
@@ -1327,23 +1294,23 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 			apiKey = m.config.APIKey
 			authMode = authModeConfigAPIKey
 			ctx = util.SetAPIKey(ctx, apiKey)
-			ctx = util.SetAuthHeader(ctx, signozclient.APIKeyHeader)
+			ctx = util.SetAuthHeader(ctx, bylonisclient.APIKeyHeader)
 			m.logger.DebugContext(ctx, "Using API key from environment config")
 		} else {
 			m.logAuthFailure(ctx, r, http.StatusUnauthorized, authFailureMissingCredential, authMode, "No API key found in headers or environment")
 			if m.config.OAuthEnabled {
 				m.setOAuthChallenge(w, "")
 			}
-			http.Error(w, "Authorization or "+signozclient.APIKeyHeader+" header required", http.StatusUnauthorized)
+			http.Error(w, "Authorization or "+bylonisclient.APIKeyHeader+" header required", http.StatusUnauthorized)
 			return
 		}
 
 		if usedOAuthToken {
-			ctx = util.SetSigNozURL(ctx, signozURL)
+			ctx = util.SetByLonisURL(ctx, bylonisURL)
 			if attr, ok := otelpkg.TenantURLAttr(ctx); ok {
 				trace.SpanFromContext(ctx).SetAttributes(attr)
 			}
-			if !m.enforceInstanceURLAllowlist(ctx, w, r, signozURL, authMode) {
+			if !m.enforceInstanceURLAllowlist(ctx, w, r, bylonisURL, authMode) {
 				return
 			}
 			decorateAuthSpan(ctx, r, authMode)
@@ -1355,32 +1322,32 @@ func (m *MCPServer) authMiddleware(next http.Handler) http.Handler {
 		// Determine final URL with precedence: instance URL header > config URL
 		if customURL != "" {
 			trimmed := strings.TrimSuffix(customURL, "/")
-			normalized, err := util.NormalizeSigNozURL(trimmed)
+			normalized, err := util.NormalizeByLonisURL(trimmed)
 			if err != nil {
-				m.logAuthFailure(ctx, r, http.StatusBadRequest, authFailureInvalidSignozURL, authMode, "Invalid "+customURLHeader+" header",
+				m.logAuthFailure(ctx, r, http.StatusBadRequest, authFailureInvalidByLonisURL, authMode, "Invalid "+bylonisclient.URLHeader+" header",
 					slog.String("url", customURL), logpkg.ErrAttr(err))
-				http.Error(w, fmt.Sprintf("Invalid %s: %v", customURLHeader, err), http.StatusBadRequest)
+				http.Error(w, fmt.Sprintf("Invalid %s: %v", bylonisclient.URLHeader, err), http.StatusBadRequest)
 				return
 			}
 			// Set the ByLonis URL on ctx first so an allowlist rejection is attributed.
-			ctx = util.SetSigNozURL(ctx, normalized)
+			ctx = util.SetByLonisURL(ctx, normalized)
 			if !m.enforceInstanceURLAllowlist(ctx, w, r, normalized, authMode) {
 				return
 			}
-			signozURL = normalized
+			bylonisURL = normalized
 		} else if m.config.URL != "" {
-			signozURL = m.config.URL
-			m.logger.DebugContext(ctx, "Using URL from environment config", slog.String("mcp.tenant_url", signozURL))
+			bylonisURL = m.config.URL
+			m.logger.DebugContext(ctx, "Using URL from environment config", slog.String("mcp.tenant_url", bylonisURL))
 		} else {
-			m.logAuthFailure(ctx, r, http.StatusBadRequest, authFailureMissingSignozURL, authMode, "No ByLonis URL found in "+signozclient.URLHeader+" header or environment")
+			m.logAuthFailure(ctx, r, http.StatusBadRequest, authFailureMissingByLonisURL, authMode, "No ByLonis URL found in "+bylonisclient.URLHeader+" header or environment")
 			http.Error(w, "ByLonis instance URL is required", http.StatusBadRequest)
 			return
 		}
 
-		ctx = util.SetSigNozURL(ctx, signozURL)
+		ctx = util.SetByLonisURL(ctx, bylonisURL)
 
 		// Decorate the otelhttp root span with tenant_url so every /mcp
-		// request trace is queryable per customer in SigNoz.
+		// request trace is queryable per customer in ByLonis.
 		if attr, ok := otelpkg.TenantURLAttr(ctx); ok {
 			trace.SpanFromContext(ctx).SetAttributes(attr)
 		}

@@ -12,7 +12,7 @@ type contextKey string
 const (
 	apiKeyContextKey               contextKey = "api_key"
 	authHeaderContextKey           contextKey = "auth_header"
-	signozURLContextKey            contextKey = "signoz_url"
+	bylonisURLContextKey           contextKey = "bylonis_url"
 	searchContextContextKey        contextKey = "search_context"
 	sessionIDContextKey            contextKey = "session_id"
 	toolNameContextKey             contextKey = "tool_name"
@@ -70,14 +70,14 @@ func GetAuthHeader(ctx context.Context) (string, bool) {
 	return header, ok
 }
 
-// SetSigNozURL stores the SigNoz URL in the context
-func SetSigNozURL(ctx context.Context, url string) context.Context {
-	return context.WithValue(ctx, signozURLContextKey, url)
+// SetByLonisURL stores the ByLonis URL in the context
+func SetByLonisURL(ctx context.Context, url string) context.Context {
+	return context.WithValue(ctx, bylonisURLContextKey, url)
 }
 
-// GetSigNozURL retrieves the SigNoz URL from the context
-func GetSigNozURL(ctx context.Context) (string, bool) {
-	url, ok := ctx.Value(signozURLContextKey).(string)
+// GetByLonisURL retrieves the ByLonis URL from the context
+func GetByLonisURL(ctx context.Context) (string, bool) {
+	url, ok := ctx.Value(bylonisURLContextKey).(string)
 	return url, ok
 }
 
@@ -125,7 +125,7 @@ func GetClientSource(ctx context.Context) (string, bool) {
 	return source, ok
 }
 
-// SetAssistantThreadID stores the SigNoz AI Assistant thread ID in the context.
+// SetAssistantThreadID stores the IA OPS assistant thread ID in the context.
 func SetAssistantThreadID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, assistantThreadIDContextKey, id)
 }
@@ -136,7 +136,7 @@ func GetAssistantThreadID(ctx context.Context) (string, bool) {
 	return id, ok
 }
 
-// SetAssistantExecutionID stores the SigNoz AI Assistant execution ID in the context.
+// SetAssistantExecutionID stores the IA OPS assistant execution ID in the context.
 func SetAssistantExecutionID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, assistantExecutionIDContextKey, id)
 }
@@ -147,11 +147,11 @@ func GetAssistantExecutionID(ctx context.Context) (string, bool) {
 	return id, ok
 }
 
-// HashTenantKey returns a SHA-256 hash of apiKey and signozURL, suitable for
+// HashTenantKey returns a SHA-256 hash of apiKey and bylonisURL, suitable for
 // use as a cache/map key without exposing the raw API key in memory.
 // A null-byte separator is used to prevent collisions between different
-// (apiKey, signozURL) pairs that contain colons.
-func HashTenantKey(apiKey, signozURL string) string {
-	h := sha256.Sum256([]byte(apiKey + "\x00" + signozURL))
+// (apiKey, bylonisURL) pairs that contain colons.
+func HashTenantKey(apiKey, bylonisURL string) string {
+	h := sha256.Sum256([]byte(apiKey + "\x00" + bylonisURL))
 	return hex.EncodeToString(h[:])
 }

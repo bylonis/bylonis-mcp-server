@@ -379,7 +379,7 @@ func TestQueryPayloadRoundTrip_PreservesSource(t *testing.T) {
 		"compositeQuery":{
 			"queries":[{
 				"type":"builder_query",
-				"spec":{"name":"A","signal":"metrics","source":"meter","aggregations":[{"metricName":"signoz_db_samples_ingested","spaceAggregation":"sum"}]}
+				"spec":{"name":"A","signal":"metrics","source":"meter","aggregations":[{"metricName":"db_samples_ingested","spaceAggregation":"sum"}]}
 			}]
 		}
 	}`

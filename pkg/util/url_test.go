@@ -2,7 +2,7 @@ package util
 
 import "testing"
 
-func TestNormalizeSigNozURLFormInput(t *testing.T) {
+func TestNormalizeByLonisURLFormInput(t *testing.T) {
 	tests := []struct {
 		name string
 		raw  string
@@ -10,23 +10,23 @@ func TestNormalizeSigNozURLFormInput(t *testing.T) {
 	}{
 		{
 			name: "adds https for protocol-less cloud host",
-			raw:  "tough-gecko.us.signoz.cloud",
-			want: "https://tough-gecko.us.signoz.cloud",
+			raw:  "tough-gecko.us.bylonis.test",
+			want: "https://tough-gecko.us.bylonis.test",
 		},
 		{
 			name: "strips path from full URL",
-			raw:  "https://tough-gecko.us.signoz.cloud/home",
-			want: "https://tough-gecko.us.signoz.cloud",
+			raw:  "https://tough-gecko.us.bylonis.test/home",
+			want: "https://tough-gecko.us.bylonis.test",
 		},
 		{
 			name: "adds https and strips path query and fragment",
-			raw:  "tough-gecko.us.signoz.cloud/home?orgId=123#logs",
-			want: "https://tough-gecko.us.signoz.cloud",
+			raw:  "tough-gecko.us.bylonis.test/home?orgId=123#logs",
+			want: "https://tough-gecko.us.bylonis.test",
 		},
 		{
 			name: "adds https when stripped query contains absolute URL",
-			raw:  "tough-gecko.us.signoz.cloud/home?next=https://example.com",
-			want: "https://tough-gecko.us.signoz.cloud",
+			raw:  "tough-gecko.us.bylonis.test/home?next=https://example.com",
+			want: "https://tough-gecko.us.bylonis.test",
 		},
 		{
 			name: "preserves explicit http and custom port",
@@ -47,18 +47,18 @@ func TestNormalizeSigNozURLFormInput(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NormalizeSigNozURLFormInput(tt.raw)
+			got, err := NormalizeByLonisURLFormInput(tt.raw)
 			if err != nil {
-				t.Fatalf("NormalizeSigNozURLFormInput(%q) error = %v", tt.raw, err)
+				t.Fatalf("NormalizeByLonisURLFormInput(%q) error = %v", tt.raw, err)
 			}
 			if got != tt.want {
-				t.Fatalf("NormalizeSigNozURLFormInput(%q) = %q, want %q", tt.raw, got, tt.want)
+				t.Fatalf("NormalizeByLonisURLFormInput(%q) = %q, want %q", tt.raw, got, tt.want)
 			}
 		})
 	}
 }
 
-func TestNormalizeSigNozURLFormInputRejectsInvalidHosts(t *testing.T) {
+func TestNormalizeByLonisURLFormInputRejectsInvalidHosts(t *testing.T) {
 	tests := []string{
 		"",
 		"ftp://tenant.example.com/home",
@@ -68,30 +68,30 @@ func TestNormalizeSigNozURLFormInputRejectsInvalidHosts(t *testing.T) {
 		"https:tenant.example.com/home",
 		"//http:tenant.example.com/home",
 		"//https:tenant.example.com/home",
-		"https://tough-gecko.us.signoz.cloud@evil.example/home",
-		"tough-gecko.us.signoz.cloud@evil.example/home",
+		"https://tough-gecko.us.bylonis.test@evil.example/home",
+		"tough-gecko.us.bylonis.test@evil.example/home",
 		"localhost/home",
 		"0.0.0.0/home",
 	}
 
 	for _, raw := range tests {
 		t.Run(raw, func(t *testing.T) {
-			if got, err := NormalizeSigNozURLFormInput(raw); err == nil {
-				t.Fatalf("NormalizeSigNozURLFormInput(%q) = %q, want error", raw, got)
+			if got, err := NormalizeByLonisURLFormInput(raw); err == nil {
+				t.Fatalf("NormalizeByLonisURLFormInput(%q) = %q, want error", raw, got)
 			}
 		})
 	}
 }
 
-func TestNormalizeSigNozURLRejectsUserinfo(t *testing.T) {
+func TestNormalizeByLonisURLRejectsUserinfo(t *testing.T) {
 	tests := []string{
 		"https://tenant.example.com@evil.example",
 	}
 
 	for _, raw := range tests {
 		t.Run(raw, func(t *testing.T) {
-			if got, err := NormalizeSigNozURL(raw); err == nil {
-				t.Fatalf("NormalizeSigNozURL(%q) = %q, want error", raw, got)
+			if got, err := NormalizeByLonisURL(raw); err == nil {
+				t.Fatalf("NormalizeByLonisURL(%q) = %q, want error", raw, got)
 			}
 		})
 	}

@@ -10,7 +10,7 @@ func TestInstanceURLAllowlistUnconfiguredAllowsAll(t *testing.T) {
 	if al.Configured() {
 		t.Fatalf("empty allowlist should not be configured")
 	}
-	for _, host := range []string{"demo.us.signoz.cloud", "1.1.1.1", "signoz.example.com", ""} {
+	for _, host := range []string{"demo.us.bylonis.test", "1.1.1.1", "bylonis.example.com", ""} {
 		if !al.AllowsHost(host) {
 			t.Errorf("unconfigured allowlist should allow %q", host)
 		}
@@ -21,16 +21,16 @@ func TestInstanceURLAllowlistUnconfiguredAllowsAll(t *testing.T) {
 }
 
 func TestInstanceURLAllowlistWildcard(t *testing.T) {
-	al := ParseInstanceURLAllowlist("*.us.signoz.cloud")
+	al := ParseInstanceURLAllowlist("*.us.bylonis.test")
 	if !al.Configured() {
 		t.Fatalf("allowlist should be configured")
 	}
 
 	allowed := []string{
-		"demo.us.signoz.cloud",
-		"DEMO.US.SIGNOZ.CLOUD", // case-insensitive
-		"tough-gecko.us.signoz.cloud",
-		"a.b.us.signoz.cloud", // wildcard spans multiple labels
+		"demo.us.bylonis.test",
+		"DEMO.US.BYLONIS.TEST", // case-insensitive
+		"tough-gecko.us.bylonis.test",
+		"a.b.us.bylonis.test", // wildcard spans multiple labels
 	}
 	for _, host := range allowed {
 		if !al.AllowsHost(host) {
@@ -39,11 +39,11 @@ func TestInstanceURLAllowlistWildcard(t *testing.T) {
 	}
 
 	denied := []string{
-		"us.signoz.cloud",               // apex is not matched by its own wildcard
-		"evil.eu.signoz.cloud",          // different region
-		"notus.signoz.cloud",            // no dot boundary before suffix
-		"demo.us.signoz.cloud.evil.com", // suffix not at the end
-		"demo.us.signoz.cloud.",         // trailing-dot FQDN fails closed
+		"us.bylonis.test",               // apex is not matched by its own wildcard
+		"evil.eu.bylonis.test",          // different region
+		"notus.bylonis.test",            // no dot boundary before suffix
+		"demo.us.bylonis.test.evil.com", // suffix not at the end
+		"demo.us.bylonis.test.",         // trailing-dot FQDN fails closed
 		"1.1.1.1",
 		"",
 	}
@@ -55,12 +55,12 @@ func TestInstanceURLAllowlistWildcard(t *testing.T) {
 }
 
 func TestInstanceURLAllowlistExactAndMultiple(t *testing.T) {
-	al := ParseInstanceURLAllowlist("signoz.example.com, *.eu.signoz.cloud ,https://*.us.signoz.cloud/")
+	al := ParseInstanceURLAllowlist("bylonis.example.com, *.eu.bylonis.test ,https://*.us.bylonis.test/")
 
 	allowed := []string{
-		"signoz.example.com",
-		"demo.eu.signoz.cloud",
-		"demo.us.signoz.cloud", // scheme/path in the pattern is stripped
+		"bylonis.example.com",
+		"demo.eu.bylonis.test",
+		"demo.us.bylonis.test", // scheme/path in the pattern is stripped
 	}
 	for _, host := range allowed {
 		if !al.AllowsHost(host) {
@@ -69,8 +69,8 @@ func TestInstanceURLAllowlistExactAndMultiple(t *testing.T) {
 	}
 
 	denied := []string{
-		"sub.signoz.example.com", // exact entry does not cover subdomains
-		"signoz.example.org",
+		"sub.bylonis.example.com", // exact entry does not cover subdomains
+		"bylonis.example.org",
 		"169.254.169.254", // SSRF target blocked once an allowlist is set
 	}
 	for _, host := range denied {
@@ -84,14 +84,14 @@ func TestInstanceURLAllowlistStripsPortFromEntry(t *testing.T) {
 	// A pasted full URL with scheme/port/path is reduced to the bare host so it
 	// still matches (url.Hostname() never carries a port). Avoids a silent
 	// all-403 footgun for operators who paste a full URL.
-	if !ParseInstanceURLAllowlist("https://signoz.example.com:8080/").AllowsHost("signoz.example.com") {
+	if !ParseInstanceURLAllowlist("https://bylonis.example.com:8080/").AllowsHost("bylonis.example.com") {
 		t.Errorf("entry with scheme/port/path should match the bare host")
 	}
-	if !ParseInstanceURLAllowlist("*.us.signoz.cloud:443").AllowsHost("demo.us.signoz.cloud") {
+	if !ParseInstanceURLAllowlist("*.us.bylonis.test:443").AllowsHost("demo.us.bylonis.test") {
 		t.Errorf("wildcard entry with a port should match a subdomain")
 	}
 	// Port on the checked URL is likewise ignored.
-	if !ParseInstanceURLAllowlist("signoz.example.com").AllowsURL("https://signoz.example.com:8443") {
+	if !ParseInstanceURLAllowlist("bylonis.example.com").AllowsURL("https://bylonis.example.com:8443") {
 		t.Errorf("port on the checked URL should be ignored when matching a bare-host entry")
 	}
 }
@@ -107,12 +107,12 @@ func TestInstanceURLNotPermittedMessage(t *testing.T) {
 }
 
 func TestInstanceURLAllowlistAllowsURL(t *testing.T) {
-	al := ParseInstanceURLAllowlist("*.us.signoz.cloud")
+	al := ParseInstanceURLAllowlist("*.us.bylonis.test")
 
-	if !al.AllowsURL("https://demo.us.signoz.cloud") {
+	if !al.AllowsURL("https://demo.us.bylonis.test") {
 		t.Errorf("expected normalized cloud URL to be allowed")
 	}
-	if !al.AllowsURL("https://demo.us.signoz.cloud:443") {
+	if !al.AllowsURL("https://demo.us.bylonis.test:443") {
 		t.Errorf("port should not affect host matching")
 	}
 	if al.AllowsURL("https://1.1.1.1") {

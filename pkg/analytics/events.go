@@ -1,7 +1,7 @@
 package analytics
 
 // Events follow "MCP <Subsection>: <Action>". The "MCP" prefix keeps these
-// distinct from main-app SigNoz events in shared destinations. IDs go in
+// distinct from main-app ByLonis events in shared destinations. IDs go in
 // attributes, never in the event name — cardinality stays bounded.
 const (
 	EventSessionRegistered           = "MCP Session: Registered"

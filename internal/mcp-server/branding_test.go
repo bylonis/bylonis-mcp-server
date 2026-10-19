@@ -3,7 +3,11 @@ package mcp_server
 import (
 	"context"
 	"encoding/json"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -75,5 +79,39 @@ func TestNothingTheAssistantReadsSaysSigNoz(t *testing.T) {
 			from, to := max(loc[0]-60, 0), min(loc[1]+60, len(text))
 			t.Errorf("%s mentions signoz: …%s…", method, text[from:to])
 		}
+	}
+}
+
+// TestNoUpstreamHeaderOrEnvNames fails if the server code reads or sends an
+// upstream name again: the SIGNOZ-API-KEY / X-SigNoz-* headers, the SIGNOZ_*
+// variables or the signoz_url OAuth field were removed in v1.0. Tests may
+// still use them to prove they are rejected.
+func TestNoUpstreamHeaderOrEnvNames(t *testing.T) {
+	legacy := regexp.MustCompile(`(?i)"[^"\n]*(signoz-api-key|x-signoz-|signoz_url|signoz_[a-z])[^"\n]*"`)
+	root := filepath.Join("..", "..")
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			if name := d.Name(); name == ".git" || name == "tools" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, ".html") || strings.HasSuffix(path, "_test.go") {
+			return nil
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		for _, m := range legacy.FindAllString(string(data), -1) {
+			t.Errorf("%s uses an upstream name: %s", path, m)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }

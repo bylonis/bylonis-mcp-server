@@ -502,7 +502,7 @@ func TestValidate_FilterExpressionConsistent(t *testing.T) {
 }
 
 func TestValidate_FilterExpressionEmptySkipped(t *testing.T) {
-	// Empty filter.expression: SigNoz builds from items, no consistency check needed.
+	// Empty filter.expression: ByLonis builds from items, no consistency check needed.
 	d := &DashboardData{
 		Title:     "Test",
 		Version:   DashboardVersion,

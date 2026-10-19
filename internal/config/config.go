@@ -6,7 +6,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/bylonis/bylonis-mcp-server/pkg/util"
@@ -32,7 +31,7 @@ type Config struct {
 
 	CustomHeaders map[string]string
 
-	// InstanceURLAllowlist optionally restricts which SigNoz backend hosts the
+	// InstanceURLAllowlist optionally restricts which ByLonis backend hosts the
 	// (multi-tenant) server will proxy to. Empty => every host is allowed.
 	InstanceURLAllowlist util.InstanceURLAllowlist
 
@@ -45,13 +44,13 @@ type Config struct {
 }
 
 const (
-	SignozURL     = "BYLONIS_URL"
-	SignozApiKey  = "BYLONIS_API_KEY"
+	ByLonisURL    = "BYLONIS_URL"
+	ByLonisAPIKey = "BYLONIS_API_KEY"
 	LogLevel      = "LOG_LEVEL"
 	TransportMode = "TRANSPORT_MODE"
 	MCPPort       = "MCP_SERVER_PORT"
 
-	SignozCustomHeaders     = "BYLONIS_CUSTOM_HEADERS"
+	ByLonisCustomHeaders    = "BYLONIS_CUSTOM_HEADERS"
 	InstanceURLAllowlistEnv = "BYLONIS_INSTANCE_URL_ALLOWLIST"
 	ClientCacheSize         = "CLIENT_CACHE_SIZE"
 	ClientCacheTTL          = "CLIENT_CACHE_TTL_MINUTES"
@@ -68,11 +67,6 @@ const (
 
 	MaxRequestBytesEnv = "MCP_MAX_REQUEST_BYTES"
 
-	// envPrefix is the prefix of the ByLonis env vars above; legacyEnvPrefix,
-	// the upstream one, is still read (with a warning) until v1.1.
-	envPrefix       = "BYLONIS_"
-	legacyEnvPrefix = "SIGNOZ_"
-
 	defaultClientCacheSize       = 256
 	defaultClientCacheTTLMinutes = 30
 	defaultAccessTTLMinutes      = 60    // 1 hour
@@ -85,7 +79,7 @@ const (
 
 func LoadConfig() (*Config, error) {
 	// Trim trailing slash from URL to prevent double-slash issues in API paths
-	url := strings.TrimSuffix(getEnv(SignozURL, ""), "/")
+	url := strings.TrimSuffix(getEnv(ByLonisURL, ""), "/")
 
 	cacheSize := getEnvInt(ClientCacheSize, defaultClientCacheSize)
 	cacheTTLMinutes := getEnvInt(ClientCacheTTL, defaultClientCacheTTLMinutes)
@@ -95,7 +89,7 @@ func LoadConfig() (*Config, error) {
 
 	// Parse custom headers from BYLONIS_CUSTOM_HEADERS env var (format: "Key1:Value1,Key2:Value2")
 	customHeaders := make(map[string]string)
-	if headersStr := getEnv(SignozCustomHeaders, ""); headersStr != "" {
+	if headersStr := getEnv(ByLonisCustomHeaders, ""); headersStr != "" {
 		for _, pair := range strings.Split(headersStr, ",") {
 			parts := strings.SplitN(pair, ":", 2)
 			if len(parts) != 2 {
@@ -115,7 +109,7 @@ func LoadConfig() (*Config, error) {
 
 	return &Config{
 		URL:                  url,
-		APIKey:               getEnv(SignozApiKey, ""),
+		APIKey:               getEnv(ByLonisAPIKey, ""),
 		LogLevel:             getEnv(LogLevel, "info"),
 		TransportMode:        getEnv(TransportMode, "stdio"),
 		Port:                 getEnv(MCPPort, "8000"),
@@ -135,28 +129,10 @@ func LoadConfig() (*Config, error) {
 	}, nil
 }
 
-// warnedLegacy records the legacy env vars already warned about.
-var warnedLegacy sync.Map
-
-// lookupEnv returns the value of key. For a BYLONIS_ key that is unset or
-// empty it falls back to the SIGNOZ_ name, warning once per variable; the
-// BYLONIS_ name wins when both are set.
+// lookupEnv returns the value of key. The upstream SIGNOZ_ names are no
+// longer read (removed in v1.0).
 func lookupEnv(key string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	rest, ok := strings.CutPrefix(key, envPrefix)
-	if !ok {
-		return ""
-	}
-	legacy := legacyEnvPrefix + rest
-	value := os.Getenv(legacy)
-	if value != "" {
-		if _, loaded := warnedLegacy.LoadOrStore(legacy, true); !loaded {
-			log.Printf("WARN: env %s is deprecated and will be removed in v1.1; use %s instead", legacy, key)
-		}
-	}
-	return value
+	return os.Getenv(key)
 }
 
 func getEnv(key, defaultValue string) string {
