@@ -27,10 +27,10 @@ import (
 
 const csrfCookieName = "bylonis_mcp_oauth_csrf"
 
-// AnalyticsEmitter publishes OAuth flow events. apiKey and signozURL are
+// AnalyticsEmitter publishes OAuth flow events. apiKey and bylonisURL are
 // the validated tenant credentials the emitter needs to resolve identity
 // (orgId) for the event. Nil disables OAuth analytics.
-type AnalyticsEmitter func(ctx context.Context, event, apiKey, signozURL string, props map[string]any)
+type AnalyticsEmitter func(ctx context.Context, event, apiKey, bylonisURL string, props map[string]any)
 
 //go:embed static/authorize.html
 var authorizeTemplateFS embed.FS
@@ -61,9 +61,9 @@ type registerClientResponse struct {
 	TokenEndpointAuthMethod string   `json:"token_endpoint_auth_method"`
 }
 
-// authFailureDisallowedSignozURL mirrors the mcp-server reason so OAuth
+// authFailureDisallowedByLonisURL mirrors the mcp-server reason so OAuth
 // allowlist rejections are alertable on the same mcp.auth.failure_reason.
-const authFailureDisallowedSignozURL = "disallowed_bylonis_url"
+const authFailureDisallowedByLonisURL = "disallowed_bylonis_url"
 
 type authorizeTemplateData struct {
 	ClientID            string
@@ -75,7 +75,7 @@ type authorizeTemplateData struct {
 	CodeChallengeMethod string
 	Scope               string
 	CSRFToken           string
-	SignozURL           string
+	ByLonisURL          string
 	ErrorMessage        string
 	ErrorCode           string
 	// FailureReason, when set, is emitted as mcp.auth.failure_reason on the
@@ -101,11 +101,11 @@ func NewHandler(logger *slog.Logger, cfg *config.Config, emitEvent AnalyticsEmit
 	}
 }
 
-func (h *Handler) emit(ctx context.Context, event, apiKey, signozURL string, props map[string]any) {
+func (h *Handler) emit(ctx context.Context, event, apiKey, bylonisURL string, props map[string]any) {
 	if h.emitEvent == nil {
 		return
 	}
-	h.emitEvent(ctx, event, apiKey, signozURL, props)
+	h.emitEvent(ctx, event, apiKey, bylonisURL, props)
 }
 
 func (h *Handler) HandleProtectedResourceMetadata(w http.ResponseWriter, r *http.Request) {
@@ -199,12 +199,7 @@ func (h *Handler) HandleAuthorizeSubmit(w http.ResponseWriter, r *http.Request) 
 	}
 
 	apiKey := strings.TrimSpace(r.FormValue("api_key"))
-	// bylonis_url is the field of the bundled form; signoz_url is still read
-	// for forms rendered before the rename.
-	signozURL := strings.TrimSpace(r.FormValue("bylonis_url"))
-	if signozURL == "" {
-		signozURL = strings.TrimSpace(r.FormValue("signoz_url"))
-	}
+	bylonisURL := strings.TrimSpace(r.FormValue("bylonis_url"))
 	if apiKey == "" {
 		h.renderAuthorizePage(w, r, http.StatusBadRequest, authorizeTemplateData{
 			ClientID:            params.ClientID,
@@ -214,13 +209,13 @@ func (h *Handler) HandleAuthorizeSubmit(w http.ResponseWriter, r *http.Request) 
 			CodeChallenge:       params.CodeChallenge,
 			CodeChallengeMethod: params.CodeChallengeMethod,
 			Scope:               params.Scope,
-			SignozURL:           signozURL,
+			ByLonisURL:          bylonisURL,
 			ErrorMessage:        "Enter your ByLonis API key to continue.",
 			ErrorCode:           "invalid_request",
 		})
 		return
 	}
-	normalizedURL, err := util.NormalizeSigNozURLFormInput(signozURL)
+	normalizedURL, err := util.NormalizeByLonisURLFormInput(bylonisURL)
 	if err != nil {
 		h.renderAuthorizePage(w, r, http.StatusBadRequest, authorizeTemplateData{
 			ClientID:            params.ClientID,
@@ -230,7 +225,7 @@ func (h *Handler) HandleAuthorizeSubmit(w http.ResponseWriter, r *http.Request) 
 			CodeChallenge:       params.CodeChallenge,
 			CodeChallengeMethod: params.CodeChallengeMethod,
 			Scope:               params.Scope,
-			SignozURL:           signozURL,
+			ByLonisURL:          bylonisURL,
 			ErrorMessage:        "Enter a valid ByLonis URL, for example your-tenant.bylonis.ai.",
 			ErrorCode:           "invalid_request",
 		})
@@ -239,8 +234,8 @@ func (h *Handler) HandleAuthorizeSubmit(w http.ResponseWriter, r *http.Request) 
 	// Reject disallowed backends before probing them, so the server never
 	// dials — or issues a token for — a host it will not serve.
 	if !h.config.InstanceURLAllowlist.AllowsURL(normalizedURL) {
-		// Seed the SigNoz URL (mcp.tenant_url) so the rejection is attributed in mcp.oauth.failures.
-		r = r.WithContext(util.SetSigNozURL(r.Context(), normalizedURL))
+		// Seed the ByLonis URL (mcp.tenant_url) so the rejection is attributed in mcp.oauth.failures.
+		r = r.WithContext(util.SetByLonisURL(r.Context(), normalizedURL))
 		h.renderAuthorizePage(w, r, http.StatusForbidden, authorizeTemplateData{
 			ClientID:            params.ClientID,
 			ClientName:          params.ClientName,
@@ -249,14 +244,14 @@ func (h *Handler) HandleAuthorizeSubmit(w http.ResponseWriter, r *http.Request) 
 			CodeChallenge:       params.CodeChallenge,
 			CodeChallengeMethod: params.CodeChallengeMethod,
 			Scope:               params.Scope,
-			SignozURL:           normalizedURL,
+			ByLonisURL:          normalizedURL,
 			ErrorMessage:        util.InstanceURLNotPermittedMessage(),
 			ErrorCode:           "access_denied",
-			FailureReason:       authFailureDisallowedSignozURL,
+			FailureReason:       authFailureDisallowedByLonisURL,
 		})
 		return
 	}
-	if err := h.validateSigNozCredentials(r.Context(), normalizedURL, apiKey); err != nil {
+	if err := h.validateByLonisCredentials(r.Context(), normalizedURL, apiKey); err != nil {
 		switch {
 		case errors.Is(err, client.ErrUnauthorized):
 			h.renderAuthorizePage(w, r, http.StatusUnauthorized, authorizeTemplateData{
@@ -267,7 +262,7 @@ func (h *Handler) HandleAuthorizeSubmit(w http.ResponseWriter, r *http.Request) 
 				CodeChallenge:       params.CodeChallenge,
 				CodeChallengeMethod: params.CodeChallengeMethod,
 				Scope:               params.Scope,
-				SignozURL:           normalizedURL,
+				ByLonisURL:          normalizedURL,
 				ErrorMessage:        "We couldn't sign in to that ByLonis instance. Check the URL and API key, then try again.",
 				ErrorCode:           "access_denied",
 			})
@@ -280,7 +275,7 @@ func (h *Handler) HandleAuthorizeSubmit(w http.ResponseWriter, r *http.Request) 
 				CodeChallenge:       params.CodeChallenge,
 				CodeChallengeMethod: params.CodeChallengeMethod,
 				Scope:               params.Scope,
-				SignozURL:           normalizedURL,
+				ByLonisURL:          normalizedURL,
 				ErrorMessage:        "We couldn't reach that ByLonis instance. Check the URL and try again.",
 				ErrorCode:           "temporarily_unavailable",
 			})
@@ -326,17 +321,17 @@ func (h *Handler) HandleAuthorizeSubmit(w http.ResponseWriter, r *http.Request) 
 	http.Redirect(w, r, redirectURL, http.StatusFound)
 }
 
-func (h *Handler) validateSigNozCredentials(ctx context.Context, signozURL, apiKey string) error {
+func (h *Handler) validateByLonisCredentials(ctx context.Context, bylonisURL, apiKey string) error {
 	// Only forward custom headers when the user-supplied URL matches the
 	// configured BYLONIS_URL to prevent leaking proxy-auth credentials to
 	// attacker-controlled hosts.
 	var headers map[string]string
-	configNormalized, _ := util.NormalizeSigNozURL(h.config.URL)
-	if strings.EqualFold(signozURL, configNormalized) {
+	configNormalized, _ := util.NormalizeByLonisURL(h.config.URL)
+	if strings.EqualFold(bylonisURL, configNormalized) {
 		headers = h.config.CustomHeaders
 	}
-	signozClient := client.NewClient(h.logger, signozURL, apiKey, client.APIKeyHeader, headers)
-	return signozClient.ValidateCredentials(ctx)
+	bylonisClient := client.NewClient(h.logger, bylonisURL, apiKey, client.APIKeyHeader, headers)
+	return bylonisClient.ValidateCredentials(ctx)
 }
 
 func (h *Handler) renderAuthorizePage(w http.ResponseWriter, r *http.Request, status int, data authorizeTemplateData) {
@@ -406,14 +401,14 @@ func (h *Handler) handleAuthorizationCodeGrant(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	apiKey, signozURL, authClientID, authRedirectURI, codeChallenge, codeChallengeMethod, _, err := DecryptAuthorizationCode(code, h.tokenSecret)
+	apiKey, bylonisURL, authClientID, authRedirectURI, codeChallenge, codeChallengeMethod, _, err := DecryptAuthorizationCode(code, h.tokenSecret)
 	if err != nil {
 		h.writeOAuthError(r, w, http.StatusBadRequest, "invalid_grant", "authorization code is invalid or expired")
 		return
 	}
 	// Seed tenant_url on ctx so downstream OAuth failure metrics and logs
 	// carry the tenant dimension for post-decrypt failure modes.
-	r = r.WithContext(util.SetSigNozURL(r.Context(), signozURL))
+	r = r.WithContext(util.SetByLonisURL(r.Context(), bylonisURL))
 	if authClientID != clientID || authRedirectURI != redirectURI {
 		h.writeOAuthError(r, w, http.StatusBadRequest, "invalid_grant", "authorization code does not match the client or redirect URI")
 		return
@@ -423,7 +418,7 @@ func (h *Handler) handleAuthorizationCodeGrant(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	h.issueTokenPair(w, r, clientID, apiKey, signozURL, "authorization_code")
+	h.issueTokenPair(w, r, clientID, apiKey, bylonisURL, "authorization_code")
 }
 
 func (h *Handler) handleRefreshTokenGrant(w http.ResponseWriter, r *http.Request) {
@@ -434,35 +429,35 @@ func (h *Handler) handleRefreshTokenGrant(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	apiKey, signozURL, refreshClientID, _, err := DecryptRefreshToken(refreshTokenValue, h.tokenSecret)
+	apiKey, bylonisURL, refreshClientID, _, err := DecryptRefreshToken(refreshTokenValue, h.tokenSecret)
 	if err != nil {
 		h.writeOAuthError(r, w, http.StatusBadRequest, "invalid_grant", "refresh token is invalid or expired")
 		return
 	}
-	r = r.WithContext(util.SetSigNozURL(r.Context(), signozURL))
+	r = r.WithContext(util.SetByLonisURL(r.Context(), bylonisURL))
 	if clientID != "" && refreshClientID != clientID {
 		h.writeOAuthError(r, w, http.StatusBadRequest, "invalid_grant", "refresh token does not belong to this client")
 		return
 	}
 
-	h.issueTokenPair(w, r, refreshClientID, apiKey, signozURL, "refresh_token")
+	h.issueTokenPair(w, r, refreshClientID, apiKey, bylonisURL, "refresh_token")
 }
 
-func (h *Handler) issueTokenPair(w http.ResponseWriter, r *http.Request, clientID, apiKey, signozURL, grantType string) {
-	r = r.WithContext(util.SetSigNozURL(r.Context(), signozURL))
+func (h *Handler) issueTokenPair(w http.ResponseWriter, r *http.Request, clientID, apiKey, bylonisURL, grantType string) {
+	r = r.WithContext(util.SetByLonisURL(r.Context(), bylonisURL))
 
-	// Refuse to mint tokens for a now-disallowed SigNoz URL (e.g. a refresh token
+	// Refuse to mint tokens for a now-disallowed ByLonis URL (e.g. a refresh token
 	// from before the allowlist tightened). invalid_grant makes the client
 	// re-run the authorize flow, where the form rejects the URL up front.
-	if !h.config.InstanceURLAllowlist.AllowsURL(signozURL) {
+	if !h.config.InstanceURLAllowlist.AllowsURL(bylonisURL) {
 		h.writeOAuthError(r, w, http.StatusBadRequest, "invalid_grant",
 			util.InstanceURLNotPermittedMessage(),
-			attribute.String("mcp.auth.failure_reason", authFailureDisallowedSignozURL))
+			attribute.String("mcp.auth.failure_reason", authFailureDisallowedByLonisURL))
 		return
 	}
 
 	accessTokenExpiresAt := time.Now().UTC().Add(h.config.AccessTokenTTL)
-	accessToken, err := EncryptToken(apiKey, signozURL, clientID, accessTokenExpiresAt, h.tokenSecret)
+	accessToken, err := EncryptToken(apiKey, bylonisURL, clientID, accessTokenExpiresAt, h.tokenSecret)
 	if err != nil {
 		h.writeOAuthError(r, w, http.StatusInternalServerError, "server_error", "failed to create access token")
 		return
@@ -470,7 +465,7 @@ func (h *Handler) issueTokenPair(w http.ResponseWriter, r *http.Request, clientI
 
 	refreshTokenValue, err := EncryptRefreshToken(
 		apiKey,
-		signozURL,
+		bylonisURL,
 		clientID,
 		time.Now().UTC().Add(h.config.RefreshTokenTTL),
 		h.tokenSecret,
@@ -487,8 +482,8 @@ func (h *Handler) issueTokenPair(w http.ResponseWriter, r *http.Request, clientI
 		RefreshToken: refreshTokenValue,
 	})
 
-	h.emit(r.Context(), analytics.EventOAuthTokenIssued, apiKey, signozURL, map[string]any{
-		analytics.AttrTenantURL: signozURL,
+	h.emit(r.Context(), analytics.EventOAuthTokenIssued, apiKey, bylonisURL, map[string]any{
+		analytics.AttrTenantURL: bylonisURL,
 		analytics.AttrGrantType: grantType,
 	})
 }
@@ -556,7 +551,7 @@ func (h *Handler) recordOAuthFailure(ctx context.Context, r *http.Request, statu
 
 	// Allowlist rejections are recorded on the metric only; the per-request log
 	// would be noisy for a misconfigured/looping client.
-	if hasAttrValue(extraAttrs, "mcp.auth.failure_reason", authFailureDisallowedSignozURL) {
+	if hasAttrValue(extraAttrs, "mcp.auth.failure_reason", authFailureDisallowedByLonisURL) {
 		return
 	}
 

@@ -39,7 +39,7 @@ type Query struct {
 }
 
 // PromQLSpec is the spec for a query envelope with Type="promql".
-// Mirrors signoz/pkg/types/querybuildertypes/querybuildertypesv5.PromQuery —
+// Mirrors the backend type pkg/types/querybuildertypes/querybuildertypesv5.PromQuery —
 // Step is left as any so callers can pass either a Go-duration string
 // ("60s", "1m") or a number of seconds, matching the backend's OneOf schema.
 type PromQLSpec struct {
@@ -594,9 +594,9 @@ func BuildTracesQueryPayload(startTime, endTime int64, filterExpression string, 
 							{Name: "k8s.pod.uid", FieldDataType: "string", Signal: "traces", FieldContext: "resource"},
 							{Name: "k8s.statefulset.name", FieldDataType: "string", Signal: "traces", FieldContext: "resource"},
 							{Name: "service.version", FieldDataType: "string", Signal: "traces", FieldContext: "resource"},
-							{Name: "signoz.deployment.tier", FieldDataType: "string", Signal: "traces", FieldContext: "resource"},
-							{Name: "signoz.workload", FieldDataType: "string", Signal: "traces", FieldContext: "resource"},
-							{Name: "signoz.workspace.key.id", FieldDataType: "string", Signal: "traces", FieldContext: "resource"},
+							{Name: "service.instance.id", FieldDataType: "string", Signal: "traces", FieldContext: "resource"},
+							{Name: "service.namespace", FieldDataType: "string", Signal: "traces", FieldContext: "resource"},
+							{Name: "telemetry.sdk.language", FieldDataType: "string", Signal: "traces", FieldContext: "resource"},
 
 							// Span attributes
 							{Name: "client.address", FieldDataType: "string", Signal: "traces", FieldContext: "tag"},

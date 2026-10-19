@@ -25,15 +25,15 @@ func TestHTTPClientAddressValidatesForwardedHeaders(t *testing.T) {
 func TestHTTPServerAddressPrefersForwardedHost(t *testing.T) {
 	req := httptest.NewRequest("POST", "https://internal.example/mcp", nil)
 	req.Host = "internal.service.local:8080"
-	req.Header.Set("X-Forwarded-Host", "mcp.us.signoz.cloud, proxy.local")
+	req.Header.Set("X-Forwarded-Host", "mcp.us.bylonis.test, proxy.local")
 
-	if got := HTTPServerAddress(req); got != "mcp.us.signoz.cloud" {
+	if got := HTTPServerAddress(req); got != "mcp.us.bylonis.test" {
 		t.Fatalf("HTTPServerAddress() = %q, want forwarded host", got)
 	}
 
 	req.Header.Del("X-Forwarded-Host")
-	req.Header.Set("Forwarded", `for=198.51.100.9;proto=https;host="mcp.eu.signoz.cloud"`)
-	if got := HTTPServerAddress(req); got != "mcp.eu.signoz.cloud" {
+	req.Header.Set("Forwarded", `for=198.51.100.9;proto=https;host="mcp.eu.bylonis.test"`)
+	if got := HTTPServerAddress(req); got != "mcp.eu.bylonis.test" {
 		t.Fatalf("HTTPServerAddress() = %q, want RFC Forwarded host", got)
 	}
 }
@@ -46,8 +46,8 @@ func TestHTTPServerAddressNormalizesQuotedForwardedHostPort(t *testing.T) {
 	}{
 		{
 			name:      "hostname with port",
-			forwarded: `for=198.51.100.9;proto=https;host="mcp.us.signoz.cloud:443"`,
-			want:      "mcp.us.signoz.cloud",
+			forwarded: `for=198.51.100.9;proto=https;host="mcp.us.bylonis.test:443"`,
+			want:      "mcp.us.bylonis.test",
 		},
 		{
 			name:      "bracketed IPv6 with port",

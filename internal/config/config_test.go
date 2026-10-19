@@ -97,39 +97,20 @@ func TestValidateConfig_StdioRequiresConfiguredCredentials(t *testing.T) {
 	require.ErrorContains(t, cfg.ValidateConfig(), "BYLONIS_API_KEY is required")
 }
 
-func TestLoadConfigLegacySignozEnv(t *testing.T) {
+// The upstream SIGNOZ_ names were accepted as aliases until v1.0; they must
+// stay ignored so a deployment still using them fails loudly.
+func TestLoadConfigIgnoresSignozEnv(t *testing.T) {
+	t.Setenv("BYLONIS_URL", "")
+	t.Setenv("BYLONIS_API_KEY", "")
 	t.Setenv("SIGNOZ_URL", "http://legacy:8080/")
 	t.Setenv("SIGNOZ_API_KEY", "legacy-key")
+	t.Setenv("SIGNOZ_CUSTOM_HEADERS", "X-Legacy:1")
 
 	cfg, err := LoadConfig()
 	if err != nil {
 		t.Fatalf("LoadConfig: %v", err)
 	}
-	if cfg.URL != "http://legacy:8080" || cfg.APIKey != "legacy-key" {
-		t.Fatalf("legacy SIGNOZ_ vars not read: url=%q key=%q", cfg.URL, cfg.APIKey)
-	}
-}
-
-func TestLoadConfigBylonisWinsOverSignoz(t *testing.T) {
-	t.Setenv("SIGNOZ_URL", "http://legacy:8080")
-	t.Setenv("BYLONIS_URL", "http://bylonis:8080")
-	t.Setenv("SIGNOZ_API_KEY", "legacy-key")
-
-	cfg, err := LoadConfig()
-	if err != nil {
-		t.Fatalf("LoadConfig: %v", err)
-	}
-	if cfg.URL != "http://bylonis:8080" {
-		t.Fatalf("BYLONIS_URL must win, got %q", cfg.URL)
-	}
-	if cfg.APIKey != "legacy-key" {
-		t.Fatalf("SIGNOZ_API_KEY fallback when BYLONIS_API_KEY is unset, got %q", cfg.APIKey)
-	}
-}
-
-func TestLookupEnvOnlyBylonisKeysFallBack(t *testing.T) {
-	t.Setenv("SIGNOZ_LOG_LEVEL", "debug")
-	if got := lookupEnv("LOG_LEVEL"); got != "" {
-		t.Fatalf("non-BYLONIS_ keys must not fall back, got %q", got)
+	if cfg.URL != "" || cfg.APIKey != "" || len(cfg.CustomHeaders) != 0 {
+		t.Fatalf("SIGNOZ_ vars must be ignored: url=%q key set=%t headers=%v", cfg.URL, cfg.APIKey != "", cfg.CustomHeaders)
 	}
 }

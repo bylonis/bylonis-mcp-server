@@ -1,6 +1,8 @@
 # Changelog
 
-All notable changes to the SigNoz MCP Server will be documented in this file.
+All notable changes to the ByLonis MCP Server will be documented in this file.
+ByLonis MCP Server is a fork of SigNoz MCP Server; the entries up to 0.4.1
+are the upstream history and keep their original names and links.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).

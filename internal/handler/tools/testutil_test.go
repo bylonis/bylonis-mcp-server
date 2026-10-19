@@ -6,12 +6,12 @@ import (
 	logpkg "github.com/bylonis/bylonis-mcp-server/pkg/log"
 	"github.com/mark3labs/mcp-go/mcp"
 
-	signozclient "github.com/bylonis/bylonis-mcp-server/internal/client"
+	bylonisclient "github.com/bylonis/bylonis-mcp-server/internal/client"
 )
 
 // newTestHandler returns a Handler whose GetClient always returns the given mock.
 // No real HTTP client or cache is created.
-func newTestHandler(mock signozclient.Client) *Handler {
+func newTestHandler(mock bylonisclient.Client) *Handler {
 	return &Handler{
 		logger:         logpkg.New("error"),
 		clientOverride: mock,

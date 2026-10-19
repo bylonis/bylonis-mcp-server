@@ -34,7 +34,7 @@ Any client that accepts a URL plus headers (Cursor `.cursor/mcp.json`, for examp
 }
 ```
 
-`SIGNOZ-API-KEY` and `X-SigNoz-*` headers are still accepted until ByLonis v1.1.
+Since ByLonis v1.0 the upstream `SIGNOZ-API-KEY` and `X-SigNoz-*` headers are no longer accepted: a request that only carries `SIGNOZ-API-KEY` gets `401` (unless the server has its own `BYLONIS_API_KEY`). Use the names under [Request headers](#request-headers).
 
 ## Running the server
 
@@ -75,6 +75,16 @@ MCP_SERVER_PORT=8000 \
 Clients then send their key in `BYLONIS-API-KEY` (as in the snippets above). If `BYLONIS_API_KEY` is also set on the server, clients need no header. Without `BYLONIS_URL`, each request must carry the instance URL in `X-ByLonis-URL`.
 
 With `OAUTH_ENABLED=true` (plus `OAUTH_TOKEN_SECRET` and `OAUTH_ISSUER_URL`) clients only need the URL: they discover the OAuth endpoints, open a browser page that asks for the ByLonis instance URL and API key, and exchange them for scoped tokens.
+
+### Request headers
+
+| Header | Purpose |
+|--------|---------|
+| `BYLONIS-API-KEY` | Service account API key. `Authorization: Bearer <token>` is also accepted. |
+| `X-ByLonis-URL` | Instance URL for this request, when the server has no `BYLONIS_URL`. |
+| `X-ByLonis-Client-Source`, `X-ByLonis-Assistant-Thread-Id`, `X-ByLonis-Assistant-Execution-Id` | Optional caller correlation, recorded on logs, traces and metrics. |
+
+The server's variables are listed under [Environment Variables](#environment-variables).
 
 ### HTTP probe endpoints
 
@@ -506,12 +516,14 @@ Executes a ByLonis Query Builder v5 query.
 | `OAUTH_REFRESH_TOKEN_TTL_MINUTES` | Refresh token lifetime in minutes (default: 1440 / 24h)       | No                                  |
 | `OAUTH_AUTH_CODE_TTL_SECONDS` | Authorization code lifetime in seconds (default: 600 / 10min)      | No                                  |
 | `BYLONIS_CUSTOM_HEADERS` | Extra HTTP headers added to every API request, useful when ByLonis is behind a reverse proxy requiring auth (e.g. `CF-Access-Client-Id:id.access,CF-Access-Client-Secret:secret`). Format: `Key1:Value1,Key2:Value2` | No |
-| `BYLONIS_INSTANCE_URL_ALLOWLIST` | Multi-tenant (http) only: comma-separated allowlist of ByLonis hosts the server will proxy to. Entries are exact hosts (`houston.bylonis.ai`) or wildcards (`*.bylonis.ai`, which matches any subdomain); a scheme/port/path included by mistake is reduced to the bare host. When set, non-matching instance URLs are refused at every ingress: the OAuth form and `X-ByLonis-URL` header (or the deprecated `X-ByLonis-URL`) get HTTP 403, the OAuth token endpoint (including existing refresh tokens) returns `invalid_grant`, and `/mcp` requests with an OAuth token get 403. Each rejection increments a failure metric tagged `disallowed_bylonis_url`, and the message tells the user to use the MCP URL shown in Settings → MCP Server of their instance. Empty/unset allows any host. The operator's own `BYLONIS_URL` is exempt. | No |
+| `BYLONIS_INSTANCE_URL_ALLOWLIST` | Multi-tenant (http) only: comma-separated allowlist of ByLonis hosts the server will proxy to. Entries are exact hosts (`houston.bylonis.ai`) or wildcards (`*.bylonis.ai`, which matches any subdomain); a scheme/port/path included by mistake is reduced to the bare host. When set, non-matching instance URLs are refused at every ingress: the OAuth form and `X-ByLonis-URL` header get HTTP 403, the OAuth token endpoint (including existing refresh tokens) returns `invalid_grant`, and `/mcp` requests with an OAuth token get 403. Each rejection increments a failure metric tagged `disallowed_bylonis_url`, and the message tells the user to use the MCP URL shown in Settings → MCP Server of their instance. Empty/unset allows any host. The operator's own `BYLONIS_URL` is exempt. | No |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP gRPC endpoint for the MCP server's own traces and metrics. Internal telemetry export is disabled when no OTLP endpoint/exporter is configured. For plaintext collectors, use an `http://` endpoint such as `http://localhost:4317`. | No |
 | `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | Trace-specific OTLP gRPC endpoint; overrides `OTEL_EXPORTER_OTLP_ENDPOINT` for traces. | No |
 | `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` | Metrics-specific OTLP gRPC endpoint; overrides `OTEL_EXPORTER_OTLP_ENDPOINT` for metrics. | No |
 | `OTEL_TRACES_EXPORTER` | Set to `none` to disable internal trace export even when an OTLP endpoint is configured. | No |
 | `OTEL_METRICS_EXPORTER` | Set to `none` to disable internal metrics export and runtime metrics even when an OTLP endpoint is configured. | No |
+
+Only the names above are read. The upstream `SIGNOZ_*` variables (and the `SIGNOZ-API-KEY` / `X-SigNoz-*` request headers) were accepted as aliases until ByLonis v1.0 and are now ignored. OAuth tokens carry the instance URL as `bylonis_url`, so tokens issued by earlier versions are rejected and the client has to authorize again.
 
 The MCP server does not run an OTLP log exporter; logs are emitted as JSON to stderr. `OTEL_LOGS_EXPORTER` is therefore not used.
 

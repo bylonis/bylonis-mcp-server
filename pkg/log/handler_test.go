@@ -25,7 +25,7 @@ func TestContextHandler_InjectsTenantSessionSearchContext(t *testing.T) {
 	logger := newTestLogger(&buf)
 
 	ctx := context.Background()
-	ctx = util.SetSigNozURL(ctx, "https://tenant.example.com")
+	ctx = util.SetByLonisURL(ctx, "https://tenant.example.com")
 	ctx = util.SetSessionID(ctx, "sess-42")
 	ctx = util.SetSearchContext(ctx, "root-cause")
 

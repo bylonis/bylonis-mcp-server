@@ -194,7 +194,7 @@ func TestValidate_NormalizesGetShapePayload(t *testing.T) {
 			"any_attr": map[string]any{
 				"type":                      "DYNAMIC",
 				"dynamicVariablesAttribute": "deployment.environment",
-				"dynamicVariablesSource":    "all sources", // legacy alias from older SigNoz versions
+				"dynamicVariablesSource":    "all sources", // legacy alias from older ByLonis versions
 			},
 		},
 		"widgets": []map[string]any{
@@ -293,7 +293,7 @@ func TestValidate_InvalidDynamicSourceStillRejected(t *testing.T) {
 
 func TestValidate_RejectsFilterExpressionMismatch(t *testing.T) {
 	// Payload with 3 items but a 2-clause expression must be rejected
-	// regardless of whether SigNoz would accept it — the list view and edit
+	// regardless of whether ByLonis would accept it — the list view and edit
 	// modal see different predicates otherwise.
 	data := toJSON(t, map[string]any{
 		"title": "Mismatch",

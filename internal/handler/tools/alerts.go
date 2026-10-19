@@ -11,7 +11,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 
-	signozclient "github.com/bylonis/bylonis-mcp-server/internal/client"
+	bylonisclient "github.com/bylonis/bylonis-mcp-server/internal/client"
 	"github.com/bylonis/bylonis-mcp-server/pkg/alert"
 	logpkg "github.com/bylonis/bylonis-mcp-server/pkg/log"
 	"github.com/bylonis/bylonis-mcp-server/pkg/paginate"
@@ -504,7 +504,7 @@ func (h *Handler) validateAlertPayload(ctx context.Context, rawConfig map[string
 }
 
 // fetchChannelNames retrieves all notification channel names from the ByLonis API.
-func fetchChannelNames(ctx context.Context, c signozclient.Client) ([]string, error) {
+func fetchChannelNames(ctx context.Context, c bylonisclient.Client) ([]string, error) {
 	resp, err := c.ListNotificationChannels(ctx)
 	if err != nil {
 		return nil, err

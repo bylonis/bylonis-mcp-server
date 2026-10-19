@@ -34,7 +34,7 @@ func newBufferedLogger(buf *bytes.Buffer, level slog.Level) *slog.Logger {
 }
 
 func TestOAuthAuthorizationFlow(t *testing.T) {
-	signozServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	backendServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/user/me" {
 			http.NotFound(w, r)
 			return
@@ -52,7 +52,7 @@ func TestOAuthAuthorizationFlow(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"status":"success","data":[]}`))
 	}))
-	defer signozServer.Close()
+	defer backendServer.Close()
 
 	cfg := &config.Config{
 		OAuthEnabled:     true,
@@ -138,7 +138,7 @@ func TestOAuthAuthorizationFlow(t *testing.T) {
 		"code_challenge_method": {"S256"},
 		"scope":                 {"openid profile"},
 		"csrf_token":            {csrfToken},
-		"signoz_url":            {signozServer.URL}, // pre-rename field name, still accepted
+		"bylonis_url":           {backendServer.URL},
 		"api_key":               {"snz-api-key"},
 	}
 
@@ -191,23 +191,23 @@ func TestOAuthAuthorizationFlow(t *testing.T) {
 		t.Fatalf("unexpected token response: %+v", tokenResult)
 	}
 
-	apiKey, signozURL, clientID, expiresAt, err := DecryptToken(tokenResult.AccessToken, []byte(cfg.OAuthTokenSecret))
+	apiKey, bylonisURL, clientID, expiresAt, err := DecryptToken(tokenResult.AccessToken, []byte(cfg.OAuthTokenSecret))
 	if err != nil {
 		t.Fatalf("DecryptToken() error = %v", err)
 	}
-	if apiKey != "snz-api-key" || signozURL != signozServer.URL || clientID != registered.ClientID {
-		t.Fatalf("decrypted token payload mismatch: apiKey=%q signozURL=%q clientID=%q", apiKey, signozURL, clientID)
+	if apiKey != "snz-api-key" || bylonisURL != backendServer.URL || clientID != registered.ClientID {
+		t.Fatalf("decrypted token payload mismatch: apiKey=%q bylonisURL=%q clientID=%q", apiKey, bylonisURL, clientID)
 	}
 	if expiresAt.Before(time.Now().UTC()) {
 		t.Fatalf("access token already expired at %v", expiresAt)
 	}
 
-	refreshAPIKey, refreshSignozURL, refreshClientID, refreshExpiresAt, err := DecryptRefreshToken(tokenResult.RefreshToken, []byte(cfg.OAuthTokenSecret))
+	refreshAPIKey, refreshBylonisURL, refreshClientID, refreshExpiresAt, err := DecryptRefreshToken(tokenResult.RefreshToken, []byte(cfg.OAuthTokenSecret))
 	if err != nil {
 		t.Fatalf("DecryptRefreshToken() error = %v", err)
 	}
-	if refreshAPIKey != "snz-api-key" || refreshSignozURL != signozServer.URL || refreshClientID != registered.ClientID {
-		t.Fatalf("decrypted refresh token payload mismatch: apiKey=%q signozURL=%q clientID=%q", refreshAPIKey, refreshSignozURL, refreshClientID)
+	if refreshAPIKey != "snz-api-key" || refreshBylonisURL != backendServer.URL || refreshClientID != registered.ClientID {
+		t.Fatalf("decrypted refresh token payload mismatch: apiKey=%q bylonisURL=%q clientID=%q", refreshAPIKey, refreshBylonisURL, refreshClientID)
 	}
 	if refreshExpiresAt.Before(time.Now().UTC()) {
 		t.Fatalf("refresh token already expired at %v", refreshExpiresAt)
@@ -218,7 +218,7 @@ func TestOAuthAuthorizationFlow(t *testing.T) {
 // authorize flow succeeds when user/me returns 404 (service-account key) and
 // the validation falls back to /api/v1/service_accounts/me.
 func TestOAuthAuthorizationFlowServiceAccountFallback(t *testing.T) {
-	signozServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	backendServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v1/user/me":
 			// Service-account key triggers 404 on user/me.
@@ -239,7 +239,7 @@ func TestOAuthAuthorizationFlowServiceAccountFallback(t *testing.T) {
 			http.NotFound(w, r)
 		}
 	}))
-	defer signozServer.Close()
+	defer backendServer.Close()
 
 	cfg := &config.Config{
 		OAuthEnabled:     true,
@@ -300,7 +300,7 @@ func TestOAuthAuthorizationFlowServiceAccountFallback(t *testing.T) {
 		"code_challenge":        {challenge},
 		"code_challenge_method": {"S256"},
 		"csrf_token":            {matches[1]},
-		"bylonis_url":           {signozServer.URL},
+		"bylonis_url":           {backendServer.URL},
 		"api_key":               {"snz-api-key"},
 	}
 	submitReq := httptest.NewRequest(http.MethodPost, "/oauth/authorize", bytes.NewBufferString(form.Encode()))
@@ -326,8 +326,8 @@ func TestOAuthAuthorizationFlowServiceAccountFallback(t *testing.T) {
 	}
 }
 
-func TestAuthorizeSubmitRejectsInvalidSigNozCredentials(t *testing.T) {
-	signozServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func TestAuthorizeSubmitRejectsInvalidByLonisCredentials(t *testing.T) {
+	backendServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/user/me" {
 			http.NotFound(w, r)
 			return
@@ -340,7 +340,7 @@ func TestAuthorizeSubmitRejectsInvalidSigNozCredentials(t *testing.T) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte(`{"status":"error","message":"Unauthorized"}`))
 	}))
-	defer signozServer.Close()
+	defer backendServer.Close()
 
 	cfg := &config.Config{
 		OAuthEnabled:     true,
@@ -384,7 +384,7 @@ func TestAuthorizeSubmitRejectsInvalidSigNozCredentials(t *testing.T) {
 		"code_challenge":        {"challenge"},
 		"code_challenge_method": {"S256"},
 		"csrf_token":            {csrfToken},
-		"bylonis_url":           {signozServer.URL},
+		"bylonis_url":           {backendServer.URL},
 		"api_key":               {"bad-api-key"},
 	}
 
@@ -407,16 +407,16 @@ func TestAuthorizeSubmitRejectsInvalidSigNozCredentials(t *testing.T) {
 	if !strings.Contains(submitRR.Body.String(), "We couldn&#39;t sign in to that ByLonis instance. Check the URL and API key, then try again.") {
 		t.Fatalf("authorize POST body = %s", submitRR.Body.String())
 	}
-	if !strings.Contains(submitRR.Body.String(), `value="`+signozServer.URL+`"`) {
-		t.Fatalf("authorize POST should preserve signoz_url, body = %s", submitRR.Body.String())
+	if !strings.Contains(submitRR.Body.String(), `value="`+backendServer.URL+`"`) {
+		t.Fatalf("authorize POST should preserve bylonis_url, body = %s", submitRR.Body.String())
 	}
 	if strings.Contains(submitRR.Body.String(), `value="bad-api-key"`) {
 		t.Fatalf("authorize POST should not echo the api key, body = %s", submitRR.Body.String())
 	}
 }
 
-func TestAuthorizeSubmitStripsSigNozURLPathQueryFragment(t *testing.T) {
-	signozServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func TestAuthorizeSubmitStripsByLonisURLPathQueryFragment(t *testing.T) {
+	backendServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/user/me" {
 			http.NotFound(w, r)
 			return
@@ -429,7 +429,7 @@ func TestAuthorizeSubmitStripsSigNozURLPathQueryFragment(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"status":"success","data":[]}`))
 	}))
-	defer signozServer.Close()
+	defer backendServer.Close()
 
 	cfg := &config.Config{
 		OAuthEnabled:     true,
@@ -471,7 +471,7 @@ func TestAuthorizeSubmitStripsSigNozURLPathQueryFragment(t *testing.T) {
 		"code_challenge":        {"challenge"},
 		"code_challenge_method": {"S256"},
 		"csrf_token":            {matches[1]},
-		"bylonis_url":           {signozServer.URL + "/home?orgId=123#logs"},
+		"bylonis_url":           {backendServer.URL + "/home?orgId=123#logs"},
 		"api_key":               {"snz-api-key"},
 	}
 
@@ -493,12 +493,12 @@ func TestAuthorizeSubmitStripsSigNozURLPathQueryFragment(t *testing.T) {
 		t.Fatalf("authorization code missing from redirect %q", submitRR.Header().Get("Location"))
 	}
 
-	_, signozURL, _, _, _, _, _, err := DecryptAuthorizationCode(code, []byte(cfg.OAuthTokenSecret))
+	_, bylonisURL, _, _, _, _, _, err := DecryptAuthorizationCode(code, []byte(cfg.OAuthTokenSecret))
 	if err != nil {
 		t.Fatalf("DecryptAuthorizationCode() error = %v", err)
 	}
-	if signozURL != signozServer.URL {
-		t.Fatalf("authorization code signozURL = %q, want %q", signozURL, signozServer.URL)
+	if bylonisURL != backendServer.URL {
+		t.Fatalf("authorization code bylonisURL = %q, want %q", bylonisURL, backendServer.URL)
 	}
 }
 
@@ -544,7 +544,7 @@ func TestRegisterClientRejectsUnsupportedCustomRedirectScheme(t *testing.T) {
 }
 
 func TestAuthorizePageUsesIssuerPathPrefixForFormAndCSRFCookie(t *testing.T) {
-	signozServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	backendServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/user/me" {
 			http.NotFound(w, r)
 			return
@@ -562,12 +562,12 @@ func TestAuthorizePageUsesIssuerPathPrefixForFormAndCSRFCookie(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"status":"success","data":[]}`))
 	}))
-	defer signozServer.Close()
+	defer backendServer.Close()
 
 	cfg := &config.Config{
 		OAuthEnabled:     true,
 		OAuthTokenSecret: "0123456789abcdef0123456789abcdef",
-		OAuthIssuerURL:   "https://mcp.example.com/signoz-mcp",
+		OAuthIssuerURL:   "https://mcp.example.com/bylonis-mcp",
 		AuthCodeTTL:      10 * time.Minute,
 	}
 
@@ -590,7 +590,7 @@ func TestAuthorizePageUsesIssuerPathPrefixForFormAndCSRFCookie(t *testing.T) {
 	if authorizeRR.Code != http.StatusOK {
 		t.Fatalf("authorize GET status = %d, body = %s", authorizeRR.Code, authorizeRR.Body.String())
 	}
-	if !strings.Contains(authorizeRR.Body.String(), `action="/signoz-mcp/oauth/authorize"`) {
+	if !strings.Contains(authorizeRR.Body.String(), `action="/bylonis-mcp/oauth/authorize"`) {
 		t.Fatalf("authorize page action missing issuer path prefix: %s", authorizeRR.Body.String())
 	}
 
@@ -599,8 +599,8 @@ func TestAuthorizePageUsesIssuerPathPrefixForFormAndCSRFCookie(t *testing.T) {
 		t.Fatalf("expected CSRF cookie to be set")
 	}
 	csrfCookie := authorizeResult.Cookies()[0]
-	if csrfCookie.Path != "/signoz-mcp/oauth/authorize" {
-		t.Fatalf("csrf cookie path = %q, want %q", csrfCookie.Path, "/signoz-mcp/oauth/authorize")
+	if csrfCookie.Path != "/bylonis-mcp/oauth/authorize" {
+		t.Fatalf("csrf cookie path = %q, want %q", csrfCookie.Path, "/bylonis-mcp/oauth/authorize")
 	}
 
 	re := regexp.MustCompile(`name="csrf_token" value="([^"]+)"`)
@@ -615,7 +615,7 @@ func TestAuthorizePageUsesIssuerPathPrefixForFormAndCSRFCookie(t *testing.T) {
 		"code_challenge":        {"challenge"},
 		"code_challenge_method": {"S256"},
 		"csrf_token":            {matches[1]},
-		"bylonis_url":           {signozServer.URL},
+		"bylonis_url":           {backendServer.URL},
 		"api_key":               {"snz-api-key"},
 	}
 
@@ -628,16 +628,16 @@ func TestAuthorizePageUsesIssuerPathPrefixForFormAndCSRFCookie(t *testing.T) {
 	if submitRR.Code != http.StatusFound {
 		t.Fatalf("authorize POST status = %d, body = %s", submitRR.Code, submitRR.Body.String())
 	}
-	if !strings.Contains(submitRR.Header().Get("Set-Cookie"), "Path=/signoz-mcp/oauth/authorize") {
+	if !strings.Contains(submitRR.Header().Get("Set-Cookie"), "Path=/bylonis-mcp/oauth/authorize") {
 		t.Fatalf("clearing CSRF cookie missing issuer path prefix: %s", submitRR.Header().Get("Set-Cookie"))
 	}
 }
 
 type capturedEmission struct {
-	event     string
-	apiKey    string
-	signozURL string
-	props     map[string]any
+	event      string
+	apiKey     string
+	bylonisURL string
+	props      map[string]any
 }
 
 type capturingEmitter struct {
@@ -645,10 +645,10 @@ type capturingEmitter struct {
 	emissions []capturedEmission
 }
 
-func (c *capturingEmitter) emit(_ context.Context, event, apiKey, signozURL string, props map[string]any) {
+func (c *capturingEmitter) emit(_ context.Context, event, apiKey, bylonisURL string, props map[string]any) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.emissions = append(c.emissions, capturedEmission{event: event, apiKey: apiKey, signozURL: signozURL, props: props})
+	c.emissions = append(c.emissions, capturedEmission{event: event, apiKey: apiKey, bylonisURL: bylonisURL, props: props})
 }
 
 func (c *capturingEmitter) snapshot() []capturedEmission {
@@ -660,7 +660,7 @@ func (c *capturingEmitter) snapshot() []capturedEmission {
 }
 
 func TestOAuthEmitterFiresOnAuthorizeAndTokenIssue(t *testing.T) {
-	signozServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	backendServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/user/me" {
 			http.NotFound(w, r)
 			return
@@ -673,7 +673,7 @@ func TestOAuthEmitterFiresOnAuthorizeAndTokenIssue(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"status":"success","data":[]}`))
 	}))
-	defer signozServer.Close()
+	defer backendServer.Close()
 
 	cfg := &config.Config{
 		OAuthEnabled:     true,
@@ -722,7 +722,7 @@ func TestOAuthEmitterFiresOnAuthorizeAndTokenIssue(t *testing.T) {
 		"code_challenge":        {challenge},
 		"code_challenge_method": {"S256"},
 		"csrf_token":            {csrfToken},
-		"bylonis_url":           {signozServer.URL},
+		"bylonis_url":           {backendServer.URL},
 		"api_key":               {"snz-api-key"},
 	}
 	submitReq := httptest.NewRequest(http.MethodPost, "/oauth/authorize", bytes.NewBufferString(form.Encode()))
@@ -761,8 +761,8 @@ func TestOAuthEmitterFiresOnAuthorizeAndTokenIssue(t *testing.T) {
 	if submitted.event != analytics.EventOAuthAuthorizationSubmitted {
 		t.Fatalf("first emission event = %q, want %q", submitted.event, analytics.EventOAuthAuthorizationSubmitted)
 	}
-	if submitted.apiKey != "snz-api-key" || submitted.signozURL != signozServer.URL {
-		t.Fatalf("first emission creds = (%q, %q), want (snz-api-key, %q)", submitted.apiKey, submitted.signozURL, signozServer.URL)
+	if submitted.apiKey != "snz-api-key" || submitted.bylonisURL != backendServer.URL {
+		t.Fatalf("first emission creds = (%q, %q), want (snz-api-key, %q)", submitted.apiKey, submitted.bylonisURL, backendServer.URL)
 	}
 
 	issued := emissions[1]
@@ -833,7 +833,7 @@ func TestWriteOAuthErrorRecordsFailureMetric(t *testing.T) {
 }
 
 func TestAuthorizeSubmitUnauthorizedRecordsFailureMetric(t *testing.T) {
-	signozServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	backendServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/user/me" {
 			http.NotFound(w, r)
 			return
@@ -841,7 +841,7 @@ func TestAuthorizeSubmitUnauthorizedRecordsFailureMetric(t *testing.T) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte(`{"status":"error","message":"Unauthorized"}`))
 	}))
-	defer signozServer.Close()
+	defer backendServer.Close()
 
 	reader := sdkmetric.NewManualReader()
 	meterProvider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
@@ -892,7 +892,7 @@ func TestAuthorizeSubmitUnauthorizedRecordsFailureMetric(t *testing.T) {
 		"code_challenge":        {"challenge"},
 		"code_challenge_method": {"S256"},
 		"csrf_token":            {matches[1]},
-		"bylonis_url":           {signozServer.URL},
+		"bylonis_url":           {backendServer.URL},
 		"api_key":               {"bad-api-key"},
 	}
 
@@ -953,12 +953,12 @@ func TestRefreshTokenGrantRejectsDisallowedInstanceURL(t *testing.T) {
 		OAuthIssuerURL:       "https://mcp.example.com",
 		AccessTokenTTL:       time.Hour,
 		RefreshTokenTTL:      24 * time.Hour,
-		InstanceURLAllowlist: util.ParseInstanceURLAllowlist("*.us.signoz.cloud"),
+		InstanceURLAllowlist: util.ParseInstanceURLAllowlist("*.us.bylonis.test"),
 	}
 
 	handler := NewHandler(logpkg.New("error"), cfg, nil, meters)
 
-	// A long-lived refresh token issued for a SigNoz instance that is no longer allowed.
+	// A long-lived refresh token issued for a ByLonis instance that is no longer allowed.
 	refreshToken, err := EncryptRefreshToken("api-key", "https://selfhosted.example.com", "client-123",
 		time.Now().UTC().Add(time.Hour), []byte(cfg.OAuthTokenSecret))
 	if err != nil {
@@ -979,7 +979,7 @@ func TestRefreshTokenGrantRejectsDisallowedInstanceURL(t *testing.T) {
 		t.Fatalf("status = %d, want %d, body = %s", rr.Code, http.StatusBadRequest, rr.Body.String())
 	}
 	if strings.Contains(rr.Body.String(), "access_token") {
-		t.Fatalf("disallowed SigNoz URL must not be issued tokens, body = %s", rr.Body.String())
+		t.Fatalf("disallowed ByLonis URL must not be issued tokens, body = %s", rr.Body.String())
 	}
 	if !strings.Contains(rr.Body.String(), "invalid_grant") {
 		t.Fatalf("expected invalid_grant error, body = %s", rr.Body.String())
@@ -1018,7 +1018,7 @@ func TestAuthorizeSubmitRejectsDisallowedInstanceURL(t *testing.T) {
 		OAuthTokenSecret:     "0123456789abcdef0123456789abcdef",
 		OAuthIssuerURL:       "https://mcp.example.com",
 		AuthCodeTTL:          10 * time.Minute,
-		InstanceURLAllowlist: util.ParseInstanceURLAllowlist("*.us.signoz.cloud"),
+		InstanceURLAllowlist: util.ParseInstanceURLAllowlist("*.us.bylonis.test"),
 	}
 
 	handler := NewHandler(logpkg.New("error"), cfg, nil, meters)

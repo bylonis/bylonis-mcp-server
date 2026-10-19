@@ -46,18 +46,18 @@ const (
 )
 
 // TenantURLAttr returns mcp.tenant_url as an OTel attribute when the context
-// carries a SigNoz URL. Returns the zero KeyValue and false when absent, so
+// carries a ByLonis URL. Returns the zero KeyValue and false when absent, so
 // callers can append conditionally without emitting an empty string value.
 func TenantURLAttr(ctx context.Context) (attribute.KeyValue, bool) {
-	signozURL, ok := util.GetSigNozURL(ctx)
-	if !ok || signozURL == "" {
+	bylonisURL, ok := util.GetByLonisURL(ctx)
+	if !ok || bylonisURL == "" {
 		return attribute.KeyValue{}, false
 	}
-	return MCPTenantURLKey.String(signozURL), true
+	return MCPTenantURLKey.String(bylonisURL), true
 }
 
 // AppendTenantURL appends the mcp.tenant_url attribute to attrs when the
-// context carries a SigNoz URL. Returns attrs unchanged when absent.
+// context carries a ByLonis URL. Returns attrs unchanged when absent.
 func AppendTenantURL(ctx context.Context, attrs []attribute.KeyValue) []attribute.KeyValue {
 	if attr, ok := TenantURLAttr(ctx); ok {
 		return append(attrs, attr)

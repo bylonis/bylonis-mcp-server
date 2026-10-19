@@ -550,7 +550,7 @@ func TestHandleListViews_MissingDataField(t *testing.T) {
 }
 
 func TestHandleListViews_NonArrayDataIsEmpty(t *testing.T) {
-	// Some SigNoz deployments return `data: {}` (or a scalar) when the
+	// Some ByLonis deployments return `data: {}` (or a scalar) when the
 	// filter matches zero rows. The handler must treat any non-array shape
 	// as an empty list rather than surfacing "invalid response format".
 	cases := map[string]string{

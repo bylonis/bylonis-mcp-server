@@ -21,7 +21,7 @@ end
 subgraph StdioPath["Stdio Transport — Single Tenant"]
     MODE -->|stdio| STDIO["ServeStdio"]
     STDIO --> CTXFUNC["StdioContextFunc"]
-    CTXFUNC --> SETCTX_S["Set apiKey and signozURL<br/>from env into ctx"]
+    CTXFUNC --> SETCTX_S["Set apiKey and bylonisURL<br/>from env into ctx"]
     SETCTX_S --> TOOL_S["Tool Handler Called"]
 end
 
@@ -39,7 +39,7 @@ subgraph HTTPPath["HTTP Transport — Multi Tenant"]
 
     AUTH --> APIKEY{"Authorization header?"}
     APIKEY -->|Yes + OAuth enabled| TRYDECRYPT["Try decrypt as OAuth token"]
-    TRYDECRYPT -->|Success| OAUTHCTX["Extract apiKey + signozURL<br/>from encrypted token"]
+    TRYDECRYPT -->|Success| OAUTHCTX["Extract apiKey + bylonisURL<br/>from encrypted token"]
     TRYDECRYPT -->|Expired| EXPIRED["401 + WWW-Authenticate challenge"]
     TRYDECRYPT -->|Not OAuth format| RAWKEY["Treat as raw API key<br/>(backward compatible)"]
     APIKEY -->|Yes + OAuth disabled| PARSE["Extract apiKey<br/>(Bearer or raw token)"]
@@ -49,11 +49,11 @@ subgraph HTTPPath["HTTP Transport — Multi Tenant"]
 
     AUTH --> URLCHECK{"ByLonis URL source?"}
     URLCHECK -->|OAuth token| FROMTOKEN["Already extracted<br/>from decrypted token"]
-    URLCHECK -->|X-ByLonis-URL header| NORMALIZE["normalizeSigNozURL"]
+    URLCHECK -->|X-ByLonis-URL header| NORMALIZE["NormalizeByLonisURL"]
     URLCHECK -->|env set| ENVURL["Use config.URL"]
     URLCHECK -->|none| NOURL["400 Bad Request"]
 
-    subgraph URLValidation["URL Validation (normalizeSigNozURL)"]
+    subgraph URLValidation["URL Validation (NormalizeByLonisURL)"]
         NORMALIZE --> SCHEME["Validate scheme (http/https only)"]
         SCHEME --> PATHCHECK["Reject path/query/fragment"]
         PATHCHECK --> LOCALHOST["Block localhost, 0.0.0.0, [::]"]
@@ -61,7 +61,7 @@ subgraph HTTPPath["HTTP Transport — Multi Tenant"]
         STRIPPORT --> ORIGIN["Return canonical origin"]
     end
 
-    ORIGIN --> SETCTX_H["Set apiKey and signozURL into ctx"]
+    ORIGIN --> SETCTX_H["Set apiKey and bylonisURL into ctx"]
     PARSE --> SETCTX_H
     OAUTHCTX --> SETCTX_H
     RAWKEY --> SETCTX_H
@@ -79,27 +79,27 @@ subgraph OAuthFlow["OAuth 2.1 Flow (Stateless)"]
     ENCID --> AUTHPAGE["GET /oauth/authorize<br/>Browser opens, user sees form"]
     AUTHPAGE --> SUBMIT["POST /oauth/authorize<br/>User submits ByLonis URL + API key"]
     SUBMIT --> VALIDATE["Normalize ByLonis URL and validate<br/>credentials against ByLonis API"]
-    VALIDATE -->|success| ENCCODE["auth_code = encrypt(api_key, signoz_url,<br/>client_id, redirect_uri, code_challenge)"]
+    VALIDATE -->|success| ENCCODE["auth_code = encrypt(api_key, bylonis_url,<br/>client_id, redirect_uri, code_challenge)"]
     VALIDATE -->|invalid URL / rejected creds / unreachable instance| AUTHPAGEERR["Re-render authorize page<br/>with inline error"]
     ENCCODE --> REDIRECT["302 Redirect to client<br/>with ?code=encrypted"]
     REDIRECT --> EXCHANGE["POST /oauth/token<br/>{code, code_verifier}"]
     EXCHANGE --> VERIFY["Decrypt code, verify PKCE,<br/>verify client_id + redirect_uri match"]
-    VERIFY --> ISSUE["access_token = encrypt(api_key, signoz_url)<br/>refresh_token = encrypt(api_key, signoz_url)"]
-    ISSUE --> USE["Client uses access_token on /mcp<br/>Middleware decrypts → apiKey + signozURL"]
+    VERIFY --> ISSUE["access_token = encrypt(api_key, bylonis_url)<br/>refresh_token = encrypt(api_key, bylonis_url)"]
+    ISSUE --> USE["Client uses access_token on /mcp<br/>Middleware decrypts → apiKey + bylonisURL"]
 
     REFRESH["POST /oauth/token<br/>{grant_type: refresh_token}"]
-    REFRESH --> DECREF["Decrypt refresh_token<br/>→ api_key, signoz_url"]
+    REFRESH --> DECREF["Decrypt refresh_token<br/>→ api_key, bylonis_url"]
     DECREF --> ISSUE
 end
 
 subgraph GetClient["GetClient — Unified for Both Transports"]
     TOOL["Tool Handler"]
     TOOL --> TLOG["tenantLogger(ctx)"]
-    TLOG --> READ["Read apiKey and signozURL from ctx"]
+    TLOG --> READ["Read apiKey and bylonisURL from ctx"]
     READ --> MISSING{"Both present?"}
 
     MISSING -->|No| ERR["Return error"]
-    MISSING -->|Yes| HASH["cacheKey = SHA256(apiKey + delimiter + signozURL)"]
+    MISSING -->|Yes| HASH["cacheKey = SHA256(apiKey + delimiter + bylonisURL)"]
 
     HASH --> LOOKUP{"clientCache LRU hit?"}
     LOOKUP -->|Yes| HIT["Return cached client"]
@@ -159,9 +159,9 @@ Each blob is prefixed with a type byte to prevent cross-type confusion:
 | Type | Blob | Contents | Created At | Used At |
 |------|------|----------|------------|---------|
 | `0x01` | `client_id` | `{redirect_uris, client_name, created_at}` | `/oauth/register` | `/oauth/authorize` |
-| `0x02` | `authorization_code` | `{api_key, signoz_url, client_id, redirect_uri, code_challenge, expires_at}` | `/oauth/authorize` (form submit) | `/oauth/token` |
-| `0x03` | `refresh_token` | `{api_key, signoz_url, client_id, expires_at}` | `/oauth/token` | `/oauth/token` (refresh grant) |
-| (untagged) | `access_token` | `{api_key, signoz_url, client_id, expires_at}` | `/oauth/token` | `/mcp` (every request) |
+| `0x02` | `authorization_code` | `{api_key, bylonis_url, client_id, redirect_uri, code_challenge, expires_at}` | `/oauth/authorize` (form submit) | `/oauth/token` |
+| `0x03` | `refresh_token` | `{api_key, bylonis_url, client_id, expires_at}` | `/oauth/token` | `/oauth/token` (refresh grant) |
+| (untagged) | `access_token` | `{api_key, bylonis_url, client_id, expires_at}` | `/oauth/token` | `/mcp` (every request) |
 
 ### Multi-Instance Deployment
 

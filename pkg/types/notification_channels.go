@@ -21,7 +21,7 @@ func MarshalReceiver(r Receiver) ([]byte, error) {
 	return json.Marshal(r)
 }
 
-// SlackConfig mirrors the SigNoz/Alertmanager slack_configs entry.
+// SlackConfig mirrors the ByLonis/Alertmanager slack_configs entry.
 type SlackConfig struct {
 	SendResolved bool   `json:"send_resolved"`
 	APIURL       string `json:"api_url"`
@@ -30,7 +30,7 @@ type SlackConfig struct {
 	Text         string `json:"text,omitempty"`
 }
 
-// WebhookConfig mirrors the SigNoz/Alertmanager webhook_configs entry.
+// WebhookConfig mirrors the ByLonis/Alertmanager webhook_configs entry.
 type WebhookConfig struct {
 	SendResolved bool               `json:"send_resolved"`
 	URL          string             `json:"url"`
@@ -48,7 +48,7 @@ type WebhookBasicAuth struct {
 	Password string `json:"password,omitempty"`
 }
 
-// PagerdutyConfig mirrors the SigNoz/Alertmanager pagerduty_configs entry.
+// PagerdutyConfig mirrors the ByLonis/Alertmanager pagerduty_configs entry.
 type PagerdutyConfig struct {
 	SendResolved bool   `json:"send_resolved"`
 	RoutingKey   string `json:"routing_key"`
@@ -56,14 +56,14 @@ type PagerdutyConfig struct {
 	Severity     string `json:"severity,omitempty"`
 }
 
-// EmailConfig mirrors the SigNoz/Alertmanager email_configs entry.
+// EmailConfig mirrors the ByLonis/Alertmanager email_configs entry.
 type EmailConfig struct {
 	SendResolved bool   `json:"send_resolved"`
 	To           string `json:"to"`
 	HTML         string `json:"html,omitempty"`
 }
 
-// OpsgenieConfig mirrors the SigNoz/Alertmanager opsgenie_configs entry.
+// OpsgenieConfig mirrors the ByLonis/Alertmanager opsgenie_configs entry.
 type OpsgenieConfig struct {
 	SendResolved bool   `json:"send_resolved"`
 	APIKey       string `json:"api_key"`
@@ -72,7 +72,7 @@ type OpsgenieConfig struct {
 	Priority     string `json:"priority,omitempty"`
 }
 
-// MSTeamsV2Config mirrors the SigNoz/Alertmanager msteamsv2_configs entry.
+// MSTeamsV2Config mirrors the ByLonis/Alertmanager msteamsv2_configs entry.
 type MSTeamsV2Config struct {
 	SendResolved bool   `json:"send_resolved"`
 	WebhookURL   string `json:"webhook_url"`
