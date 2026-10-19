@@ -1,0 +1,446 @@
+
+=== TRACES SCHEMA ===
+
+Database: bylonis_traces
+
+Total Tables: 16
+
+Local Tables
+
+Table: bylonis_error_index_v2
+
+- Engine: MergeTree
+- Total Columns: 11
+- Total Indexes: 3
+
+Columns:
+- timestamp: DateTime64(9)
+- errorID: FixedString(32)
+- groupID: FixedString(32)
+- traceID: FixedString(32)
+- spanID: String
+- serviceName: LowCardinality(String)
+- exceptionType: LowCardinality(String)
+- exceptionMessage: String
+- exceptionStacktrace: String
+- exceptionEscaped: Bool
+- resourceTagsMap: Map(LowCardinality(String), String)
+
+Indexes:
+- idx_error_id (errorID) - Type: bloom_filter
+- idx_resourceTagsMapKeys (mapKeys(resourceTagsMap)) - Type: bloom_filter(0.01)
+- idx_resourceTagsMapValues (mapValues(resourceTagsMap)) - Type: bloom_filter(0.01)
+
+---
+
+Table: bylonis_index_v3
+
+- Engine: MergeTree
+- Total Columns: 79
+- Total Indexes: 21
+
+Columns:
+- ts_bucket_start: UInt64
+- resource_fingerprint: String
+- timestamp: DateTime64(9)
+- trace_id: FixedString(32)
+- span_id: String
+- trace_state: String
+- parent_span_id: String
+- flags: UInt32
+- name: LowCardinality(String)
+- kind: Int8
+- kind_string: String
+- duration_nano: UInt64
+- status_code: Int16
+- status_message: String
+- status_code_string: String
+- attributes_string: Map(LowCardinality(String), String)
+- attributes_number: Map(LowCardinality(String), Float64)
+- attributes_bool: Map(LowCardinality(String), Bool)
+- resources_string: Map(LowCardinality(String), String)
+- events: Array(String)
+- links: String
+- response_status_code: LowCardinality(String)
+- external_http_url: LowCardinality(String)
+- http_url: LowCardinality(String)
+- external_http_method: LowCardinality(String)
+- http_method: LowCardinality(String)
+- http_host: LowCardinality(String)
+- db_name: LowCardinality(String)
+- db_operation: LowCardinality(String)
+- has_error: Bool
+- is_remote: LowCardinality(String)
+- resource_string_service$$name: LowCardinality(String) - Default: resources_string['service.name']
+- attribute_string_http$$route: LowCardinality(String) - Default: attributes_string['http.route']
+- attribute_string_messaging$$system: LowCardinality(String) - Default: attributes_string['messaging.system']
+- attribute_string_messaging$$operation: LowCardinality(String) - Default: attributes_string['messaging.operation']
+- attribute_string_db$$system: LowCardinality(String) - Default: attributes_string['db.system']
+- attribute_string_rpc$$system: LowCardinality(String) - Default: attributes_string['rpc.system']
+- attribute_string_rpc$$service: LowCardinality(String) - Default: attributes_string['rpc.service']
+- attribute_string_rpc$$method: LowCardinality(String) - Default: attributes_string['rpc.method']
+- attribute_string_peer$$service: LowCardinality(String) - Default: attributes_string['peer.service']
+- traceID: FixedString(32) - Alias: trace_id
+- spanID: String - Alias: span_id
+- parentSpanID: String - Alias: parent_span_id
+- spanKind: String - Alias: kind_string
+- durationNano: UInt64 - Alias: duration_nano
+- statusCode: Int16 - Alias: status_code
+- statusMessage: String - Alias: status_message
+- statusCodeString: String - Alias: status_code_string
+- references: String - Alias: links
+- responseStatusCode: LowCardinality(String) - Alias: response_status_code
+- externalHttpUrl: LowCardinality(String) - Alias: external_http_url
+- httpUrl: LowCardinality(String) - Alias: http_url
+- externalHttpMethod: LowCardinality(String) - Alias: external_http_method
+- httpMethod: LowCardinality(String) - Alias: http_method
+- httpHost: LowCardinality(String) - Alias: http_host
+- dbName: LowCardinality(String) - Alias: db_name
+- dbOperation: LowCardinality(String) - Alias: db_operation
+- hasError: Bool - Alias: has_error
+- isRemote: LowCardinality(String) - Alias: is_remote
+- serviceName: LowCardinality(String) - Alias: resource_string_service$$name
+- httpRoute: LowCardinality(String) - Alias: attribute_string_http$$route
+- msgSystem: LowCardinality(String) - Alias: attribute_string_messaging$$system
+- msgOperation: LowCardinality(String) - Alias: attribute_string_messaging$$operation
+- dbSystem: LowCardinality(String) - Alias: attribute_string_db$$system
+- rpcSystem: LowCardinality(String) - Alias: attribute_string_rpc$$system
+- rpcService: LowCardinality(String) - Alias: attribute_string_rpc$$service
+- rpcMethod: LowCardinality(String) - Alias: attribute_string_rpc$$method
+- peerService: LowCardinality(String) - Alias: attribute_string_peer$$service
+- resource_string_service$$name_exists: Bool - Default: if(mapContains(resources_string, 'service.name') != 0, true, false)
+- attribute_string_http$$route_exists: Bool - Default: if(mapContains(attributes_string, 'http.route') != 0, true, false)
+- attribute_string_messaging$$system_exists: Bool - Default: if(mapContains(attributes_string, 'messaging.system') != 0, true, false)
+- attribute_string_messaging$$operation_exists: Bool - Default: if(mapContains(attributes_string, 'messaging.operation') != 0, true, false)
+- attribute_string_db$$system_exists: Bool - Default: if(mapContains(attributes_string, 'db.system') != 0, true, false)
+- attribute_string_rpc$$system_exists: Bool - Default: if(mapContains(attributes_string, 'rpc.system') != 0, true, false)
+- attribute_string_rpc$$service_exists: Bool - Default: if(mapContains(attributes_string, 'rpc.service') != 0, true, false)
+- attribute_string_rpc$$method_exists: Bool - Default: if(mapContains(attributes_string, 'rpc.method') != 0, true, false)
+- attribute_string_peer$$service_exists: Bool - Default: if(mapContains(attributes_string, 'peer.service') != 0, true, false)
+- resource: JSON(max_dynamic_paths=100)
+- scope: JSON(max_dynamic_paths=0, name String, version String, attributes JSON(max_dynamic_paths=0))
+
+Indexes:
+- idx_trace_id (trace_id) - Type: tokenbf_v1(10000, 5,0)
+- idx_span_id (span_id) - Type: tokenbf_v1(5000, 5,0)
+- idx_duration (duration_nano) - Type: minmax
+- idx_name (name) - Type: ngrambf_v1(4, 5000, 2, 0)
+- idx_kind (kind) - Type: minmax
+- idx_http_route (attribute_string_http$$route) - Type: bloom_filter
+- idx_http_url (http_url) - Type: bloom_filter
+- idx_http_host (http_host) - Type: bloom_filter
+- idx_http_method (http_method) - Type: bloom_filter
+- idx_timestamp (timestamp) - Type: minmax
+- idx_rpc_method (attribute_string_rpc$$method) - Type: bloom_filter
+- idx_response_statusCode (response_status_code) - Type: set(0)
+- idx_status_code_string (status_code_string) - Type: set(3)
+- idx_kind_string (kind_string) - Type: set(5)
+- attributes_string_idx_key (mapKeys(attributes_string)) - Type: tokenbf_v1(1024, 2, 0)
+- attributes_string_idx_val (mapValues(attributes_string)) - Type: ngrambf_v1(4, 5000, 2, 0)
+- attributes_number_idx_key (mapKeys(attributes_number)) - Type: tokenbf_v1(1024, 2, 0)
+- attributes_number_idx_val (mapValues(attributes_number)) - Type: bloom_filter
+- attributes_bool_idx_key (mapKeys(attributes_bool)) - Type: tokenbf_v1(1024, 2, 0)
+- resources_string_idx_key (mapKeys(resources_string)) - Type: tokenbf_v1(1024, 2, 0)
+- resources_string_idx_val (mapValues(resources_string)) - Type: ngrambf_v1(4, 5000, 2, 0)
+
+---
+
+Table: dependency_graph_minutes_v2
+
+- Engine: AggregatingMergeTree
+- Total Columns: 9
+- Total Indexes: 0
+
+Columns:
+- src: LowCardinality(String)
+- dest: LowCardinality(String)
+- duration_quantiles_state: AggregateFunction(quantiles(0.5, 0.75, 0.9, 0.95, 0.99), Float64)
+- error_count: SimpleAggregateFunction(sum, UInt64)
+- total_count: SimpleAggregateFunction(sum, UInt64)
+- timestamp: DateTime
+- deployment_environment: LowCardinality(String)
+- k8s_cluster_name: LowCardinality(String)
+- k8s_namespace_name: LowCardinality(String)
+
+---
+
+Table: span_attributes_keys
+
+- Engine: ReplacingMergeTree
+- Total Columns: 5
+- Total Indexes: 0
+
+Columns:
+- tagKey: LowCardinality(String)
+- tagType: Enum8('tag' = 1, 'resource' = 2)
+- dataType: Enum8('string' = 1, 'bool' = 2, 'float64' = 3)
+- isColumn: Bool
+- timestamp: DateTime - Default: toDateTime(now())
+
+---
+
+Table: tag_attributes_v2
+
+- Engine: ReplacingMergeTree
+- Total Columns: 6
+- Total Indexes: 2
+
+Columns:
+- unix_milli: Int64
+- tag_key: String
+- tag_type: LowCardinality(String)
+- tag_data_type: LowCardinality(String)
+- string_value: String
+- number_value: Nullable(Float64)
+
+Indexes:
+- string_value_index (string_value) - Type: ngrambf_v1(4, 1024, 3, 0)
+- number_value_index (number_value) - Type: minmax
+
+---
+
+Table: top_level_operations
+
+- Engine: ReplacingMergeTree
+- Total Columns: 3
+- Total Indexes: 0
+
+Columns:
+- name: LowCardinality(String)
+- serviceName: LowCardinality(String)
+- time: DateTime - Default: now()
+
+---
+
+Table: trace_summary
+
+- Engine: AggregatingMergeTree
+- Total Columns: 4
+- Total Indexes: 0
+
+Columns:
+- trace_id: String
+- start: SimpleAggregateFunction(min, DateTime64(9))
+- end: SimpleAggregateFunction(max, DateTime64(9))
+- num_spans: SimpleAggregateFunction(sum, UInt64)
+
+---
+
+Table: traces_v3_resource
+
+- Engine: ReplacingMergeTree
+- Total Columns: 3
+- Total Indexes: 2
+
+Columns:
+- labels: String
+- fingerprint: String
+- seen_at_ts_bucket_start: Int64
+
+Indexes:
+- idx_labels (lower(labels)) - Type: ngrambf_v1(4, 1024, 3, 0)
+- idx_labels_v1 (labels) - Type: ngrambf_v1(4, 1024, 3, 0)
+
+---
+
+Distributed Tables
+
+Table: distributed_bylonis_error_index_v2
+
+- Engine: Distributed
+- Total Columns: 11
+- Total Indexes: 0
+
+Columns:
+- timestamp: DateTime64(9)
+- errorID: FixedString(32)
+- groupID: FixedString(32)
+- traceID: FixedString(32)
+- spanID: String
+- serviceName: LowCardinality(String)
+- exceptionType: LowCardinality(String)
+- exceptionMessage: String
+- exceptionStacktrace: String
+- exceptionEscaped: Bool
+- resourceTagsMap: Map(LowCardinality(String), String)
+
+---
+
+Table: distributed_bylonis_index_v3
+
+- Engine: Distributed
+- Total Columns: 79
+- Total Indexes: 0
+
+Columns:
+- ts_bucket_start: UInt64
+- resource_fingerprint: String
+- timestamp: DateTime64(9)
+- trace_id: FixedString(32)
+- span_id: String
+- trace_state: String
+- parent_span_id: String
+- flags: UInt32
+- name: LowCardinality(String)
+- kind: Int8
+- kind_string: String
+- duration_nano: UInt64
+- status_code: Int16
+- status_message: String
+- status_code_string: String
+- attributes_string: Map(LowCardinality(String), String)
+- attributes_number: Map(LowCardinality(String), Float64)
+- attributes_bool: Map(LowCardinality(String), Bool)
+- resources_string: Map(LowCardinality(String), String)
+- events: Array(String)
+- links: String
+- response_status_code: LowCardinality(String)
+- external_http_url: LowCardinality(String)
+- http_url: LowCardinality(String)
+- external_http_method: LowCardinality(String)
+- http_method: LowCardinality(String)
+- http_host: LowCardinality(String)
+- db_name: LowCardinality(String)
+- db_operation: LowCardinality(String)
+- has_error: Bool
+- is_remote: LowCardinality(String)
+- resource_string_service$$name: LowCardinality(String) - Default: resources_string['service.name']
+- attribute_string_http$$route: LowCardinality(String) - Default: attributes_string['http.route']
+- attribute_string_messaging$$system: LowCardinality(String) - Default: attributes_string['messaging.system']
+- attribute_string_messaging$$operation: LowCardinality(String) - Default: attributes_string['messaging.operation']
+- attribute_string_db$$system: LowCardinality(String) - Default: attributes_string['db.system']
+- attribute_string_rpc$$system: LowCardinality(String) - Default: attributes_string['rpc.system']
+- attribute_string_rpc$$service: LowCardinality(String) - Default: attributes_string['rpc.service']
+- attribute_string_rpc$$method: LowCardinality(String) - Default: attributes_string['rpc.method']
+- attribute_string_peer$$service: LowCardinality(String) - Default: attributes_string['peer.service']
+- traceID: FixedString(32) - Alias: trace_id
+- spanID: String - Alias: span_id
+- parentSpanID: String - Alias: parent_span_id
+- spanKind: String - Alias: kind_string
+- durationNano: UInt64 - Alias: duration_nano
+- statusCode: Int16 - Alias: status_code
+- statusMessage: String - Alias: status_message
+- statusCodeString: String - Alias: status_code_string
+- references: String - Alias: links
+- responseStatusCode: LowCardinality(String) - Alias: response_status_code
+- externalHttpUrl: LowCardinality(String) - Alias: external_http_url
+- httpUrl: LowCardinality(String) - Alias: http_url
+- externalHttpMethod: LowCardinality(String) - Alias: external_http_method
+- httpMethod: LowCardinality(String) - Alias: http_method
+- httpHost: LowCardinality(String) - Alias: http_host
+- dbName: LowCardinality(String) - Alias: db_name
+- dbOperation: LowCardinality(String) - Alias: db_operation
+- hasError: Bool - Alias: has_error
+- isRemote: LowCardinality(String) - Alias: is_remote
+- serviceName: LowCardinality(String) - Alias: resource_string_service$$name
+- httpRoute: LowCardinality(String) - Alias: attribute_string_http$$route
+- msgSystem: LowCardinality(String) - Alias: attribute_string_messaging$$system
+- msgOperation: LowCardinality(String) - Alias: attribute_string_messaging$$operation
+- dbSystem: LowCardinality(String) - Alias: attribute_string_db$$system
+- rpcSystem: LowCardinality(String) - Alias: attribute_string_rpc$$system
+- rpcService: LowCardinality(String) - Alias: attribute_string_rpc$$service
+- rpcMethod: LowCardinality(String) - Alias: attribute_string_rpc$$method
+- peerService: LowCardinality(String) - Alias: attribute_string_peer$$service
+- resource_string_service$$name_exists: Bool - Default: if(mapContains(resources_string, 'service.name') != 0, true, false)
+- attribute_string_http$$route_exists: Bool - Default: if(mapContains(attributes_string, 'http.route') != 0, true, false)
+- attribute_string_messaging$$system_exists: Bool - Default: if(mapContains(attributes_string, 'messaging.system') != 0, true, false)
+- attribute_string_messaging$$operation_exists: Bool - Default: if(mapContains(attributes_string, 'messaging.operation') != 0, true, false)
+- attribute_string_db$$system_exists: Bool - Default: if(mapContains(attributes_string, 'db.system') != 0, true, false)
+- attribute_string_rpc$$system_exists: Bool - Default: if(mapContains(attributes_string, 'rpc.system') != 0, true, false)
+- attribute_string_rpc$$service_exists: Bool - Default: if(mapContains(attributes_string, 'rpc.service') != 0, true, false)
+- attribute_string_rpc$$method_exists: Bool - Default: if(mapContains(attributes_string, 'rpc.method') != 0, true, false)
+- attribute_string_peer$$service_exists: Bool - Default: if(mapContains(attributes_string, 'peer.service') != 0, true, false)
+- resource: JSON(max_dynamic_paths=100)
+- scope: JSON(max_dynamic_paths=0, name String, version String, attributes JSON(max_dynamic_paths=0))
+
+---
+
+Table: distributed_dependency_graph_minutes_v2
+
+- Engine: Distributed
+- Total Columns: 9
+- Total Indexes: 0
+
+Columns:
+- src: LowCardinality(String)
+- dest: LowCardinality(String)
+- duration_quantiles_state: AggregateFunction(quantiles(0.5, 0.75, 0.9, 0.95, 0.99), Float64)
+- error_count: SimpleAggregateFunction(sum, UInt64)
+- total_count: SimpleAggregateFunction(sum, UInt64)
+- timestamp: DateTime
+- deployment_environment: LowCardinality(String)
+- k8s_cluster_name: LowCardinality(String)
+- k8s_namespace_name: LowCardinality(String)
+
+---
+
+Table: distributed_span_attributes_keys
+
+- Engine: Distributed
+- Total Columns: 4
+- Total Indexes: 0
+
+Columns:
+- tagKey: LowCardinality(String)
+- tagType: Enum8('tag' = 1, 'resource' = 2)
+- dataType: Enum8('string' = 1, 'bool' = 2, 'float64' = 3)
+- isColumn: Bool
+
+---
+
+Table: distributed_tag_attributes_v2
+
+- Engine: Distributed
+- Total Columns: 6
+- Total Indexes: 0
+
+Columns:
+- unix_milli: Int64
+- tag_key: String
+- tag_type: LowCardinality(String)
+- tag_data_type: LowCardinality(String)
+- string_value: String
+- number_value: Nullable(Float64)
+
+---
+
+Table: distributed_top_level_operations
+
+- Engine: Distributed
+- Total Columns: 3
+- Total Indexes: 0
+
+Columns:
+- name: LowCardinality(String)
+- serviceName: LowCardinality(String)
+- time: DateTime - Default: now()
+
+---
+
+Table: distributed_trace_summary
+
+- Engine: Distributed
+- Total Columns: 4
+- Total Indexes: 0
+
+Columns:
+- trace_id: String
+- start: SimpleAggregateFunction(min, DateTime64(9))
+- end: SimpleAggregateFunction(max, DateTime64(9))
+- num_spans: SimpleAggregateFunction(sum, UInt64)
+
+---
+
+Table: distributed_traces_v3_resource
+
+- Engine: Distributed
+- Total Columns: 3
+- Total Indexes: 0
+
+Columns:
+- labels: String
+- fingerprint: String
+- seen_at_ts_bucket_start: Int64
+
+---
+
