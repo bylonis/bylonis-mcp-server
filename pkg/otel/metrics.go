@@ -15,17 +15,6 @@ type Meters struct {
 	OAuthFailures       metric.Int64Counter
 	IdentityCacheHits   metric.Int64Counter
 	IdentityCacheMisses metric.Int64Counter
-	DocsSearches        metric.Int64Counter
-	DocsSearchDuration  metric.Float64Histogram
-	DocsFetches         metric.Int64Counter
-	DocsRefreshes       metric.Int64Counter
-	DocsRefreshDuration metric.Float64Histogram
-	DocsIndexAge        metric.Float64Gauge
-	DocsIndexSizeBytes  metric.Int64Gauge
-	DocsIndexDocCount   metric.Int64Gauge
-	DocsIndexGeneration metric.Int64Gauge
-	DocsFetcherRetries  metric.Int64Counter
-	DocsSitemapFailures metric.Int64Counter
 }
 
 func NewMeters(mp metric.MeterProvider) (*Meters, error) {
@@ -113,50 +102,6 @@ func NewMeters(mp metric.MeterProvider) (*Meters, error) {
 		return nil, err
 	}
 
-	docsSearches, err := meter.Int64Counter("bylonis_docs_searches_total", metric.WithDescription("Count of docs searches"))
-	if err != nil {
-		return nil, err
-	}
-	docsSearchDuration, err := meter.Float64Histogram("bylonis_docs_search_duration_seconds", metric.WithDescription("Duration of docs searches"), metric.WithUnit("s"))
-	if err != nil {
-		return nil, err
-	}
-	docsFetches, err := meter.Int64Counter("bylonis_docs_fetches_total", metric.WithDescription("Count of docs fetches"))
-	if err != nil {
-		return nil, err
-	}
-	docsRefreshes, err := meter.Int64Counter("bylonis_docs_refresh_total", metric.WithDescription("Count of docs refresh outcomes"))
-	if err != nil {
-		return nil, err
-	}
-	docsRefreshDuration, err := meter.Float64Histogram("bylonis_docs_refresh_duration_seconds", metric.WithDescription("Duration of docs refreshes"), metric.WithUnit("s"))
-	if err != nil {
-		return nil, err
-	}
-	docsIndexAge, err := meter.Float64Gauge("bylonis_docs_index_age_seconds", metric.WithDescription("Age of the active docs index"), metric.WithUnit("s"))
-	if err != nil {
-		return nil, err
-	}
-	docsIndexSizeBytes, err := meter.Int64Gauge("bylonis_docs_index_size_bytes", metric.WithDescription("Approximate byte size of indexed docs corpus"), metric.WithUnit("By"))
-	if err != nil {
-		return nil, err
-	}
-	docsIndexDocCount, err := meter.Int64Gauge("bylonis_docs_index_doc_count", metric.WithDescription("Number of pages in the active docs index"))
-	if err != nil {
-		return nil, err
-	}
-	docsIndexGeneration, err := meter.Int64Gauge("bylonis_docs_index_generation", metric.WithDescription("Active docs index generation"))
-	if err != nil {
-		return nil, err
-	}
-	docsFetcherRetries, err := meter.Int64Counter("bylonis_docs_fetcher_retries_total", metric.WithDescription("Count of docs fetcher retries"))
-	if err != nil {
-		return nil, err
-	}
-	docsSitemapFailures, err := meter.Int64Counter("bylonis_docs_sitemap_parse_failures_total", metric.WithDescription("Count of docs sitemap parse failures"))
-	if err != nil {
-		return nil, err
-	}
 	return &Meters{
 		ToolCalls:           toolCalls,
 		ToolCallDuration:    toolCallDuration,
@@ -168,16 +113,5 @@ func NewMeters(mp metric.MeterProvider) (*Meters, error) {
 		OAuthFailures:       oauthFailures,
 		IdentityCacheHits:   identityCacheHits,
 		IdentityCacheMisses: identityCacheMisses,
-		DocsSearches:        docsSearches,
-		DocsSearchDuration:  docsSearchDuration,
-		DocsFetches:         docsFetches,
-		DocsRefreshes:       docsRefreshes,
-		DocsRefreshDuration: docsRefreshDuration,
-		DocsIndexAge:        docsIndexAge,
-		DocsIndexSizeBytes:  docsIndexSizeBytes,
-		DocsIndexDocCount:   docsIndexDocCount,
-		DocsIndexGeneration: docsIndexGeneration,
-		DocsFetcherRetries:  docsFetcherRetries,
-		DocsSitemapFailures: docsSitemapFailures,
 	}, nil
 }

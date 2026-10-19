@@ -81,7 +81,7 @@ With `OAUTH_ENABLED=true` (plus `OAUTH_TOKEN_SECRET` and `OAUTH_ISSUER_URL`) cli
 | Endpoint | Purpose |
 |----------|---------|
 | `/livez` | Liveness. `200 OK` whenever the process answers HTTP. |
-| `/readyz` | Readiness. `200 OK` once the server can take traffic; with the docs tools enabled it also waits for the docs index (`503` until then). |
+| `/readyz` | Readiness. `200 OK` once the server can take traffic. |
 | `/healthz` | Legacy alias of `/readyz`. |
 
 ## What can you do with it?
@@ -125,8 +125,6 @@ With `OAUTH_ENABLED=true` (plus `OAUTH_TOKEN_SECRET` and `OAUTH_ISSUER_URL`) cli
 | `bylonis_get_service_top_operations` | Get top operations for a service |
 | `bylonis_list_views` | List saved Explorer views for a sourcePage (traces/logs/metrics) |
 | `bylonis_get_view` | Get a saved view by UUID |
-| `bylonis_search_docs` | Off by default (`BYLONIS_DOCS_TOOLS_ENABLED`). Search the upstream project docs for product, setup, instrumentation, config, API, deployment, or troubleshooting questions |
-| `bylonis_fetch_doc` | Off by default (`BYLONIS_DOCS_TOOLS_ENABLED`). Fetch full markdown for one upstream docs page or heading |
 | `bylonis_create_view` | Create a new saved Explorer view |
 | `bylonis_update_view` | Replace an existing saved view (full-body PUT) |
 | `bylonis_delete_view` | Delete a saved view by UUID |
@@ -141,12 +139,6 @@ With `OAUTH_ENABLED=true` (plus `OAUTH_TOKEN_SECRET` and `OAUTH_ISSUER_URL`) cli
 | `bylonis_create_notification_channel` | Create a notification channel and send a test notification |
 | `bylonis_update_notification_channel` | Update a notification channel and send a test notification |
 | `bylonis_delete_notification_channel` | Delete a notification channel by ID |
-
-### Agent Routing Guidance
-
-When the docs tools are enabled, use `bylonis_search_docs` for product questions: how-to, feature usage, setup, configuration, API behavior, deployment, instrumentation and troubleshooting. Use live data tools for actual telemetry, alert state, dashboard contents, saved views, and tenant-specific resources. When a docs search result needs exact commands or a specific section, call `bylonis_fetch_doc`.
-
-Docs tools use the same authentication path as other MCP tools.
 
 <details>
 <summary><strong>Parameter Reference</strong></summary>
@@ -288,29 +280,6 @@ List ByLonis saved Explorer views for a given sourcePage. Supports pagination; r
 Get a single saved view by UUID.
 
 - **Parameters**: `viewId` (required) - Saved view UUID
-
-#### `bylonis_search_docs`
-
-Off by default (`BYLONIS_DOCS_TOOLS_ENABLED=true`). Search the bundled upstream documentation corpus with BM25 over indexed markdown content.
-
-- **Parameters**:
-  - `query` (required) - Natural-language or keyword query
-  - `limit` (optional) - Maximum results to return (default: 10, max: 25)
-  - `section_slug` (optional) - Exact top-level docs section filter, such as `setup`, `logs-management`, `apm-distributed-tracing`, `metrics`, `alerts`, `dashboards`, `signoz-apis`, `querying`, or `collection-agents`
-  - `searchContext` - User's original question
-
-#### `bylonis_fetch_doc`
-
-Off by default (`BYLONIS_DOCS_TOOLS_ENABLED=true`). Fetch full markdown for one page of the bundled upstream documentation corpus. Accepts only URLs or `/docs/...` paths from that corpus.
-
-- **Parameters**:
-  - `url` (required) - Docs page URL or path
-  - `heading` (optional) - Heading anchor ID or heading text
-  - `searchContext` - User's original question
-
-#### `bylonis://docs/sitemap`
-
-Read-only MCP resource containing the indexed docs sitemap used by the docs search and fetch tools.
 
 #### `bylonis_create_view`
 
@@ -530,9 +499,6 @@ Executes a ByLonis Query Builder v5 query.
 | `TRANSPORT_MODE`  | MCP transport mode: `stdio`(default) or `http`                                 | No                                  |
 | `MCP_SERVER_PORT` | Port for HTTP transport mode                                                   | Yes only when `TRANSPORT_MODE=http` |
 | `MCP_MAX_REQUEST_BYTES` | Max inbound MCP HTTP request body size in bytes (default: `4194304` / 4 MiB). Bounds memory from a single oversized request. | No |
-| `BYLONIS_DOCS_TOOLS_ENABLED` | Register `bylonis_search_docs` and `bylonis_fetch_doc` (default: `false`). Their corpus is the upstream documentation, so they stay off until ByLonis publishes its own docs; when off, the docs index is not loaded or refreshed | No |
-| `BYLONIS_DOCS_REFRESH_INTERVAL` | Runtime docs sitemap refresh interval (Go duration, default: `6h`) | No |
-| `BYLONIS_DOCS_FULL_REFRESH_INTERVAL` | Runtime full docs refresh interval (Go duration, default: `24h`) | No |
 | `OAUTH_ENABLED`   | Enable OAuth 2.1 authentication flow (`true`/`false`)                          | No (default: `false`)               |
 | `OAUTH_TOKEN_SECRET` | Encryption key for OAuth tokens (min 32 bytes, e.g. `openssl rand -base64 32`) | Yes when `OAUTH_ENABLED=true`    |
 | `OAUTH_ISSUER_URL` | Public URL of this MCP server (used in OAuth metadata discovery)              | Yes when `OAUTH_ENABLED=true`       |

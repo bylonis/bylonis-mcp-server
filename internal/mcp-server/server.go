@@ -17,7 +17,6 @@ import (
 
 	signozclient "github.com/bylonis/bylonis-mcp-server/internal/client"
 	"github.com/bylonis/bylonis-mcp-server/internal/config"
-	docsindex "github.com/bylonis/bylonis-mcp-server/internal/docs"
 	"github.com/bylonis/bylonis-mcp-server/internal/handler/tools"
 	"github.com/bylonis/bylonis-mcp-server/internal/oauth"
 	"github.com/bylonis/bylonis-mcp-server/pkg/analytics"
@@ -289,67 +288,7 @@ func NewMCPServer(log *slog.Logger, handler *tools.Handler, cfg *config.Config, 
 	}
 }
 
-// startDocsIndex registers the docs index the docs tools read and builds it in
-// the background. It only runs when the docs tools are enabled.
-func (m *MCPServer) startDocsIndex(ctx context.Context) error {
-	// Register a placeholder IndexRegistry up-front so the docs tool handlers
-	// have a non-nil *IndexRegistry to reference. Ready() reports false until
-	// the async corpus build below calls Swap() with a real snapshot, so docs
-	// handlers correctly return INDEX_NOT_READY in the window before the
-	// index is populated. This lets HTTP server publication (below) happen
-	// within the 1 s test bound instead of waiting on the 1-3 s bleve build.
-	placeholderRegistry, err := docsindex.NewPlaceholderRegistry(ctx)
-	if err != nil {
-		return fmt.Errorf("initialize placeholder docs registry: %w", err)
-	}
-	m.handler.SetDocsIndex(placeholderRegistry)
-
-	// Build the real corpus-backed index asynchronously; swap it in when ready.
-	// Always start the refresher even when the embedded corpus is unavailable
-	// (schema mismatch, decode failure, missing asset) so the server can
-	// recover via live fetch instead of remaining empty until the next
-	// process restart.
-	go func() {
-		var loaded bool
-		snapshot, loadErr := docsindex.LoadEmbeddedCorpus()
-		if loadErr != nil {
-			m.logger.WarnContext(ctx, "embedded docs corpus unavailable; refresher will attempt a live build", logpkg.ErrAttr(loadErr))
-		} else if swapErr := placeholderRegistry.Swap(ctx, snapshot); swapErr != nil {
-			m.logger.ErrorContext(ctx, "docs index initial build failed; refresher will retry", logpkg.ErrAttr(swapErr))
-		} else {
-			placeholderRegistry.RecordMetrics(ctx, m.meters)
-			m.logger.InfoContext(ctx, "Docs index ready", slog.Int("pages", len(snapshot.Pages)))
-			loaded = true
-		}
-		refresher := docsindex.NewRefresher(m.logger, placeholderRegistry, docsindex.NewFetcher(docsindex.FetcherConfig{}), docsindex.RefreshConfig{
-			RefreshInterval:     m.config.DocsRefreshInterval,
-			FullRefreshInterval: m.config.DocsFullRefreshInterval,
-		})
-		refresher.SetMeters(m.meters)
-		refresher.Start(ctx)
-		// Only kick an immediate refresh when the embedded blob could not
-		// be loaded (schema mismatch, decode failure, missing asset) — in
-		// that case the index is empty and waiting on the 6 h scheduled
-		// tick would serve empty docs tools in the meantime. In the normal
-		// "blob loaded fine" case, we deliberately skip the on-boot refresh
-		// so startup doesn't pay a ~15 s CPU/memory spike against the live
-		// corpus; freshness is handled by the scheduled refresher
-		// (6 h incremental, 24 h forced) and by `make docs-index`, run by
-		// hand ahead of a release to keep the committed blob reasonably
-		// fresh at cold-boot time.
-		if !loaded {
-			go func() {
-				if err := refresher.Trigger(ctx, true); err != nil {
-					m.logger.WarnContext(ctx, "initial docs live refresh failed", logpkg.ErrAttr(err))
-				}
-			}()
-		}
-	}()
-	return nil
-}
-
 // registerHandlers adds every tool, resource and prompt the server exposes.
-// The docs tools are only added when they are enabled.
 func (m *MCPServer) registerHandlers(s *server.MCPServer) {
 	m.handler.RegisterMetricsHandlers(s)
 	m.handler.RegisterFieldsHandlers(s)
@@ -359,9 +298,6 @@ func (m *MCPServer) registerHandlers(s *server.MCPServer) {
 	m.handler.RegisterQueryBuilderV5Handlers(s)
 	m.handler.RegisterLogsHandlers(s)
 	m.handler.RegisterViewHandlers(s)
-	if m.config.DocsToolsEnabled {
-		m.handler.RegisterDocsHandlers(s)
-	}
 	m.handler.RegisterTracesHandlers(s)
 	m.handler.RegisterNotificationChannelHandlers(s)
 	m.handler.RegisterResourceTemplates(s)
@@ -388,18 +324,11 @@ func (m *MCPServer) Run(ctx context.Context) error {
 		slog.String("server_name", "BylonisMCPServer"),
 		slog.String("transport_mode", m.config.TransportMode))
 
-	// Short-circuit if shutdown already signaled. The async docs-index build
-	// below would otherwise continue to run after Run() returns; tests rely
-	// on a 2 s exit bound.
+	// Short-circuit if shutdown already signaled; tests rely on a 2 s exit
+	// bound.
 	if err := ctx.Err(); err != nil {
 		m.logger.InfoContext(ctx, "Shutdown signaled before startup; exiting early")
 		return nil
-	}
-
-	if m.config.DocsToolsEnabled {
-		if err := m.startDocsIndex(ctx); err != nil {
-			return err
-		}
 	}
 
 	m.registerHandlers(s)
@@ -1476,13 +1405,12 @@ func (m *MCPServer) buildHTTP(s *server.MCPServer) *http.Server {
 		_, _ = fmt.Fprint(w, "ok")
 	})
 
-	// Readiness/health are stricter than liveness: when the docs tools are
-	// enabled, Kubernetes should only route traffic to pods that can serve them
-	// without INDEX_NOT_READY. With the docs tools off (the default) there is no
-	// index to wait for. /healthz is kept as a legacy generic health endpoint.
+	// /readyz reports whether the server has a tool handler to route traffic
+	// to; it has no other dependency to wait for. /healthz is kept as a
+	// legacy generic health endpoint.
 	readyHandler := func(w http.ResponseWriter, r *http.Request) {
-		if m.handler == nil || (m.config.DocsToolsEnabled && !m.handler.DocsIndexReady()) {
-			http.Error(w, "docs index not ready", http.StatusServiceUnavailable)
+		if m.handler == nil {
+			http.Error(w, "handler not ready", http.StatusServiceUnavailable)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
