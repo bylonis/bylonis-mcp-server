@@ -28,6 +28,9 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: No new SigNoz references
+        run: .github/scripts/check-signoz-refs.sh
+
       - name: gofmt
         run: |
           unformatted=$(gofmt -l $(git ls-files '*.go'))
