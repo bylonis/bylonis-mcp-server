@@ -29,7 +29,7 @@ jobs:
           go-version-file: go.mod
 
       - name: No new SigNoz references
-        run: scripts/check-signoz-refs.sh
+        run: .github/scripts/check-signoz-refs.sh
 
       - name: gofmt
         run: |

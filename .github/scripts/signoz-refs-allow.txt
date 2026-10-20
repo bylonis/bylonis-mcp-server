@@ -1,0 +1,16 @@
+# Files the brand guard (check-signoz-refs.sh) does not count. One bash glob per line ('*' crosses
+# '/'), always with the reason after '#'. Adding a line here is a review decision.
+LICENSE                              # upstream license (Apache-2.0)
+NOTICE                               # required attribution to upstream
+README.md                            # fork attribution and the upstream SIGNOZ_* names that v1.0 no longer reads
+CHANGELOG.md                         # release history, including the v1.0 retirement of the SIGNOZ_* aliases
+.github/scripts/check-signoz-refs.sh         # the guard itself
+.github/scripts/signoz-refs-allow.txt        # this list
+.github/workflows/ci.yaml            # runs the guard
+internal/config/config*.go           # the SIGNOZ_* variables are ignored since v1.0, and the test checks it
+internal/mcp-server/server*.go       # SIGNOZ-API-KEY / X-SigNoz-* headers are rejected since v1.0, and the tests check it
+internal/mcp-server/branding_test.go # checks that nothing the assistant reads mentions signoz
+internal/oauth/branding_test.go      # checks that the authorize page does not mention SigNoz
+internal/oauth/crypto*.go            # tokens issued before v1.0 carried signoz_url and must re-authorize; the test checks it
+pkg/dashboard/schema_exporter_test.go  # checks that the traces schema does not mention signoz
+pkg/util/allowlist_test.go           # checks that the allowlist error does not mention SigNoz
