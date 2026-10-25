@@ -36,9 +36,29 @@ var schemaArrayFields = map[string]struct{}{
 	"prefixItems": {},
 }
 
+// alwaysLoadKey asks Claude Code to load a tool with the session instead of deferring it behind
+// ToolSearch, which costs a model call before the first query (bylonis#260).
+const alwaysLoadKey = "anthropic/alwaysLoad"
+
 func addTool(s *server.MCPServer, tool mcp.Tool, handler server.ToolHandlerFunc) {
 	normalizeToolSchemas(&tool)
+	markAlwaysLoad(&tool)
 	s.AddTool(tool, handler)
+}
+
+// markAlwaysLoad loads the read-only tools up front: they answer almost every question. The ones
+// that create or change objects, with the longest schemas, stay behind ToolSearch.
+func markAlwaysLoad(tool *mcp.Tool) {
+	if hint := tool.Annotations.ReadOnlyHint; hint == nil || !*hint {
+		return
+	}
+	if tool.Meta == nil {
+		tool.Meta = &mcp.Meta{}
+	}
+	if tool.Meta.AdditionalFields == nil {
+		tool.Meta.AdditionalFields = map[string]any{}
+	}
+	tool.Meta.AdditionalFields[alwaysLoadKey] = true
 }
 
 func normalizeToolSchemas(tool *mcp.Tool) {

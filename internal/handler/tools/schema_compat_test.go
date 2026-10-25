@@ -164,3 +164,34 @@ func containsString(values []string, want string) bool {
 	}
 	return false
 }
+
+func TestMarkAlwaysLoadOnlyReadOnlyTools(t *testing.T) {
+	tests := []struct {
+		name string
+		tool mcp.Tool
+		want bool
+	}{
+		{"read-only", mcp.NewTool("bylonis_list_services", mcp.WithReadOnlyHintAnnotation(true)), true},
+		{"mutating", mcp.NewTool("bylonis_create_dashboard", mcp.WithReadOnlyHintAnnotation(false)), false},
+		{"unannotated", mcp.NewTool("bylonis_delete_view"), false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			markAlwaysLoad(&tt.tool)
+			b, err := json.Marshal(tt.tool)
+			if err != nil {
+				t.Fatalf("marshal tool: %v", err)
+			}
+			var doc struct {
+				Meta map[string]any `json:"_meta"`
+			}
+			if err := json.Unmarshal(b, &doc); err != nil {
+				t.Fatalf("unmarshal tool JSON: %v", err)
+			}
+			if got := doc.Meta[alwaysLoadKey] == true; got != tt.want {
+				t.Fatalf("_meta = %#v, want %s %v", doc.Meta, alwaysLoadKey, tt.want)
+			}
+		})
+	}
+}
