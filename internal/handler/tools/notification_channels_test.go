@@ -916,3 +916,75 @@ func TestHandleListNotificationChannels_TopLevelName(t *testing.T) {
 		t.Errorf("expected name=ops-slack read from top-level field, got %v", got)
 	}
 }
+
+// ByLonis never returns a channel's secrets (bylonis#272): an update that leaves them out sends the marker,
+// which ByLonis reads as "keep the saved value".
+func TestHandleUpdateNotificationChannel_KeepsOmittedSecrets(t *testing.T) {
+	cases := []struct {
+		args map[string]any
+		key  string
+		path func(map[string]any) any
+	}{
+		{map[string]any{"type": "slack", "slack_channel": "#b"}, "slack_configs",
+			func(c map[string]any) any { return c["api_url"] }},
+		{map[string]any{"type": "pagerduty"}, "pagerduty_configs",
+			func(c map[string]any) any { return c["routing_key"] }},
+		{map[string]any{"type": "opsgenie"}, "opsgenie_configs",
+			func(c map[string]any) any { return c["api_key"] }},
+		{map[string]any{"type": "msteams"}, "msteamsv2_configs",
+			func(c map[string]any) any { return c["webhook_url"] }},
+		{map[string]any{"type": "webhook", "webhook_username": "user"}, "webhook_configs",
+			func(c map[string]any) any {
+				return c["http_config"].(map[string]any)["basic_auth"].(map[string]any)["password"]
+			}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.args["type"].(string), func(t *testing.T) {
+			var updated, tested []byte
+			mock := &client.MockClient{
+				UpdateNotificationChannelFn: func(ctx context.Context, id string, receiverJSON []byte) error {
+					updated = receiverJSON
+					return nil
+				},
+				GetNotificationChannelFn: func(ctx context.Context, id string) (json.RawMessage, error) {
+					return json.RawMessage(`{"data":{}}`), nil
+				},
+				TestNotificationChannelFn: func(ctx context.Context, receiverJSON []byte) error {
+					tested = receiverJSON
+					return nil
+				},
+			}
+			args := map[string]any{"id": "019b1af4-3ef5-734d-8ba8-cc12fb5b5978", "name": "c"}
+			for k, v := range tc.args {
+				args[k] = v
+			}
+			result, err := newTestHandler(mock).handleUpdateNotificationChannel(testCtx(),
+				makeToolRequest("bylonis_update_notification_channel", args))
+			if err != nil || result.IsError {
+				t.Fatalf("unexpected error: %v %v", err, result.Content)
+			}
+			for _, body := range [][]byte{updated, tested} {
+				var receiver map[string]any
+				if err := json.Unmarshal(body, &receiver); err != nil {
+					t.Fatalf("failed to parse body: %v", err)
+				}
+				cfg := receiver[tc.key].([]any)[0].(map[string]any)
+				if got := tc.path(cfg); got != secretMarker {
+					t.Errorf("expected the secret to be sent as %q, got %v", secretMarker, got)
+				}
+			}
+		})
+	}
+}
+
+func TestHandleCreateNotificationChannel_StillRequiresTheSecret(t *testing.T) {
+	h := newTestHandler(&client.MockClient{})
+	result, err := h.handleCreateNotificationChannel(testCtx(), makeToolRequest("bylonis_create_notification_channel",
+		map[string]any{"type": "slack", "name": "c"}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.IsError {
+		t.Fatalf("expected a validation error without slack_api_url")
+	}
+}
