@@ -34,6 +34,7 @@ func (h *Handler) RegisterNotificationChannelHandlers(s *server.MCPServer) {
 			"List all notification channels configured in ByLonis.\n\n"+
 				"Returns channel id, name, type (slack, webhook, pagerduty, email, opsgenie, msteams), "+
 				"configuration details, and timestamps.\n\n"+
+				"Secrets (webhook URLs, API and routing keys, passwords, tokens) are never returned: they come as \"<secret>\".\n\n"+
 				"Use this tool to discover existing channels before creating new ones or to verify channel configurations.\n\n"+
 				"Results are paginated. Use 'limit' and 'offset' to page through large result sets. "+
 				"The response includes pagination metadata: total count, hasMore flag, and nextOffset for the next page.",
@@ -104,13 +105,16 @@ func (h *Handler) RegisterNotificationChannelHandlers(s *server.MCPServer) {
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
 		mcp.WithDescription(
 			"Update an existing notification channel in ByLonis and send a test notification to verify it works.\n\n"+
-				"IMPORTANT: This replaces the full channel configuration. All fields must be provided, not just the ones being changed.\n\n"+
+				"IMPORTANT: This replaces the full channel configuration. All fields must be provided, not just the ones being changed, "+
+				"except the secrets (slack_api_url, webhook_url, webhook_password, pagerduty_routing_key, opsgenie_api_key, msteams_webhook_url): "+
+				"ByLonis never returns them, so omit them to keep the saved value, or provide a new one to replace it. "+
+				"Never pass \"<secret>\" as a value of your own. To keep a webhook's basic authentication, provide webhook_username.\n\n"+
 				"SUPPORTED TYPES: slack, webhook, pagerduty, email, opsgenie, msteams\n\n"+
 				"REQUIRED FIELDS:\n"+
 				"- id: The UUID of the channel to update\n"+
 				"- type: Channel type (slack, webhook, pagerduty, email, opsgenie, msteams)\n"+
 				"- name: Channel name\n\n"+
-				"REQUIRED FIELDS BY TYPE:\n"+
+				"REQUIRED FIELDS BY TYPE (secrets only if they change):\n"+
 				"- slack: slack_api_url (Slack incoming webhook URL)\n"+
 				"- webhook: webhook_url (endpoint URL)\n"+
 				"- pagerduty: pagerduty_routing_key (integration/routing key)\n"+
@@ -315,7 +319,7 @@ func (h *Handler) handleCreateNotificationChannel(ctx context.Context, req mcp.C
 	}
 
 	// Build receiver JSON based on type
-	receiverJSON, err := buildReceiverJSON(channelType, name, sendResolved, args)
+	receiverJSON, err := buildReceiverJSON(channelType, name, sendResolved, args, false)
 	if err != nil {
 		h.logger.WarnContext(ctx, "Failed to build receiver JSON", logpkg.ErrAttr(err))
 		return mcp.NewToolResultError(err.Error()), nil
@@ -401,7 +405,7 @@ func (h *Handler) handleUpdateNotificationChannel(ctx context.Context, req mcp.C
 	}
 
 	// Build receiver JSON based on type
-	receiverJSON, err := buildReceiverJSON(channelType, name, sendResolved, args)
+	receiverJSON, err := buildReceiverJSON(channelType, name, sendResolved, args, true)
 	if err != nil {
 		h.logger.WarnContext(ctx, "Failed to build receiver JSON", logpkg.ErrAttr(err))
 		return mcp.NewToolResultError(err.Error()), nil
@@ -466,12 +470,23 @@ func getStringParam(args map[string]any, key string) string {
 	return v
 }
 
-func buildReceiverJSON(channelType, name string, sendResolved bool, args map[string]any) ([]byte, error) {
+// secretMarker is how ByLonis returns a channel's secrets, and what it reads as "keep the saved value" (bylonis#272).
+const secretMarker = "<secret>"
+
+// buildReceiverJSON builds the receiver for a create or, with keepSecrets, an update: then a secret left out
+// is sent as the marker, so ByLonis keeps the saved one instead of requiring the agent to know it.
+func buildReceiverJSON(channelType, name string, sendResolved bool, args map[string]any, keepSecrets bool) ([]byte, error) {
 	receiver := types.Receiver{Name: name}
+	secret := func(key string) string {
+		if v := getStringParam(args, key); v != "" || !keepSecrets {
+			return v
+		}
+		return secretMarker
+	}
 
 	switch channelType {
 	case "slack":
-		apiURL := getStringParam(args, "slack_api_url")
+		apiURL := secret("slack_api_url")
 		if apiURL == "" {
 			return nil, fmt.Errorf(`parameter validation failed: "slack_api_url" is required when type=slack. Provide the Slack incoming webhook URL`)
 		}
@@ -485,7 +500,7 @@ func buildReceiverJSON(channelType, name string, sendResolved bool, args map[str
 		receiver.SlackConfigs = []types.SlackConfig{cfg}
 
 	case "webhook":
-		webhookURL := getStringParam(args, "webhook_url")
+		webhookURL := secret("webhook_url")
 		if webhookURL == "" {
 			return nil, fmt.Errorf(`parameter validation failed: "webhook_url" is required when type=webhook. Provide the webhook endpoint URL`)
 		}
@@ -495,6 +510,9 @@ func buildReceiverJSON(channelType, name string, sendResolved bool, args map[str
 		}
 		username := getStringParam(args, "webhook_username")
 		password := getStringParam(args, "webhook_password")
+		if username != "" && password == "" && keepSecrets {
+			password = secretMarker
+		}
 		if username != "" || password != "" {
 			cfg.HTTPConfig = &types.WebhookHTTPConfig{
 				BasicAuth: &types.WebhookBasicAuth{
@@ -506,7 +524,7 @@ func buildReceiverJSON(channelType, name string, sendResolved bool, args map[str
 		receiver.WebhookConfigs = []types.WebhookConfig{cfg}
 
 	case "pagerduty":
-		routingKey := getStringParam(args, "pagerduty_routing_key")
+		routingKey := secret("pagerduty_routing_key")
 		if routingKey == "" {
 			return nil, fmt.Errorf(`parameter validation failed: "pagerduty_routing_key" is required when type=pagerduty. Provide the PagerDuty integration/routing key`)
 		}
@@ -531,7 +549,7 @@ func buildReceiverJSON(channelType, name string, sendResolved bool, args map[str
 		receiver.EmailConfigs = []types.EmailConfig{cfg}
 
 	case "opsgenie":
-		apiKey := getStringParam(args, "opsgenie_api_key")
+		apiKey := secret("opsgenie_api_key")
 		if apiKey == "" {
 			return nil, fmt.Errorf(`parameter validation failed: "opsgenie_api_key" is required when type=opsgenie. Provide the OpsGenie API key`)
 		}
@@ -545,7 +563,7 @@ func buildReceiverJSON(channelType, name string, sendResolved bool, args map[str
 		receiver.OpsgenieConfigs = []types.OpsgenieConfig{cfg}
 
 	case "msteams":
-		webhookURL := getStringParam(args, "msteams_webhook_url")
+		webhookURL := secret("msteams_webhook_url")
 		if webhookURL == "" {
 			return nil, fmt.Errorf(`parameter validation failed: "msteams_webhook_url" is required when type=msteams. Provide the MS Teams incoming webhook URL`)
 		}
