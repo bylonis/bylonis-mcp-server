@@ -122,7 +122,7 @@ The server's variables are listed under [Environment Variables](#environment-var
 | `bylonis_list_alerts` | List firing/silenced/inhibited Alertmanager alert *instances* (not rule definitions) |
 | `bylonis_list_alert_rules` | List configured alert rules, including inactive/OK and disabled rules |
 | `bylonis_get_alert` | Get an alert rule definition by ID via GET /api/v2/rules/{ruleId} |
-| `bylonis_get_alert_history` | Get alert state history timeline for a rule |
+| `bylonis_get_alert_history` | Get alert state history timeline for a rule, or how many times every rule fired (without `ruleId`) |
 | `bylonis_create_alert` | Create an alert rule via POST /api/v2/rules; v2alpha1 for threshold/promql, v1 for anomaly |
 | `bylonis_update_alert` | Update an alert rule by UUIDv7 via PUT /api/v2/rules/{ruleId} |
 | `bylonis_delete_alert` | Delete an alert rule by UUIDv7 via DELETE /api/v2/rules/{ruleId} |
@@ -263,16 +263,27 @@ Gets top operations for a specific service.
 
 #### `bylonis_get_alert_history`
 
-Gets alert history timeline for a specific rule.
+With `ruleId`, gets the alert history timeline of that rule. **Without `ruleId`**, answers "which alerts
+fired, and how many times" in one call. The server has one history endpoint per rule, so the MCP queries
+every rule's firing transitions in parallel (8 at a time) and returns:
+
+- `fired`: for each rule that fired, its `firings` count, `lastFiredAt` (RFC 3339, UTC) and
+  `lastFiredLabels` (the labels of that series), sorted by `firings`;
+- `notFired`: the names of the rules that did not fire;
+- `errors`: the rules whose history could not be read, if any.
+
+Each row of the history is a state change, so the firing rows are the times the rule fired: the count
+the alert's page shows. Before, a question about all alerts took one call per rule (bylonis#473).
 
 - **Parameters**:
-  - `ruleId` (required) - Alert rule ID
+  - `ruleId` (optional) - Alert rule ID. Omit it for the summary of all rules
   - `timeRange` (optional) - Time range like '2h', '6h', '2d', '7d' (ignored when both `start` and `end` are provided)
   - `start` (optional) - Start timestamp in milliseconds (defaults to 6 hours ago)
   - `end` (optional) - End timestamp in milliseconds (defaults to now)
-  - `offset` (optional) - Offset for pagination (default: 0)
-  - `limit` (optional) - Limit number of results (default: 20)
-  - `order` (optional) - Sort order: 'asc' or 'desc' (default: 'asc')
+  - `state` (optional, with `ruleId`) - 'firing' or 'inactive'
+  - `offset` (optional, with `ruleId`) - Offset for pagination (default: 0)
+  - `limit` (optional, with `ruleId`) - Limit number of results (default: 20)
+  - `order` (optional, with `ruleId`) - Sort order: 'asc' or 'desc' (default: 'asc')
 
 #### `bylonis_list_views`
 
