@@ -61,8 +61,10 @@ func (h *Handler) RegisterAlertsHandlers(s *server.MCPServer) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
-		mcp.WithDescription("Get alert history timeline for a specific rule. Defaults to last 6 hours if no time specified. Use 'state' to filter by alert state (e.g., only firing transitions or only resolutions)."),
-		mcp.WithString("ruleId", mcp.Required(), mcp.Description("Alert rule ID")),
+		mcp.WithDescription("Get alert history. Defaults to last 6 hours if no time specified.\n\n"+
+			"WITHOUT ruleId (recommended for questions about all alerts, e.g. 'which alerts fired in the last 24h and how many times?'): one call returns, for every rule, how many times it fired in the range, when it last fired and with which labels, plus the names of the rules that did not fire. Do not call this tool once per rule.\n\n"+
+			"WITH ruleId: the state timeline of that rule. Use 'state' to filter by alert state (e.g., only firing transitions or only resolutions); 'state', 'offset', 'limit' and 'order' apply only with ruleId."),
+		mcp.WithString("ruleId", mcp.Description("Alert rule ID (optional). Omit it for the summary of all rules.")),
 		mcp.WithString("timeRange", mcp.Description("Time range string (optional). Ignored when both start and end are provided. Format: <number><unit> where unit is 'm' (minutes), 'h' (hours), or 'd' (days). Examples: '30m', '1h', '2h', '6h', '24h', '7d'. Defaults to last 6 hours if not provided.")),
 		mcp.WithString("start", mcp.Description("Start timestamp in milliseconds (optional, defaults to 6 hours ago)")),
 		mcp.WithString("end", mcp.Description("End timestamp in milliseconds (optional, defaults to now)")),
@@ -293,9 +295,9 @@ func (h *Handler) handleGetAlertHistory(ctx context.Context, req mcp.CallToolReq
 	args := req.Params.Arguments.(map[string]any)
 
 	ruleID, ok := args["ruleId"].(string)
-	if !ok || ruleID == "" {
-		h.logger.WarnContext(ctx, "Invalid or empty ruleId parameter", slog.Any("ruleId", args["ruleId"]))
-		return mcp.NewToolResultError(`Parameter validation failed: "ruleId" must be a non-empty string. Example: {"ruleId": "0196634d-5d66-75c4-b778-e317f49dab7a", "timeRange": "24h"}`), nil
+	if raw, present := args["ruleId"]; present && raw != nil && !ok {
+		h.logger.WarnContext(ctx, "Invalid ruleId parameter", slog.Any("ruleId", raw))
+		return mcp.NewToolResultError(`Parameter validation failed: "ruleId" must be a string, or omitted for the summary of all rules. Example: {"ruleId": "0196634d-5d66-75c4-b778-e317f49dab7a", "timeRange": "24h"}`), nil
 	}
 
 	startStr, endStr := timeutil.GetTimestampsWithDefaults(args, "ms")
@@ -308,6 +310,10 @@ func (h *Handler) handleGetAlertHistory(ctx context.Context, req mcp.CallToolReq
 	if _, err := fmt.Sscanf(endStr, "%d", &end); err != nil {
 		h.logger.WarnContext(ctx, "Invalid end timestamp format", slog.String("end", endStr), logpkg.ErrAttr(err))
 		return mcp.NewToolResultError(fmt.Sprintf(`Invalid "end" timestamp: "%s". Expected milliseconds since epoch (e.g., "1697472000000") or use "timeRange" parameter instead (e.g., "24h")`, endStr)), nil
+	}
+
+	if strings.TrimSpace(ruleID) == "" {
+		return h.alertHistorySummary(ctx, start, end)
 	}
 
 	_, offset := paginate.ParseParams(args)

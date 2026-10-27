@@ -358,11 +358,11 @@ func TestHandleGetAlertHistory_ExplicitStartEndOverrideTimeRange(t *testing.T) {
 	}
 }
 
-func TestHandleGetAlertHistory_EmptyRuleId(t *testing.T) {
+func TestHandleGetAlertHistory_InvalidRuleIdType(t *testing.T) {
 	mock := &client.MockClient{}
 	h := newTestHandler(mock)
 	req := makeToolRequest("bylonis_get_alert_history", map[string]any{
-		"ruleId":    "",
+		"ruleId":    42,
 		"timeRange": "1h",
 	})
 
@@ -371,7 +371,7 @@ func TestHandleGetAlertHistory_EmptyRuleId(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if !result.IsError {
-		t.Error("expected error result for empty ruleId")
+		t.Error("expected error result for a non-string ruleId")
 	}
 }
 
