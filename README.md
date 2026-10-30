@@ -105,6 +105,8 @@ The server's variables are listed under [Environment Variables](#environment-var
 "Search traces for the checkout service from the last hour"
 "Get details for trace ID abc123"
 "Create a dashboard with CPU and memory widgets"
+"Why is the agent of compute-n07 disconnected?"
+"What changed on storage-02 before yesterday's incident?"
 ```
 
 ## Available Tools
@@ -149,6 +151,11 @@ The server's variables are listed under [Environment Variables](#environment-var
 | `bylonis_create_notification_channel` | Create a notification channel and send a test notification |
 | `bylonis_update_notification_channel` | Update a notification channel and send a test notification |
 | `bylonis_delete_notification_channel` | Delete a notification channel by ID |
+| `bylonis_list_fleet_nodes` | List the nodes of the Fleet Control inventory, filtered by search, label selector, site, status, kind or agent |
+| `bylonis_get_fleet_node` | The card of one node by hostname: status, OpAMP agent, health of its collector and last runner jobs |
+| `bylonis_get_fleet_node_history` | What changed on a node (fields, labels, groups, agents, Ansible runs), who did it, in a range |
+| `bylonis_get_fleet_coverage` | Machines sending telemetry outside the inventory, silent agents and nodes without an agent |
+| `bylonis_list_fleet_agent_health` | Health of the collectors of the fleet from their own metrics, optionally only those with problems |
 
 <details>
 <summary><strong>Parameter Reference</strong></summary>
@@ -509,6 +516,34 @@ Executes a ByLonis Query Builder v5 query.
   - `clickhouse_sql` — `{name, query, disabled, legend?}`.
 
 </details>
+
+### Fleet tools (bylonis#463)
+
+Read-only tools over the inventory of Fleet Control: they only send GETs under `/api/v1/inventory/` and
+`/api/v1/fleet/`, with the key of the caller, so they see what that key may see. The API never returns the
+secrets of the credentials, and the tools also drop the id of a node's credential, the enrollment token of
+an agent, effective configurations and time series. While the tenant has Fleet Control off, they answer
+404 and say so. The deployments of #450 will get their own tools when they exist.
+
+#### `bylonis_get_fleet_node`
+
+One call for "why is the agent of X disconnected?": the node (status and since when, last seen, IPs, site,
+labels by source, attributes, groups), its OpAMP agent (connected or not, since when, last heartbeat,
+versions), the health of its collector in the window (`window`, default `1h`: items accepted, refused,
+sent and failed, queue, CPU, memory, uptime, problems) and the last 10 jobs of its site runner. A part
+that fails is reported inside the answer and the rest still comes.
+
+- **Parameters**: `hostname` (exact, case-insensitive; similar names are suggested when none matches) or
+  `nodeId`; `window` (optional).
+
+#### `bylonis_get_fleet_node_history`
+
+For "what changed on this host before the incident?": the history of the node, newest first, with the
+operation (create, update, delete, link, unlink, ansible), the field, old and new values, who and from
+where (ui, api, agent, import, discovery, system).
+
+- **Parameters**: `hostname` or `nodeId`; `timeRange` (`<n>m`, `<n>h`, `<n>d`; default `7d`) or `start`/`end`
+  (RFC 3339 or milliseconds); `limit` (default 50, max 200).
 
 ## Environment Variables
 

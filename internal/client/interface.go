@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"net/url"
 
 	"github.com/bylonis/bylonis-mcp-server/pkg/types"
 )
@@ -43,4 +44,7 @@ type Client interface {
 	UpdateNotificationChannel(ctx context.Context, id string, receiverJSON []byte) error
 	DeleteNotificationChannel(ctx context.Context, id string) error
 	TestNotificationChannel(ctx context.Context, receiverJSON []byte) error
+	// GetFleet reads the inventory and Fleet Control of ByLonis (bylonis#463): a GET under /api/v1/inventory/ or
+	// /api/v1/fleet/, nothing else.
+	GetFleet(ctx context.Context, path string, query url.Values) (json.RawMessage, error)
 }

@@ -44,4 +44,6 @@ const ServerInstructions = `# ByLonis MCP Server — Instructions
 5. **Never convert Unix timestamps manually.** All ByLonis timestamps (start, end, and time series values) are Unix milliseconds. When presenting timestamps to the user, always use a programmatic method (e.g., a date conversion tool or function) to convert them to human-readable format. Do NOT attempt mental arithmetic or manual offset calculations — this is error-prone and leads to incorrect times being reported.
 
 6. **Do not generate ByLonis frontend links.** Never guess or build a clickable ByLonis URL from IDs, names, or the base domain. Only return a link if a tool or resource explicitly provides the full frontend URL; otherwise say MCP cannot generate a reliable link.
+
+7. **Questions about a machine or the fleet go to the fleet tools first.** For "why is the agent of X disconnected?", "is X up?" or "what is X?", call bylonis_get_fleet_node with the hostname: one call gives its status, its OpAMP agent, the health of its collector and the last jobs of its site runner. For "what changed on X before the incident?", call bylonis_get_fleet_node_history with a range that covers the incident. Use bylonis_get_fleet_coverage for machines missing from the inventory or agents that do not report, and only then query metrics or logs of that host.
 `
