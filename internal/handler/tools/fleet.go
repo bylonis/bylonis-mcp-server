@@ -57,6 +57,7 @@ func (h *Handler) RegisterFleetHandlers(s *server.MCPServer) {
 		mcp.WithDestructiveHintAnnotation(false),
 		searchContext,
 		mcp.WithDescription("The full card of one node of the fleet, by hostname or id, in one call: use it for questions like 'why is the agent of compute-n07 disconnected?'.\n\n"+
+			"'statusReason' says in words why the node has its status (what watches it and what that saw; 'unknown' is NOT 'down'): start the answer from it.\n\n"+
 			"Returns: the node (status, last seen, IPs, site, labels by source, attributes, groups), its OpAMP agent (connected or not, since when, last heartbeat, versions, health reported by the supervisor), the health of the collector from its own metrics in the window (accepted/refused/sent/failed items, queue, CPU, memory, uptime, problems: dropping, queue_full, exporter_failing), and the last jobs of its site runner (access checks, remote installs, Ansible).\n\n"+
 			"Use bylonis_get_fleet_node_history for what changed on the node."),
 		mcp.WithString("hostname", mcp.Description("Hostname of the node (exact, case-insensitive). Either this or nodeId.")),
@@ -69,6 +70,7 @@ func (h *Handler) RegisterFleetHandlers(s *server.MCPServer) {
 		mcp.WithDestructiveHintAnnotation(false),
 		searchContext,
 		mcp.WithDescription("The history of one node of the fleet, newest first: what changed (fields, labels, groups, site, fleet, credential name), agents linked or unlinked, and the Ansible runs on it, with who did it and from where (ui, api, agent, import, discovery, system). Use it for 'what changed on this host before the incident?'.\n\n"+
+			"'byOperation' counts the changes by operation: create, update, delete, link/unlink (agents) and ansible (playbook runs, whose newValue is the recap). Mention the Ansible runs and agent links explicitly when they are there.\n\n"+
 			"Defaults to the last 7 days; 'timeRange' ('24h', '7d') or 'start'/'end' (RFC3339 or milliseconds) narrow it."),
 		mcp.WithString("hostname", mcp.Description("Hostname of the node. Either this or nodeId.")),
 		mcp.WithString("nodeId", mcp.Description("Id of the node. Either this or hostname.")),
@@ -363,6 +365,8 @@ func (h *Handler) handleGetFleetNode(ctx context.Context, req mcp.CallToolReques
 		}
 		out["agentHealth"] = health
 	}
+	siteName, _ := card["site"].(string)
+	out["statusReason"] = h.fleetStatusReason(ctx, client, node, out["agent"], siteName)
 	if raw, err := client.GetFleet(ctx, "/api/v1/fleet/jobs", url.Values{"node_id": {id}, "limit": {strconv.Itoa(fleetRecentJobs)}}); err == nil {
 		if page, err := fleetData[struct {
 			Jobs []map[string]any `json:"jobs"`
@@ -376,6 +380,87 @@ func (h *Handler) handleGetFleetNode(ctx context.Context, req mcp.CallToolReques
 		}
 	}
 	return fleetResult(out)
+}
+
+// fleetStatusReason says in words why a node has its status: what watches it and what that saw. The status alone
+// misleads: "unknown" is not "down", it means that nothing has checked the node (bylonis#463).
+func (h *Handler) fleetStatusReason(ctx context.Context, client bylonisclient.Client, node fleetNode, agent any, site string) string {
+	status, _ := node["status"].(string)
+	method, _ := node["livenessMethod"].(string)
+	lastSeen, _ := node["lastSeenAt"].(string)
+	since, _ := node["statusChangedAt"].(string)
+	address, _ := node["primaryIp"].(string)
+	switch method {
+	case "none":
+		return "Nothing watches this node (livenessMethod none), so its status is always unknown; it is not down."
+	case "agent":
+		// The status comes from the data of its collector (host.name), whether or not it is linked over OpAMP.
+		agentID, _ := node["agentId"].(string)
+		connected := false
+		if agent, ok := agent.(map[string]any); ok {
+			connected = agent["status"] == "connected"
+		}
+		opamp := " Its collector is linked over OpAMP."
+		switch {
+		case agentID == "":
+			opamp = " Its collector is not linked over OpAMP, so Fleet Control does not manage its configuration."
+		case !connected:
+			opamp = " Its OpAMP agent is disconnected."
+		}
+		switch {
+		case status == "up":
+			return "Up: the data of its collector arrived at " + lastSeen + "." + opamp
+		case lastSeen == "":
+			return "Its status is unknown, not down: no data of its collector has ever arrived. Install the agent on it (remote install from its card, or the installer)." + opamp
+		default:
+			return "Down since " + orUnknown(since) + ": the data of its collector stopped at " + lastSeen + "; the collector, its supervisor or the machine stopped, or it cannot reach ByLonis." + opamp
+		}
+	case "icmp", "tcp":
+		check := "ping"
+		if method == "tcp" {
+			check = "a TCP connection"
+		}
+		probes := h.fleetProbes(ctx, client, site)
+		switch {
+		case status == "up":
+			return "Up: the probe of its site reached " + address + " with " + check + " at " + lastSeen + "."
+		case status == "down":
+			return "Down since " + orUnknown(since) + ": the probe of site " + site + " does not reach " + address + " with " + check + "."
+		case probes == 0:
+			return "Its status is unknown, not down: it is watched with " + check + " to " + address + ", which a probe agent (role sonda) of site " + site + " must do, and no probe of the site is connected. Nobody has checked it."
+		default:
+			return "Its status is unknown, not down: the probe of site " + site + " has not reported " + address + " yet."
+		}
+	}
+	return "Status " + status + "."
+}
+
+// fleetProbes counts the connected probe agents (role sonda) of a site.
+func (h *Handler) fleetProbes(ctx context.Context, client bylonisclient.Client, site string) int {
+	raw, err := client.GetFleet(ctx, "/api/v1/fleet/agents", url.Values{"role": {"sonda"}, "status": {"connected"}, "limit": {"100"}})
+	if err != nil {
+		return 0
+	}
+	page, err := fleetData[struct {
+		Agents []map[string]any `json:"agents"`
+	}](raw)
+	if err != nil {
+		return 0
+	}
+	count := 0
+	for _, agent := range page.Agents {
+		if agent["site"] == site && agent["status"] == "connected" {
+			count++
+		}
+	}
+	return count
+}
+
+func orUnknown(text string) string {
+	if text == "" {
+		return "never"
+	}
+	return text
 }
 
 // fleetTime reads a time as RFC3339 or milliseconds since epoch.
@@ -440,16 +525,22 @@ func (h *Handler) handleGetFleetNodeHistory(ctx context.Context, req mcp.CallToo
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
-	// The ids of the rows, the organization and the node say nothing to the reader: the hostname is there.
+	// The ids of the rows, the organization and the node say nothing to the reader: the hostname is there. The
+	// count by operation keeps a run of Ansible or an agent linked from hiding among field edits.
+	byOperation := map[string]int{}
 	if changes, ok := page["changes"].([]any); ok {
 		for _, change := range changes {
 			if change, ok := change.(map[string]any); ok {
 				delete(change, "id")
 				delete(change, "orgId")
 				delete(change, "nodeId")
+				if operation, ok := change["operation"].(string); ok {
+					byOperation[operation]++
+				}
 			}
 		}
 	}
+	page["byOperation"] = byOperation
 	page["from"], page["to"] = start.Format(time.RFC3339), end.Format(time.RFC3339)
 	return fleetResult(page)
 }

@@ -101,6 +101,8 @@ func TestGetFleetNode(t *testing.T) {
 	job := out["recentJobs"].([]any)[0].(map[string]any)
 	assert.Equal(t, "no se puede conectar", job["error"])
 	assert.NotContains(t, job, "params")
+	assert.Contains(t, out["statusReason"], "stopped at 2026-10-29T07:58:00Z")
+	assert.Contains(t, out["statusReason"], "OpAMP agent is disconnected")
 	assert.Contains(t, *calls, "/api/v1/inventory/nodes/n7/agent_health?window=1h")
 	assert.Contains(t, *calls, "/api/v1/fleet/jobs?limit=10&node_id=n7")
 
@@ -136,6 +138,7 @@ func TestGetFleetNodeHistory(t *testing.T) {
 	out := resultJSON(t, result)
 	assert.EqualValues(t, 1, out["total"])
 	assert.NotContains(t, out["changes"].([]any)[0].(map[string]any), "orgId")
+	assert.Equal(t, map[string]any{"ansible": float64(1)}, out["byOperation"])
 	assert.Equal(t, "2026-10-28T00:00:00Z", out["from"])
 	assert.Contains(t, (*calls)[0], "from=2026-10-28T00%3A00%3A00Z")
 
@@ -167,4 +170,32 @@ func TestGetFleetCoverageAndAgentHealth(t *testing.T) {
 	out = resultJSON(t, result)
 	assert.EqualValues(t, 1, out["total"])
 	assert.Equal(t, "b", out["nodes"].([]any)[0].(map[string]any)["hostname"])
+}
+
+func TestFleetStatusReason(t *testing.T) {
+	probes := `{"agents":[{"instanceUid":"p1","role":"sonda","site":"lumina","status":"connected"}],"total":1}`
+	reason := func(node string, answers map[string]string) string {
+		t.Helper()
+		answers["/api/v1/inventory/sites"] = fleetSites
+		answers["/api/v1/inventory/nodes/x"] = node
+		answers["/api/v1/fleet/jobs"] = `{"jobs":[],"total":0}`
+		mock, _ := fleetAPI(t, answers)
+		result, err := newTestHandler(mock).handleGetFleetNode(testCtx(), makeToolRequest("bylonis_get_fleet_node", map[string]any{"nodeId": "x"}))
+		require.NoError(t, err)
+		return resultJSON(t, result)["statusReason"].(string)
+	}
+	hole := `{"id":"x","hostname":"hole","siteId":"s1","status":"unknown","livenessMethod":"icmp","primaryIp":"10.255.255.1"}`
+	assert.Contains(t, reason(hole, map[string]string{"/api/v1/fleet/agents": `{"agents":[],"total":0}`}), "no probe of the site is connected")
+	assert.Contains(t, reason(hole, map[string]string{"/api/v1/fleet/agents": probes}), "has not reported 10.255.255.1 yet")
+	down := `{"id":"x","hostname":"sw","siteId":"s1","status":"down","statusChangedAt":"2026-10-29T08:00:00Z","livenessMethod":"tcp","primaryIp":"10.0.0.9"}`
+	assert.Contains(t, reason(down, map[string]string{"/api/v1/fleet/agents": probes}), "does not reach 10.0.0.9 with a TCP connection")
+	noAgent := `{"id":"x","hostname":"desk","siteId":"s1","status":"unknown","livenessMethod":"agent"}`
+	assert.Contains(t, reason(noAgent, map[string]string{}), "no data of its collector has ever arrived")
+	// lumina: up from the data of its collector, without OpAMP
+	upNoOpAMP := `{"id":"x","hostname":"compute-n07","siteId":"s1","status":"up","lastSeenAt":"2026-10-30T03:00:00Z","livenessMethod":"agent"}`
+	got := reason(upNoOpAMP, map[string]string{})
+	assert.Contains(t, got, "Up: the data of its collector arrived at 2026-10-30T03:00:00Z")
+	assert.Contains(t, got, "not linked over OpAMP")
+	none := `{"id":"x","hostname":"x","status":"unknown","livenessMethod":"none"}`
+	assert.Contains(t, reason(none, map[string]string{}), "Nothing watches")
 }
