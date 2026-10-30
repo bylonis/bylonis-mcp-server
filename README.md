@@ -155,6 +155,15 @@ The server's variables are listed under [Environment Variables](#environment-var
 | `bylonis_get_fleet_node` | The card of one node by hostname: status, OpAMP agent, health of its collector and last runner jobs |
 | `bylonis_get_fleet_node_history` | What changed on a node (fields, labels, groups, agents, Ansible runs), who did it, in a range |
 | `bylonis_get_fleet_coverage` | Machines sending telemetry outside the inventory, silent agents and nodes without an agent |
+| `bylonis_list_fleets` | List the fleets of Fleet Control with their configuration versions |
+| `bylonis_get_fleet_config` | Get a configuration template of a fleet (the newest by default) |
+| `bylonis_validate_fleet_config` | Validate a configuration for a fleet in dry run, saving nothing |
+| `bylonis_propose_fleet_config` | Save a validated configuration as the next version of a fleet, **not deployed** |
+| `bylonis_list_playbooks` | List the Ansible playbooks |
+| `bylonis_get_playbook` | Get a playbook with the YAML of a version and its versions |
+| `bylonis_propose_playbook` | Save a playbook, or its next version, in the library: nothing runs |
+| `bylonis_check_playbook` | Check a playbook with `--check --diff` on a selector or group: nothing changes |
+| `bylonis_get_playbook_run` | Get the check and run of a playbook, host by host |
 | `bylonis_list_fleet_agent_health` | Health of the collectors of the fleet from their own metrics, optionally only those with problems |
 
 <details>
@@ -544,6 +553,14 @@ where (ui, api, agent, import, discovery, system).
 
 - **Parameters**: `hostname` or `nodeId`; `timeRange` (`<n>m`, `<n>h`, `<n>d`; default `7d`) or `start`/`end`
   (RFC 3339 or milliseconds); `limit` (default 50, max 200).
+
+### Proposals of IA OPS (bylonis#459)
+
+IA OPS can **propose** a configuration of the collector (a new version of a fleet, validated for every member)
+and an Ansible playbook (a version in the library, then its `--check --diff`), marked "Propuesta de IA OPS" in
+their notes. **Nothing is deployed nor run**: there is no tool to deploy a version or to approve a run, the
+client only posts to the paths of the proposals, and ByLonis refuses the approval of a run with an API key. A
+person deploys or approves in ByLonis.
 
 ## Environment Variables
 
