@@ -16,6 +16,7 @@ type MockClient struct {
 	ListMetricsFn               func(ctx context.Context, start, end int64, limit int, searchText, source string) (json.RawMessage, error)
 	ListAlertsFn                func(ctx context.Context, params types.ListAlertsParams) (json.RawMessage, error)
 	ListAlertRulesFn            func(ctx context.Context) (json.RawMessage, error)
+	PostFleetFn                 func(ctx context.Context, path string, body any) (json.RawMessage, error)
 	GetFleetFn                  func(ctx context.Context, path string, query url.Values) (json.RawMessage, error)
 	GetAlertByRuleIDFn          func(ctx context.Context, ruleID string) (json.RawMessage, error)
 	GetAlertHistoryFn           func(ctx context.Context, ruleID string, req types.AlertHistoryRequest) (json.RawMessage, error)
@@ -285,6 +286,13 @@ func (m *MockClient) TestNotificationChannel(ctx context.Context, receiverJSON [
 func (m *MockClient) GetFleet(ctx context.Context, path string, query url.Values) (json.RawMessage, error) {
 	if m.GetFleetFn != nil {
 		return m.GetFleetFn(ctx, path, query)
+	}
+	return json.RawMessage(`{}`), nil
+}
+
+func (m *MockClient) PostFleet(ctx context.Context, path string, body any) (json.RawMessage, error) {
+	if m.PostFleetFn != nil {
+		return m.PostFleetFn(ctx, path, body)
 	}
 	return json.RawMessage(`{}`), nil
 }
