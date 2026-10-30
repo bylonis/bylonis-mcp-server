@@ -394,20 +394,26 @@ func (h *Handler) fleetStatusReason(ctx context.Context, client bylonisclient.Cl
 	case "none":
 		return "Nothing watches this node (livenessMethod none), so its status is always unknown; it is not down."
 	case "agent":
+		// The status comes from the data of its collector (host.name), whether or not it is linked over OpAMP.
 		agentID, _ := node["agentId"].(string)
 		connected := false
 		if agent, ok := agent.(map[string]any); ok {
 			connected = agent["status"] == "connected"
 		}
+		opamp := " Its collector is linked over OpAMP."
 		switch {
 		case agentID == "":
-			return "It should be watched by its own agent (livenessMethod agent), but no agent is linked to it: its status is unknown, not down. Install the agent on it (remote install from its card, or the installer)."
-		case status == "up":
-			return "Up: its agent reported at " + lastSeen + "."
+			opamp = " Its collector is not linked over OpAMP, so Fleet Control does not manage its configuration."
 		case !connected:
-			return "Its OpAMP agent is disconnected and its last data is from " + orUnknown(lastSeen) + " (status " + status + " since " + orUnknown(since) + "): the agent, its supervisor or the machine stopped, or it cannot reach ByLonis."
+			opamp = " Its OpAMP agent is disconnected."
+		}
+		switch {
+		case status == "up":
+			return "Up: the data of its collector arrived at " + lastSeen + "." + opamp
+		case lastSeen == "":
+			return "Its status is unknown, not down: no data of its collector has ever arrived. Install the agent on it (remote install from its card, or the installer)." + opamp
 		default:
-			return "Its agent is connected but its host data stopped at " + orUnknown(lastSeen) + " (status " + status + " since " + orUnknown(since) + "): look at the health of the collector and its exporter."
+			return "Down since " + orUnknown(since) + ": the data of its collector stopped at " + lastSeen + "; the collector, its supervisor or the machine stopped, or it cannot reach ByLonis." + opamp
 		}
 	case "icmp", "tcp":
 		check := "ping"

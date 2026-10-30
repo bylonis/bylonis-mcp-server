@@ -101,6 +101,7 @@ func TestGetFleetNode(t *testing.T) {
 	job := out["recentJobs"].([]any)[0].(map[string]any)
 	assert.Equal(t, "no se puede conectar", job["error"])
 	assert.NotContains(t, job, "params")
+	assert.Contains(t, out["statusReason"], "stopped at 2026-10-29T07:58:00Z")
 	assert.Contains(t, out["statusReason"], "OpAMP agent is disconnected")
 	assert.Contains(t, *calls, "/api/v1/inventory/nodes/n7/agent_health?window=1h")
 	assert.Contains(t, *calls, "/api/v1/fleet/jobs?limit=10&node_id=n7")
@@ -189,7 +190,12 @@ func TestFleetStatusReason(t *testing.T) {
 	down := `{"id":"x","hostname":"sw","siteId":"s1","status":"down","statusChangedAt":"2026-10-29T08:00:00Z","livenessMethod":"tcp","primaryIp":"10.0.0.9"}`
 	assert.Contains(t, reason(down, map[string]string{"/api/v1/fleet/agents": probes}), "does not reach 10.0.0.9 with a TCP connection")
 	noAgent := `{"id":"x","hostname":"desk","siteId":"s1","status":"unknown","livenessMethod":"agent"}`
-	assert.Contains(t, reason(noAgent, map[string]string{}), "no agent is linked")
+	assert.Contains(t, reason(noAgent, map[string]string{}), "no data of its collector has ever arrived")
+	// lumina: up from the data of its collector, without OpAMP
+	upNoOpAMP := `{"id":"x","hostname":"compute-n07","siteId":"s1","status":"up","lastSeenAt":"2026-10-30T03:00:00Z","livenessMethod":"agent"}`
+	got := reason(upNoOpAMP, map[string]string{})
+	assert.Contains(t, got, "Up: the data of its collector arrived at 2026-10-30T03:00:00Z")
+	assert.Contains(t, got, "not linked over OpAMP")
 	none := `{"id":"x","hostname":"x","status":"unknown","livenessMethod":"none"}`
 	assert.Contains(t, reason(none, map[string]string{}), "Nothing watches")
 }
