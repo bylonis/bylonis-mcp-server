@@ -99,6 +99,8 @@ func (h *Handler) RegisterFleetHandlers(s *server.MCPServer) {
 		mcp.WithString("window", mcp.Description("'15m', '1h', '24h'… Default '15m'.")),
 		mcp.WithString("problemsOnly", mcp.Description("'true' to keep only the nodes with a problem.")),
 	), h.handleListFleetAgentHealth)
+
+	h.registerFleetDiagnosticHandlers(s, searchContext)
 }
 
 // fleetArgs reads the string arguments of a tool call.
