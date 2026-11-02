@@ -155,6 +155,8 @@ The server's variables are listed under [Environment Variables](#environment-var
 | `bylonis_get_fleet_node` | The card of one node by hostname: status, OpAMP agent, health of its collector and last runner jobs |
 | `bylonis_get_fleet_node_history` | What changed on a node (fields, labels, groups, agents, Ansible runs), who did it, in a range |
 | `bylonis_get_fleet_coverage` | Machines sending telemetry outside the inventory, silent agents and nodes without an agent |
+| `bylonis_list_fleet_diagnostics` | List the diagnostics (flares) of a node or an agent of a cluster |
+| `bylonis_get_fleet_diagnostic` | Read a diagnostic of an agent: what ByLonis knows and the logs and configurations of its host, censored |
 | `bylonis_list_fleets` | List the fleets of Fleet Control with their configuration versions |
 | `bylonis_get_fleet_config` | Get a configuration template of a fleet (the newest by default) |
 | `bylonis_validate_fleet_config` | Validate a configuration for a fleet in dry run, saving nothing |
@@ -553,6 +555,25 @@ where (ui, api, agent, import, discovery, system).
 
 - **Parameters**: `hostname` or `nodeId`; `timeRange` (`<n>m`, `<n>h`, `<n>d`; default `7d`) or `start`/`end`
   (RFC 3339 or milliseconds); `limit` (default 50, max 200).
+
+#### `bylonis_get_fleet_diagnostic` and `bylonis_list_fleet_diagnostics` (bylonis#461)
+
+For "why does the agent of X not send data, not connect or fail?": a diagnostic (flare) of the agent, which a
+person asks for in the card of the node.
+- **Sections from ByLonis:** the node, the agent and the health of each component, its effective configuration,
+  its status against its fleet, its own metrics of the last hour, the history of the node and the jobs of its
+  site runner.
+- **Sections from the host,** which the site runner collected or someone uploaded: versions, system, services,
+  configurations, connectivity, and the logs of the supervisor and the collector. For a cluster, the output of
+  the kubectl commands.
+- **Secrets:** ByLonis censors them (`<censurado>`).
+- **Permission and audit:** reading a diagnostic needs the permission `diagnose` (granted in Inventario → Permisos),
+  and ByLonis records the read in its audit.
+- **Parameters:**
+  - `bylonis_get_fleet_diagnostic`: `diagnosticId`, or `hostname` / `nodeId` for the newest one of a node;
+    `sections` (comma-separated names); `maxChars` per section (default 20000, max 200000). A log keeps its end.
+  - `bylonis_list_fleet_diagnostics`: `hostname`, `nodeId` or `agentId`.
+- **Read only:** there is no tool to create one.
 
 ### Proposals of IA OPS (bylonis#459)
 
