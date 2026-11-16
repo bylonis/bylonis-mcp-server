@@ -51,4 +51,9 @@ type Client interface {
 	// version of a fleet, a playbook or its version, or the check of a playbook. Only those paths: never a
 	// deployment nor the approval of a run.
 	PostFleet(ctx context.Context, path string, body any) (json.RawMessage, error)
+	// GetTheme reads the themes of the organization (bylonis#705): the list, one theme or the design surface.
+	GetTheme(ctx context.Context, path string) (json.RawMessage, error)
+	// SendTheme generates, patches or validates a theme (nothing is saved), or creates (POST) or updates (PUT) one.
+	// Only those paths: never deleting a theme nor picking the theme of the organization.
+	SendTheme(ctx context.Context, method, path string, body any) (json.RawMessage, error)
 }

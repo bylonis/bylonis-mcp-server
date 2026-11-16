@@ -1,6 +1,6 @@
 # ByLonis MCP Server
 
-A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that gives AI assistants access to the observability data of a ByLonis instance: metrics, traces, logs, alerts, dashboards, saved views, notification channels and services, queried in natural language.
+A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that gives AI assistants access to the observability data of a ByLonis instance: metrics, traces, logs, alerts, dashboards, saved views, notification channels and services, queried in natural language, and the themes of the interface.
 
 ByLonis MCP Server is a fork of SigNoz MCP Server (Apache-2.0); see [NOTICE](NOTICE).
 
@@ -167,6 +167,13 @@ The server's variables are listed under [Environment Variables](#environment-var
 | `bylonis_check_playbook` | Check a playbook with `--check --diff` on a selector or group: nothing changes |
 | `bylonis_get_playbook_run` | Get the check and run of a playbook, host by host |
 | `bylonis_list_fleet_agent_health` | Health of the collectors of the fleet from their own metrics, optionally only those with problems |
+| `bylonis_get_design_surface` | What a theme is made of: tokens and groups, personalities, contrast pairs, color formats, built-in themes |
+| `bylonis_generate_theme` | Generate a theme (light and dark) from a base color, logo colors and/or a personality, **not saved** |
+| `bylonis_patch_theme_tokens` | Change some tokens of a theme: new modes, diff and contrast report, **not saved** |
+| `bylonis_validate_theme` | Validate a theme: tokens, colors and the WCAG contrast of every semantic pair |
+| `bylonis_list_themes` | List the themes of the organization with their contrast status |
+| `bylonis_get_theme` | Get a theme with its colors and the pairs that fail the contrast |
+| `bylonis_save_theme` | Create a theme or update one (administrator API key) |
 
 <details>
 <summary><strong>Parameter Reference</strong></summary>
@@ -582,6 +589,66 @@ and an Ansible playbook (a version in the library, then its `--check --diff`), m
 their notes. **Nothing is deployed nor run**: there is no tool to deploy a version or to approve a run, the
 client only posts to the paths of the proposals, and ByLonis refuses the approval of a run with an API key. A
 person deploys or approves in ByLonis.
+
+### Themes (bylonis#705)
+
+The themes of the organization: the colors of the interface in light and dark mode. The MCP has no logic of its
+own: each tool calls an endpoint of ByLonis under `/api/v1/themes`, whose deterministic engine generates the
+themes and whose validator measures the WCAG 2.1 contrast. Generating, patching and validating save nothing;
+only `bylonis_save_theme` saves. ByLonis lets only administrators generate, patch, validate and save (finer
+permissions arrive with bylonis#644): with another key those tools answer 403 and say an administrator key is
+needed. No tool deletes a theme or picks the theme of the organization. A natural-language `prompt` is not
+available yet (bylonis#931): the tools reject it.
+
+#### `bylonis_get_design_surface`
+
+The modes, the 48 semantic tokens with their group (`surfaces`, `text`, `accent`, `status`, `charts`), the
+personalities, the contrast pairs with their minimum, the color formats (`#rrggbb`, `#rrggbbaa`,
+`oklch(L C H[/A])`) and the built-in themes (`bylonis`). `GET /api/v1/themes/design-surface`.
+
+#### `bylonis_generate_theme`
+
+`POST /api/v1/themes/generate`. Returns `{theme: {name, modes}, contrast_report: {ok, failures, failing}, warnings, saved: false}`;
+the engine corrects the lightness until every pair passes, and `warnings` says what it adjusted.
+
+- **Parameters** (at least one of the first three):
+  - `base_color` (optional) - `#rrggbb`, `#rrggbbaa` or `oklch(L C H)`; it becomes the accent
+  - `palette_from_image` (optional) - up to 8 colors extracted from a logo (only the hex values), the dominant
+    first; the first is the accent when there is no `base_color`, the second the brand color
+  - `personality` (optional) - `technical-dark`, `clean-light`, `corporate` or `high-contrast` (text at 7:1)
+  - `name` (optional) - name of the theme; derived from the input if omitted
+  - `prompt` - not available yet (bylonis#931): rejected
+
+#### `bylonis_patch_theme_tokens`
+
+`POST /api/v1/themes/patch`. Returns `{theme: {modes}, diff: [{path, from, to}], contrast_report, saved: false}`.
+It does not correct the contrast.
+
+- **Parameters**:
+  - `theme_id` (optional) - a saved theme or `bylonis`; either this or `theme`
+  - `theme` (optional) - `{"modes": {"light": {...}, "dark": {...}}}`, as `bylonis_generate_theme` returns it
+  - `patch` (required) - `"mode.token"` → color, e.g. `{"light.accent": "#2563eb"}`
+  - `prompt` - not available yet (bylonis#931): rejected
+
+#### `bylonis_validate_theme`
+
+`POST /api/v1/themes/validate`: `{valid, errors, contrast}`, the contrast pair by pair in both modes.
+
+- **Parameters**: `theme` (required) - `{"name"?: "...", "modes": {"light": {...}, "dark": {...}}}`
+
+#### `bylonis_list_themes` and `bylonis_get_theme`
+
+`GET /api/v1/themes` (compact: id, name, source, built-in, contrast status; plus the theme of the organization
+and the one that applies to the caller) and `GET /api/v1/themes/{id}` (colors and the failing pairs).
+
+- **Parameters** of `bylonis_get_theme`: `theme_id` (required) - id or `bylonis`
+
+#### `bylonis_save_theme`
+
+Creates a theme (`POST /api/v1/themes`) or updates `theme_id` (`PUT /api/v1/themes/{id}`). Failing the contrast
+does not prevent saving, but such a theme cannot be the theme of the organization.
+
+- **Parameters**: `theme_id` (optional), `name` (required), `modes` (required) - `{"light": {...}, "dark": {...}}`
 
 ## Environment Variables
 

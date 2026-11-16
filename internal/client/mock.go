@@ -17,6 +17,8 @@ type MockClient struct {
 	ListAlertsFn                func(ctx context.Context, params types.ListAlertsParams) (json.RawMessage, error)
 	ListAlertRulesFn            func(ctx context.Context) (json.RawMessage, error)
 	PostFleetFn                 func(ctx context.Context, path string, body any) (json.RawMessage, error)
+	GetThemeFn                  func(ctx context.Context, path string) (json.RawMessage, error)
+	SendThemeFn                 func(ctx context.Context, method, path string, body any) (json.RawMessage, error)
 	GetFleetFn                  func(ctx context.Context, path string, query url.Values) (json.RawMessage, error)
 	GetAlertByRuleIDFn          func(ctx context.Context, ruleID string) (json.RawMessage, error)
 	GetAlertHistoryFn           func(ctx context.Context, ruleID string, req types.AlertHistoryRequest) (json.RawMessage, error)
@@ -293,6 +295,20 @@ func (m *MockClient) GetFleet(ctx context.Context, path string, query url.Values
 func (m *MockClient) PostFleet(ctx context.Context, path string, body any) (json.RawMessage, error) {
 	if m.PostFleetFn != nil {
 		return m.PostFleetFn(ctx, path, body)
+	}
+	return json.RawMessage(`{}`), nil
+}
+
+func (m *MockClient) GetTheme(ctx context.Context, path string) (json.RawMessage, error) {
+	if m.GetThemeFn != nil {
+		return m.GetThemeFn(ctx, path)
+	}
+	return json.RawMessage(`{}`), nil
+}
+
+func (m *MockClient) SendTheme(ctx context.Context, method, path string, body any) (json.RawMessage, error) {
+	if m.SendThemeFn != nil {
+		return m.SendThemeFn(ctx, method, path, body)
 	}
 	return json.RawMessage(`{}`), nil
 }
