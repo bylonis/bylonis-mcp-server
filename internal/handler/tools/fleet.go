@@ -84,7 +84,8 @@ func (h *Handler) RegisterFleetHandlers(s *server.MCPServer) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		searchContext,
-		mcp.WithDescription("Compares the inventory with the telemetry in a window: machines that send metrics, logs or traces but are not in the inventory (untracked), nodes that should have an agent and do not report (silent), nodes alive without an agent (gaps, candidates to install it), and per site the share of nodes with a healthy agent."),
+		mcp.WithDescription("Compares the inventory with the telemetry in a window: machines that send metrics, logs or traces but are not in the inventory (untracked), nodes that should have an agent and do not report (silent), nodes alive without an agent (gaps, candidates to install it), and per site the share of nodes with a healthy agent.\n\n"+
+			"'ignored' lists the nodes with the label cobertura=ignorar, whatever their state: known exceptions that someone left out on purpose. They are never in silent or gaps, but still count in the share of their site. Do not report them as problems; mention them only if the user asks about one."),
 		mcp.WithString("site", mcp.Description("Site name; all sites if omitted.")),
 		mcp.WithString("window", mcp.Description("'1h', '24h' or '168h'. Default '24h'.")),
 	), h.handleGetFleetCoverage)
@@ -569,7 +570,7 @@ func (h *Handler) handleGetFleetCoverage(ctx context.Context, req mcp.CallToolRe
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 	_, siteNames, _ := h.fleetSites(ctx, client)
-	for _, key := range []string{"silent", "gaps"} {
+	for _, key := range []string{"silent", "gaps", "ignored"} {
 		if nodes, ok := coverage[key].([]any); ok {
 			compact := make([]fleetNode, 0, len(nodes))
 			for _, node := range nodes {

@@ -988,3 +988,120 @@ func TestHandleCreateNotificationChannel_StillRequiresTheSecret(t *testing.T) {
 		t.Fatalf("expected a validation error without slack_api_url")
 	}
 }
+
+// savedEmailChannel is an email channel as ByLonis returns it, with its own subject, template and SMTP connection.
+const savedEmailChannel = `{"status":"success","data":{"id":"019b1af4-3ef5-734d-8ba8-cc12fb5b5978","name":"Email - Alertas","type":"email",` +
+	`"data":"{\"name\":\"Email - Alertas\",\"email_configs\":[{\"send_resolved\":true,\"to\":\"noc@example.com\",` +
+	`\"from\":\"alertas@example.com\",\"smarthost\":\"smtp.example.com:587\",\"auth_username\":\"alertas\",` +
+	`\"auth_password\":\"<secret>\",\"html\":\"{{ template \\\"propia.html\\\" . }}\",\"text\":\"plain\",` +
+	`\"headers\":{\"Subject\":\"[Lumina/{{ .CommonLabels.severity }}] {{ .CommonLabels.alertname }}\"}}]}"}}`
+
+// updateEmailChannel updates the saved email channel with args and returns the email configuration it sent.
+func updateEmailChannel(t *testing.T, args map[string]any) map[string]any {
+	t.Helper()
+	var updated []byte
+	mock := &client.MockClient{
+		GetNotificationChannelFn: func(ctx context.Context, id string) (json.RawMessage, error) {
+			return json.RawMessage(savedEmailChannel), nil
+		},
+		UpdateNotificationChannelFn: func(ctx context.Context, id string, receiverJSON []byte) error {
+			updated = receiverJSON
+			return nil
+		},
+		TestNotificationChannelFn: func(ctx context.Context, receiverJSON []byte) error { return nil },
+	}
+	call := map[string]any{"id": "019b1af4-3ef5-734d-8ba8-cc12fb5b5978", "type": "email", "name": "Email - Alertas"}
+	for k, v := range args {
+		call[k] = v
+	}
+	result, err := newTestHandler(mock).handleUpdateNotificationChannel(testCtx(),
+		makeToolRequest("bylonis_update_notification_channel", call))
+	if err != nil || result.IsError {
+		t.Fatalf("unexpected error: %v %v", err, result.Content)
+	}
+	var receiver map[string]any
+	if err := json.Unmarshal(updated, &receiver); err != nil {
+		t.Fatalf("failed to parse body: %v", err)
+	}
+	return receiver["email_configs"].([]any)[0].(map[string]any)
+}
+
+// Adding a recipient keeps the subject, the template and the text of the channel (bylonis#1023), and leaves the
+// SMTP connection out, so that ByLonis keeps the saved one (bylonis#783).
+func TestHandleUpdateNotificationChannel_EmailKeepsSubjectAndTemplate(t *testing.T) {
+	cfg := updateEmailChannel(t, map[string]any{"email_to": "noc@example.com,guardia@example.com"})
+	if cfg["to"] != "noc@example.com,guardia@example.com" {
+		t.Errorf("to = %v", cfg["to"])
+	}
+	if cfg["html"] != `{{ template "propia.html" . }}` || cfg["text"] != "plain" {
+		t.Errorf("html = %v, text = %v: expected the saved ones", cfg["html"], cfg["text"])
+	}
+	if got := cfg["headers"].(map[string]any)["Subject"]; got != "[Lumina/{{ .CommonLabels.severity }}] {{ .CommonLabels.alertname }}" {
+		t.Errorf("Subject = %v: expected the saved one", got)
+	}
+	for _, key := range []string{"smarthost", "from", "auth_username", "auth_password"} {
+		if _, ok := cfg[key]; ok {
+			t.Errorf("%s was sent: ByLonis must keep the saved connection", key)
+		}
+	}
+}
+
+func TestHandleUpdateNotificationChannel_EmailReplacesWhatItGets(t *testing.T) {
+	cfg := updateEmailChannel(t, map[string]any{"email_to": "noc@example.com", "email_html": "<b>x</b>",
+		"email_headers": `{"Subject":"nuevo"}`})
+	if cfg["html"] != "<b>x</b>" {
+		t.Errorf("html = %v", cfg["html"])
+	}
+	if headers := cfg["headers"].(map[string]any); len(headers) != 1 || headers["Subject"] != "nuevo" {
+		t.Errorf("headers = %v", headers)
+	}
+}
+
+// Without the saved channel the update would wipe its subject: it changes nothing.
+func TestHandleUpdateNotificationChannel_EmailWithoutTheSavedChannel(t *testing.T) {
+	updated := false
+	mock := &client.MockClient{
+		GetNotificationChannelFn: func(ctx context.Context, id string) (json.RawMessage, error) {
+			return nil, fmt.Errorf("boom")
+		},
+		UpdateNotificationChannelFn: func(ctx context.Context, id string, receiverJSON []byte) error {
+			updated = true
+			return nil
+		},
+	}
+	result, err := newTestHandler(mock).handleUpdateNotificationChannel(testCtx(),
+		makeToolRequest("bylonis_update_notification_channel", map[string]any{
+			"id": "019b1af4-3ef5-734d-8ba8-cc12fb5b5978", "type": "email", "name": "c", "email_to": "a@example.com"}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.IsError || updated {
+		t.Fatalf("expected an error and no update, got IsError=%v updated=%v", result.IsError, updated)
+	}
+}
+
+func TestHandleCreateNotificationChannel_EmailHeaders(t *testing.T) {
+	var created []byte
+	mock := &client.MockClient{
+		CreateNotificationChannelFn: func(ctx context.Context, receiverJSON []byte) (json.RawMessage, error) {
+			created = receiverJSON
+			return json.RawMessage(`{"data":{}}`), nil
+		},
+		TestNotificationChannelFn: func(ctx context.Context, receiverJSON []byte) error { return nil },
+	}
+	h := newTestHandler(mock)
+	args := map[string]any{"type": "email", "name": "c", "email_to": "a@example.com", "email_headers": `{"Subject":"s"}`}
+	result, err := h.handleCreateNotificationChannel(testCtx(), makeToolRequest("bylonis_create_notification_channel", args))
+	if err != nil || result.IsError {
+		t.Fatalf("unexpected error: %v %v", err, result.Content)
+	}
+	if !strings.Contains(string(created), `"headers":{"Subject":"s"}`) {
+		t.Errorf("headers not sent: %s", created)
+	}
+
+	args["email_headers"] = `["Subject"]`
+	result, err = h.handleCreateNotificationChannel(testCtx(), makeToolRequest("bylonis_create_notification_channel", args))
+	if err != nil || !result.IsError {
+		t.Fatalf("expected a validation error for headers that are not an object, got %v %v", err, result)
+	}
+}

@@ -27,7 +27,7 @@ func (h *Handler) RegisterAlertsHandlers(s *server.MCPServer) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
-		mcp.WithDescription("Lists currently firing/silenced/inhibited alert *instances* from Alertmanager — not rule definitions. Use bylonis_list_alert_rules for configured rules, bylonis_get_alert with a ruleId for one full rule definition, or bylonis_get_alert_history for the state timeline.\n\nReturns alert name, rule ID, severity, start time, end time, and state.\n\nFILTERING: Use server-side filters to narrow results BEFORE paginating.\n- To find a specific alert by name: filter='alertname=\"HighCPU\"'\n- To find alerts by severity: filter='severity=\"critical\"'\n- Combine matchers: filter='alertname=\"HighCPU\",severity=\"critical\"'\n- To see only firing alerts: active='true', silenced='false', inhibited='false'\n- To see only silenced alerts: silenced='true', active='false'\n- To filter by notification receiver: receiver='slack-.*'\nBy default all alert states (active, silenced, inhibited) are included.\n\nPAGINATION: Supports 'limit' and 'offset'. Response includes 'pagination' with 'total', 'hasMore', and 'nextOffset'. Prefer 'filter' to find specific alerts instead of paginating all pages. Default: limit=50, offset=0."),
+		mcp.WithDescription("Lists currently firing/silenced/inhibited alert *instances* from Alertmanager — not rule definitions. Use bylonis_list_alert_rules for configured rules, bylonis_get_alert with a ruleId for one full rule definition, or bylonis_get_alert_history for the state timeline.\n\nReturns alert name, rule ID, severity, start time, end time, and state. An alert someone acknowledged (said they work on it) also has acknowledgedBy, acknowledgedAt and acknowledgementNote: say who is on it before suggesting anything. While acknowledged, its channel is not notified again until something in it changes. Acknowledging is done by a person in ByLonis (Alertas), not with this MCP.\n\nFILTERING: Use server-side filters to narrow results BEFORE paginating.\n- To find a specific alert by name: filter='alertname=\"HighCPU\"'\n- To find alerts by severity: filter='severity=\"critical\"'\n- Combine matchers: filter='alertname=\"HighCPU\",severity=\"critical\"'\n- To see only firing alerts: active='true', silenced='false', inhibited='false'\n- To see only silenced alerts: silenced='true', active='false'\n- To filter by notification receiver: receiver='slack-.*'\nBy default all alert states (active, silenced, inhibited) are included.\n\nPAGINATION: Supports 'limit' and 'offset'. Response includes 'pagination' with 'total', 'hasMore', and 'nextOffset'. Prefer 'filter' to find specific alerts instead of paginating all pages. Default: limit=50, offset=0."),
 		mcp.WithString("limit", mcp.Description("Maximum number of alerts to return per page. Default: 50.")),
 		mcp.WithString("offset", mcp.Description("Number of results to skip for pagination. Default: 0.")),
 		mcp.WithString("active", mcp.Description("Include active (firing) alerts. Values: 'true' or 'false'. Default: true.")),
@@ -52,7 +52,7 @@ func (h *Handler) RegisterAlertsHandlers(s *server.MCPServer) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
-		mcp.WithDescription("Get the rule definition for a specific alert rule by ruleId (GET /api/v2/rules/{ruleId}).\n\nResponse shape depends on the ByLonis server version. Post-#10997 servers return the canonical Rule type with audit fields createdAt/updatedAt/createdBy/updatedBy; older servers return GettableRule with createAt/updateAt/createBy/updateBy (no 'd')."),
+		mcp.WithDescription("Get the full definition of one alert rule by ruleId (GET /api/v2/rules/{ruleId}), with its audit fields createdAt/updatedAt/createdBy/updatedBy. Read it before bylonis_update_alert, which replaces the whole rule: keep what the user does not ask to change, holdDuration included.\n\nA rule with the label fleet is managed by the inventory of Fleet Control: it cannot be changed or deleted with this MCP (see bylonis_update_alert)."),
 		mcp.WithString("ruleId", mcp.Required(), mcp.Description("Alert rule ID (UUIDv7 on v2 servers).")),
 	)
 	addTool(s, getAlertTool, h.handleGetAlert)
@@ -94,6 +94,8 @@ func (h *Handler) RegisterAlertsHandlers(s *server.MCPServer) {
 				"present that list to the user, let them choose, then call again with their selection. "+
 				"If no suitable channel exists, use bylonis_create_notification_channel first.\n\n"+
 				"Supports all alert types (metrics, logs, traces, exceptions) and rule types (threshold, promql, anomaly).\n"+
+				"To fire only when the problem lasts (e.g. 'only if it stays down 10 minutes'), set holdDuration (0s–24h): until then the alert is pending and nothing is sent.\n"+
+				"Do not create rules with the label fleet: ByLonis rejects them (fleet_managed_rule); those come from Inventario → Alertas.\n"+
 				"Labels enable routing policies — always set labels.severity (critical, error, warning, or info) to match your highest threshold tier, and add team/service labels for routing.",
 		),
 		mcp.WithInputSchema[types.CreateAlertInput](),
@@ -107,7 +109,9 @@ func (h *Handler) RegisterAlertsHandlers(s *server.MCPServer) {
 			"Updates an existing alert rule in ByLonis (PUT /api/v2/rules/{ruleId}). Replaces the full rule configuration.\n\n"+
 				"CRITICAL: Read bylonis://alert/instructions and bylonis://alert/examples before generating the payload. "+
 				"When ruleType=promql_rule, also read bylonis://promql/instructions — OTel dotted metric names require the Prometheus 3.x UTF-8 quoted-selector form. "+
-				"Always fetch the current rule with bylonis_get_alert first and merge changes on top of it — PUT replaces the full rule.\n\n"+
+				"Always fetch the current rule with bylonis_get_alert first and merge changes on top of it — PUT replaces the full rule: a field left out, such as holdDuration, is lost.\n\n"+
+				"FLEET RULES: a rule with the label fleet is managed by the inventory of Fleet Control. ByLonis rejects updating it, or removing that label, with 400 fleet_managed_rule. "+
+				"Do not try: tell the user to change it in Inventario → Alertas.\n\n"+
 				"The rule payload is the same shape as bylonis_create_alert. All the same validation rules apply, including "+
 				"the notification-channel presence check.",
 		),
@@ -120,7 +124,9 @@ func (h *Handler) RegisterAlertsHandlers(s *server.MCPServer) {
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
 		mcp.WithString("ruleId", mcp.Required(), mcp.Description("UUIDv7 of the alert rule to delete. The server validates the UUID format and returns invalid_input on bad values.")),
-		mcp.WithDescription("Deletes an alert rule by ID (DELETE /api/v2/rules/{ruleId}). Irreversible. Confirm with the user before calling."),
+		mcp.WithDescription("Deletes an alert rule by ID (DELETE /api/v2/rules/{ruleId}). Irreversible. Confirm with the user before calling.\n\n"+
+			"If the rule is firing, its channels get the resolved notification and its alerts are closed in the history. "+
+			"A rule with the label fleet cannot be deleted here (400 fleet_managed_rule): it is removed in Inventario → Alertas."),
 	)
 	addTool(s, deleteAlertTool, h.handleDeleteAlert)
 
@@ -179,12 +185,17 @@ func (h *Handler) handleListAlerts(ctx context.Context, req mcp.CallToolRequest)
 	alertsList := make([]types.Alert, 0, len(apiResponse.Data))
 	for _, apiAlert := range apiResponse.Data {
 		alertsList = append(alertsList, types.Alert{
-			Alertname: apiAlert.Labels.Alertname,
-			RuleID:    apiAlert.Labels.RuleID,
-			Severity:  apiAlert.Labels.Severity,
-			StartsAt:  apiAlert.StartsAt,
-			EndsAt:    apiAlert.EndsAt,
-			State:     apiAlert.Status.State,
+			Alertname:           apiAlert.Labels.Alertname,
+			RuleID:              apiAlert.Labels.RuleID,
+			Severity:            apiAlert.Labels.Severity,
+			StartsAt:            apiAlert.StartsAt,
+			EndsAt:              apiAlert.EndsAt,
+			State:               apiAlert.Status.State,
+			Series:              apiAlert.Annotations["bylonis_series"],
+			FiredAt:             apiAlert.Annotations["bylonis_fired_at"],
+			AcknowledgedBy:      apiAlert.Annotations["bylonis_acknowledged_by"],
+			AcknowledgedAt:      apiAlert.Annotations["bylonis_acknowledged_at"],
+			AcknowledgementNote: apiAlert.Annotations["bylonis_acknowledged_note"],
 		})
 	}
 

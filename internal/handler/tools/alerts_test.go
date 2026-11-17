@@ -1191,3 +1191,47 @@ func TestHandleDeleteAlert_ClientError(t *testing.T) {
 		t.Fatal("expected error result from client error")
 	}
 }
+
+// An acknowledged alert says who is on it (bylonis#595), from the annotations of the rule manager.
+func TestHandleListAlerts_Acknowledgement(t *testing.T) {
+	mock := &client.MockClient{
+		ListAlertsFn: func(ctx context.Context, params types.ListAlertsParams) (json.RawMessage, error) {
+			return json.RawMessage(`{"status": "success", "data": [
+				{"labels": {"alertname": "NFS sin réplica", "ruleId": "r1", "severity": "critical"},
+				 "annotations": {"summary": "s", "bylonis_series": "1234567890", "bylonis_fired_at": "1763380000000",
+				   "bylonis_acknowledged_by": "noc@example.com", "bylonis_acknowledged_at": "2026-11-17T10:00:00Z",
+				   "bylonis_acknowledged_note": "Mirando el DRBD"},
+				 "startsAt": "2026-11-17T09:46:40Z", "endsAt": "", "status": {"state": "active"}},
+				{"labels": {"alertname": "Disco lleno", "ruleId": "r2", "severity": "warning"},
+				 "annotations": {"bylonis_series": "42", "bylonis_fired_at": "1763380100000"},
+				 "startsAt": "", "endsAt": "", "status": {"state": "active"}}
+			]}`), nil
+		},
+	}
+	result, err := newTestHandler(mock).handleListAlerts(testCtx(), makeToolRequest("bylonis_list_alerts", map[string]any{}))
+	if err != nil || result.IsError {
+		t.Fatalf("unexpected error: %v %v", err, result.Content)
+	}
+	var page struct {
+		Data []map[string]any `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(result.Content[0].(mcp.TextContent).Text), &page); err != nil {
+		t.Fatal(err)
+	}
+	if len(page.Data) != 2 {
+		t.Fatalf("expected 2 alerts, got %v", page.Data)
+	}
+	acked := page.Data[0]
+	for key, want := range map[string]string{"series": "1234567890", "firedAt": "1763380000000",
+		"acknowledgedBy": "noc@example.com", "acknowledgedAt": "2026-11-17T10:00:00Z", "acknowledgementNote": "Mirando el DRBD"} {
+		if acked[key] != want {
+			t.Errorf("%s = %v, want %q", key, acked[key], want)
+		}
+	}
+	if _, ok := page.Data[1]["acknowledgedBy"]; ok {
+		t.Errorf("an alert nobody acknowledged must not have acknowledgedBy: %v", page.Data[1])
+	}
+	if _, ok := acked["summary"]; ok {
+		t.Errorf("the other annotations must not be copied: %v", acked)
+	}
+}

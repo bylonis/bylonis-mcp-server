@@ -12,7 +12,7 @@ Schemas supported:
 - **v1** for anomaly_rule — top-level evalWindow/frequency with condition.op/matchType/target/algorithm/seasonality. No thresholds block.
 
 ## CRITICAL: Before Creating an Alert
-1. ALWAYS read bylonis://alert/examples for complete working payloads (the canonical upstream PR #11023 examples plus a Cost Meter cumulative-budget example).
+1. ALWAYS read bylonis://alert/examples for complete working payloads (metric, logs and traces thresholds, PromQL, anomaly, tiered thresholds, notification settings and a Cost Meter cumulative-budget example).
 2. Use bylonis_get_alert on an existing alert to study the exact structure your ByLonis instance expects.
 3. Use bylonis_get_field_keys to discover available attributes for filters and groupBy.
 4. NOTIFICATION CHANNELS: If the user explicitly names a channel, use it directly. Otherwise, do NOT guess channel names — call bylonis_create_alert without channels first, it returns available channels. Present the list to the user, let them choose, then retry with their selection. If no suitable channel exists, use bylonis_create_notification_channel to create one first.
@@ -25,7 +25,7 @@ A repeatable mental model for going from a user request ("alert me when login p9
 4. **Pick the aggregation shape.** Metrics → object {metricName, timeAggregation, spaceAggregation}. Logs/traces → {expression: "count()" | "p99(duration_nano)" | …}.
 5. **Write the filter.** See "Filter & Having Expressions" for the operator set. Prefer resource attributes (service.name, deployment.environment, k8s.*) — the backend indexes them.
 6. **Configure thresholds.** Tier name (critical | error | warning | info), op, matchType, target. Add channels only if the user named them — otherwise leave empty and let channel validation prompt the user.
-7. **Evaluation.** Leave defaults (evalWindow=5m, frequency=1m) unless the user asked for a different window.
+7. **Evaluation.** Leave defaults (evalWindow=5m, frequency=1m) unless the user asked for a different window. If the user says the problem must last (e.g. "only if it stays down 10 minutes"), set holdDuration.
 8. **Notification.** Always ask the user for channel names — never guess. Set notificationSettings.groupBy on high-cardinality queries to reduce noise.
 
 ## Alert Types (alertType)
@@ -218,11 +218,23 @@ evaluation controls how the rule is evaluated:
 }
 ` + "```" + `
 
-- evalWindow: how long the condition must persist (e.g. 5m, 15m, 30m, 1h, 4h, 24h).
+- evalWindow: the window of data each evaluation looks at (e.g. 5m, 15m, 30m, 1h, 4h, 24h). For how long the condition must last before firing, use holdDuration (below).
 - frequency: how often to evaluate (e.g. 1m, 5m, 15m).
 - Auto-generated (5m window, 1m frequency) if omitted for threshold/promql rules.
-- **Format**: Go duration strings. Both "5m" and "5m0s" are accepted; stick to one style per payload. Common values: 1m, 5m, 15m, 30m, 1h, 4h, 24h, 1d.
+- **Format**: Go duration strings. Both "5m" and "5m0s" are accepted; stick to one style per payload. Common values: 1m, 5m, 15m, 30m, 1h, 4h, 24h. Units go up to h: write 24h, not 1d.
 - **Sizing tips**: keep evalWindow ≥ frequency. Short windows (1-5m) catch spikes; long windows (30m-1h) smooth noise. For infrequent signals (hourly batch jobs) set frequency to 5-15m to reduce evaluation cost.
+
+### Wait before firing (holdDuration)
+
+` + "```" + `json
+"holdDuration": "10m"
+` + "```" + `
+
+- Top-level field, for every ruleType (threshold, promql, anomaly and ClickHouse SQL rules).
+- A series whose condition is true stays **pending** and sends nothing until it has held for holdDuration; if it recovers before, it never fires. Like the for of Prometheus.
+- Between 0s and 24h (Go duration string). Omitted or 0s fires at once.
+- It is the lever against a rule that flaps (fires and resolves within minutes again and again). In a ClickHouse SQL rule, where the query decides the condition, it is the main one.
+- PUT replaces the whole rule: on bylonis_update_alert, keep the holdDuration of the saved rule unless the user asks to change it.
 
 ### Cumulative window (daily/monthly totals)
 
@@ -259,6 +271,10 @@ A general evaluation kind, independent of signal/source — use it for any perio
 - **renotify.interval**: re-notify interval (e.g. 15m, 30m, 1h, 4h).
 - **renotify.alertStates**: accepted values are firing and nodata. Any other value is rejected.
 - **usePolicy**: routing mode. false (default) = deliver to the channels listed in each threshold entry. true = ignore per-threshold channels and route via the org-level notification policy matching on labels.
+
+## Fleet rules (label fleet)
+
+Rules with the label fleet are written by the inventory of Fleet Control (Inventario → Alertas). ByLonis rejects creating, updating or deleting one from here with 400 fleet_managed_rule, and also adding or removing that label. To change one, tell the user to do it in Inventario → Alertas.
 
 ## Labels & Routing
 
@@ -351,11 +367,12 @@ anomaly_rule: none of the above defaults are applied automatically — you must 
 // The examples below mirror the canonical payloads in upstream PR #11023, plus a Cost Meter example
 // (pkg/apiserver/bylonisapiserver/ruler_examples.go). Keep this list in sync
 // with upstream when that file changes.
-const Examples = `# ByLonis Alert Rule — Examples (mirrors upstream PR #11023)
+const Examples = `# ByLonis Alert Rule — Examples
 
-These examples mirror the canonical payloads in upstream PR #11023
+These examples mirror the canonical payloads of ByLonis
 (pkg/apiserver/bylonisapiserver/ruler_examples.go). Threshold and PromQL rules
-use v2alpha1; the anomaly example uses the v1 shape.
+use v2alpha1; the anomaly example uses the v1 shape. Any of them takes a
+top-level holdDuration (e.g. "10m") to fire only when the condition lasts.
 
 ## 1. metric_threshold_single — metric threshold, single builder query
 Fires when a pod consumes more than 80% of its requested CPU for the whole evaluation window.
@@ -1005,4 +1022,5 @@ Fires when today's total log ingestion exceeds 10 GiB. The query targets Cost Me
 4. Channel names in thresholds.spec[].channels must match exactly the names from bylonis_list_notification_channels.
 5. For threshold_rule/promql_rule, schemaVersion/evaluation/notificationSettings are auto-generated if omitted. For anomaly_rule, supply evalWindow/frequency at the top level and op/matchType/target/algorithm/seasonality under condition — no thresholds block, no auto-generated evaluation.
 6. absentFor is in minutes (= consecutive evaluation cycles when frequency is 1m).
+7. holdDuration (top level) is how long the condition must hold before firing; evalWindow is how much data each evaluation reads.
 `

@@ -30,6 +30,13 @@ type Alert struct {
 	StartsAt  string `json:"startsAt"`
 	EndsAt    string `json:"endsAt"`
 	State     string `json:"state"`
+	// The series and the start (ms) that identify the alert, and who acknowledged it, when and with what note
+	// (bylonis#595), from the annotations the rule manager puts on it.
+	Series              string `json:"series,omitempty"`
+	FiredAt             string `json:"firedAt,omitempty"`
+	AcknowledgedBy      string `json:"acknowledgedBy,omitempty"`
+	AcknowledgedAt      string `json:"acknowledgedAt,omitempty"`
+	AcknowledgementNote string `json:"acknowledgementNote,omitempty"`
 }
 
 type APIAlertLabels struct {
@@ -43,10 +50,11 @@ type APIAlertStatus struct {
 }
 
 type APIAlert struct {
-	Labels   APIAlertLabels `json:"labels"`
-	Status   APIAlertStatus `json:"status"`
-	StartsAt string         `json:"startsAt"`
-	EndsAt   string         `json:"endsAt"`
+	Labels      APIAlertLabels    `json:"labels"`
+	Annotations map[string]string `json:"annotations"`
+	Status      APIAlertStatus    `json:"status"`
+	StartsAt    string            `json:"startsAt"`
+	EndsAt      string            `json:"endsAt"`
 }
 
 type APIAlertsResponse struct {
