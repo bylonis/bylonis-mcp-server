@@ -303,6 +303,7 @@ func (m *MCPServer) registerHandlers(s *server.MCPServer) {
 	m.handler.RegisterFleetHandlers(s)
 	m.handler.RegisterProposalHandlers(s)
 	m.handler.RegisterThemeHandlers(s)
+	m.handler.RegisterInsightHandlers(s)
 	m.handler.RegisterResourceTemplates(s)
 	prompts.RegisterPrompts(s.AddPrompt)
 }

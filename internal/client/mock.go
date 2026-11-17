@@ -20,6 +20,8 @@ type MockClient struct {
 	GetThemeFn                  func(ctx context.Context, path string) (json.RawMessage, error)
 	SendThemeFn                 func(ctx context.Context, method, path string, body any) (json.RawMessage, error)
 	GetFleetFn                  func(ctx context.Context, path string, query url.Values) (json.RawMessage, error)
+	GetReadOnlyFn               func(ctx context.Context, path string, query url.Values) (json.RawMessage, error)
+	PostReadOnlyFn              func(ctx context.Context, path string, query url.Values, body []byte) (json.RawMessage, error)
 	GetAlertByRuleIDFn          func(ctx context.Context, ruleID string) (json.RawMessage, error)
 	GetAlertHistoryFn           func(ctx context.Context, ruleID string, req types.AlertHistoryRequest) (json.RawMessage, error)
 	ListDashboardsFn            func(ctx context.Context) (json.RawMessage, error)
@@ -309,6 +311,20 @@ func (m *MockClient) GetTheme(ctx context.Context, path string) (json.RawMessage
 func (m *MockClient) SendTheme(ctx context.Context, method, path string, body any) (json.RawMessage, error) {
 	if m.SendThemeFn != nil {
 		return m.SendThemeFn(ctx, method, path, body)
+	}
+	return json.RawMessage(`{}`), nil
+}
+
+func (m *MockClient) GetReadOnly(ctx context.Context, path string, query url.Values) (json.RawMessage, error) {
+	if m.GetReadOnlyFn != nil {
+		return m.GetReadOnlyFn(ctx, path, query)
+	}
+	return json.RawMessage(`{}`), nil
+}
+
+func (m *MockClient) PostReadOnly(ctx context.Context, path string, query url.Values, body []byte) (json.RawMessage, error) {
+	if m.PostReadOnlyFn != nil {
+		return m.PostReadOnlyFn(ctx, path, query, body)
 	}
 	return json.RawMessage(`{}`), nil
 }
