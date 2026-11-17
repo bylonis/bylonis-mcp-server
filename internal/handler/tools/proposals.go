@@ -35,7 +35,7 @@ func (h *Handler) RegisterProposalHandlers(s *server.MCPServer) {
 	}
 
 	addTool(s, readOnly("bylonis_list_fleets",
-		"Lists the fleets of Fleet Control: groups of agents that share a configuration of the collector. Returns name, kind (linux_host, kubernetes), members, collector version, and the newest and stable versions of its configuration."),
+		"Lists the fleets of Fleet Control: groups of agents that share a configuration of the collector. Returns name, kind (linux_host, windows_host or k8s_cluster), members, collector version, and the newest and stable versions of its configuration."),
 		h.handleListFleets)
 	addTool(s, readOnly("bylonis_get_fleet_config",
 		"Gets a configuration of the collector of a fleet: its template (text/template over YAML of the OpenTelemetry Collector, with .Node, .Labels and .Tenant), its note and who wrote it. Read it before proposing a change, to start from it.",
@@ -63,14 +63,15 @@ func (h *Handler) RegisterProposalHandlers(s *server.MCPServer) {
 		mcp.WithString("version", mcp.Description("Version number; the newest if omitted."))),
 		h.handleGetPlaybook)
 	addTool(s, proposal("bylonis_propose_playbook",
-		"Proposes an Ansible playbook: one YAML file, a list of plays each with hosts (all, or groups of the inventory such as site_lumina or class_escritorio), without import_playbook. Saves it in the library of ByLonis as a new playbook, or as the next version of the playbook with that name. Nothing runs: check it with bylonis_check_playbook; a person approves the real run in ByLonis.",
+		"Proposes an Ansible playbook: one YAML file, a list of plays each with hosts (all, or groups of the inventory such as site_lumina or class_escritorio), without import_playbook. Saves it in the library of ByLonis as a new playbook, or as the next version of the playbook with that name. Nothing runs: check it with bylonis_check_playbook; a person approves the real run in ByLonis.\n\n"+
+			"WINDOWS HOSTS (osType windows): Ansible reaches them by SSH, already elevated and without become (a become: true is overridden), and only the collection ansible.windows is installed. Use its modules (ansible.windows.win_service, win_shell, win_copy…), not the Linux ones, in plays for them; a playbook for both kinds splits them by group or with when on ansible_os_family.",
 		mcp.WithString("name", mcp.Required(), mcp.Description("Name of the playbook; an existing one gets a new version.")),
 		mcp.WithString("content", mcp.Required(), mcp.Description("The YAML of the playbook.")),
 		mcp.WithString("note", mcp.Required(), mcp.Description("What it does and why, for the person who reviews it.")),
 		mcp.WithString("description", mcp.Description("Description of a new playbook."))),
 		h.handleProposePlaybook)
 	addTool(s, proposal("bylonis_check_playbook",
-		"Checks a version of a playbook on the nodes of a label selector or a group: the site runners run --syntax-check, ansible-lint if they have it, and --check --diff, which changes nothing. Returns the run; read its result with bylonis_get_playbook_run (it takes from seconds to minutes). The real run is approved by a person in ByLonis (Inventario → Ansible), never by this tool. Prefer a test node or a small selector.",
+		"Checks a version of a playbook on the nodes of a label selector or a group: the site runners run --syntax-check, ansible-lint if they have it, and --check --diff, which changes nothing. Returns the run; read its result with bylonis_get_playbook_run (it takes from seconds to minutes). The real run is approved by a person in ByLonis (Inventario → Ansible), never by this tool. Prefer a test node or a small selector. Windows hosts need a site runner new enough for them: an older one fails the run and asks to update it.",
 		mcp.WithString("playbook", mcp.Required(), mcp.Description("Name or id of the playbook.")),
 		mcp.WithString("version", mcp.Description("Version number; the newest if omitted.")),
 		mcp.WithString("selector", mcp.Description("Label selector of the nodes, e.g. 'class=prueba'. Either this or group.")),

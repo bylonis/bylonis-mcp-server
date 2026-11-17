@@ -153,7 +153,7 @@ func TestGetFleetNodeHistory(t *testing.T) {
 func TestGetFleetCoverageAndAgentHealth(t *testing.T) {
 	mock, calls := fleetAPI(t, map[string]string{
 		"/api/v1/inventory/sites":        fleetSites,
-		"/api/v1/inventory/coverage":     `{"window":"24h","untracked":[{"machine":"lumina-collector"}],"silent":[` + fleetNodeN07 + `],"gaps":[],"sites":[]}`,
+		"/api/v1/inventory/coverage":     `{"window":"24h","untracked":[{"machine":"lumina-collector"}],"silent":[` + fleetNodeN07 + `],"gaps":[],"ignored":[` + fleetNodeN07 + `],"sites":[]}`,
 		"/api/v1/inventory/agent_health": `{"window":"15m","nodes":[{"hostname":"a","problems":[]},{"hostname":"b","problems":["queue_full"]}]}`,
 	})
 	h := newTestHandler(mock)
@@ -163,6 +163,12 @@ func TestGetFleetCoverageAndAgentHealth(t *testing.T) {
 	silent := out["silent"].([]any)[0].(map[string]any)
 	assert.Equal(t, "compute-n07", silent["hostname"])
 	assert.NotContains(t, silent, "credentialId")
+	// The known exceptions (cobertura=ignorar, bylonis#503) come compact too, without the id of the credential.
+	ignored := out["ignored"].([]any)[0].(map[string]any)
+	assert.Equal(t, "compute-n07", ignored["hostname"])
+	assert.Equal(t, "lumina", ignored["site"])
+	assert.NotContains(t, ignored, "credentialId")
+	assert.NotContains(t, ignored, "attributes")
 	assert.Contains(t, *calls, "/api/v1/inventory/coverage?siteId=s1&window=24h")
 
 	result, err = h.handleListFleetAgentHealth(testCtx(), makeToolRequest("bylonis_list_fleet_agent_health", map[string]any{"problemsOnly": "true"}))

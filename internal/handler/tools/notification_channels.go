@@ -9,6 +9,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 
+	bylonisclient "github.com/bylonis/bylonis-mcp-server/internal/client"
 	logpkg "github.com/bylonis/bylonis-mcp-server/pkg/log"
 	"github.com/bylonis/bylonis-mcp-server/pkg/paginate"
 	"github.com/bylonis/bylonis-mcp-server/pkg/types"
@@ -55,7 +56,7 @@ func (h *Handler) RegisterNotificationChannelHandlers(s *server.MCPServer) {
 				"- slack: name, slack_api_url (Slack incoming webhook URL)\n"+
 				"- webhook: name, webhook_url (endpoint URL)\n"+
 				"- pagerduty: name, pagerduty_routing_key (integration/routing key)\n"+
-				"- email: name, email_to (comma-separated email addresses)\n"+
+				"- email: name, email_to (comma-separated email addresses); email_headers sets the subject\n"+
 				"- opsgenie: name, opsgenie_api_key (OpsGenie API key)\n"+
 				"- msteams: name, msteams_webhook_url (MS Teams incoming webhook URL)\n\n"+
 				"After creating the channel, a test notification is always sent to verify the channel is working. "+
@@ -85,6 +86,7 @@ func (h *Handler) RegisterNotificationChannelHandlers(s *server.MCPServer) {
 		// Email fields
 		mcp.WithString("email_to", mcp.Description("Comma-separated list of email addresses. Required when type=email")),
 		mcp.WithString("email_html", mcp.Description("Custom HTML email template (Go template syntax supported)")),
+		mcp.WithString("email_headers", mcp.Description(`Email headers as a JSON object, e.g. {"Subject":"[{{ .CommonLabels.severity }}] {{ .CommonLabels.alertname }}"} (Go template syntax supported). The Subject header is the subject of the email.`)),
 
 		// OpsGenie fields
 		mcp.WithString("opsgenie_api_key", mcp.Description("OpsGenie API key. Required when type=opsgenie")),
@@ -109,6 +111,9 @@ func (h *Handler) RegisterNotificationChannelHandlers(s *server.MCPServer) {
 				"except the secrets (slack_api_url, webhook_url, webhook_password, pagerduty_routing_key, opsgenie_api_key, msteams_webhook_url): "+
 				"ByLonis never returns them, so omit them to keep the saved value, or provide a new one to replace it. "+
 				"Never pass \"<secret>\" as a value of your own. To keep a webhook's basic authentication, provide webhook_username.\n\n"+
+				"EMAIL: the saved template (email_html), headers (email_headers, with the subject) and SMTP connection are kept when omitted, "+
+				"so to add a recipient pass only id, type, name and the whole email_to. Read the channel with bylonis_get_notification_channel first: "+
+				"email_to replaces the list.\n\n"+
 				"SUPPORTED TYPES: slack, webhook, pagerduty, email, opsgenie, msteams\n\n"+
 				"REQUIRED FIELDS:\n"+
 				"- id: The UUID of the channel to update\n"+
@@ -150,6 +155,7 @@ func (h *Handler) RegisterNotificationChannelHandlers(s *server.MCPServer) {
 		// Email fields
 		mcp.WithString("email_to", mcp.Description("Comma-separated list of email addresses. Required when type=email")),
 		mcp.WithString("email_html", mcp.Description("Custom HTML email template (Go template syntax supported)")),
+		mcp.WithString("email_headers", mcp.Description(`Email headers as a JSON object, e.g. {"Subject":"[{{ .CommonLabels.severity }}] {{ .CommonLabels.alertname }}"} (Go template syntax supported). The Subject header is the subject of the email.`)),
 
 		// OpsGenie fields
 		mcp.WithString("opsgenie_api_key", mcp.Description("OpsGenie API key. Required when type=opsgenie")),
@@ -319,7 +325,7 @@ func (h *Handler) handleCreateNotificationChannel(ctx context.Context, req mcp.C
 	}
 
 	// Build receiver JSON based on type
-	receiverJSON, err := buildReceiverJSON(channelType, name, sendResolved, args, false)
+	receiverJSON, err := buildReceiverJSON(channelType, name, sendResolved, args, false, nil)
 	if err != nil {
 		h.logger.WarnContext(ctx, "Failed to build receiver JSON", logpkg.ErrAttr(err))
 		return mcp.NewToolResultError(err.Error()), nil
@@ -404,15 +410,27 @@ func (h *Handler) handleUpdateNotificationChannel(ctx context.Context, req mcp.C
 		}
 	}
 
-	// Build receiver JSON based on type
-	receiverJSON, err := buildReceiverJSON(channelType, name, sendResolved, args, true)
+	client, err := h.GetClient(ctx)
 	if err != nil {
-		h.logger.WarnContext(ctx, "Failed to build receiver JSON", logpkg.ErrAttr(err))
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	client, err := h.GetClient(ctx)
+	// An email channel keeps its saved template and headers (bylonis#1023): without them, adding a recipient would
+	// leave it with the default subject and body.
+	var savedEmail *types.EmailConfig
+	if channelType == "email" {
+		savedEmail, err = savedEmailConfig(ctx, client, id)
+		if err != nil {
+			h.logger.ErrorContext(ctx, "Failed to read the saved email channel", slog.String("id", id), logpkg.ErrAttr(err))
+			return mcp.NewToolResultError(fmt.Sprintf("Failed to read the saved channel, to keep its subject and template: %s. "+
+				"Nothing was changed.", err.Error())), nil
+		}
+	}
+
+	// Build receiver JSON based on type
+	receiverJSON, err := buildReceiverJSON(channelType, name, sendResolved, args, true, savedEmail)
 	if err != nil {
+		h.logger.WarnContext(ctx, "Failed to build receiver JSON", logpkg.ErrAttr(err))
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
@@ -473,9 +491,50 @@ func getStringParam(args map[string]any, key string) string {
 // secretMarker is how ByLonis returns a channel's secrets, and what it reads as "keep the saved value" (bylonis#272).
 const secretMarker = "<secret>"
 
+// savedEmailConfig reads the first email configuration of a saved channel; nil if it has none.
+func savedEmailConfig(ctx context.Context, client bylonisclient.Client, id string) (*types.EmailConfig, error) {
+	raw, err := client.GetNotificationChannel(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	var envelope struct {
+		Data struct {
+			Data string `json:"data"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(raw, &envelope); err != nil {
+		return nil, fmt.Errorf("unexpected channel response: %w", err)
+	}
+	if envelope.Data.Data == "" {
+		return nil, nil
+	}
+	var receiver types.Receiver
+	if err := json.Unmarshal([]byte(envelope.Data.Data), &receiver); err != nil {
+		return nil, fmt.Errorf("unexpected channel configuration: %w", err)
+	}
+	if len(receiver.EmailConfigs) == 0 {
+		return nil, nil
+	}
+	return &receiver.EmailConfigs[0], nil
+}
+
+// parseEmailHeaders reads email_headers, a JSON object of strings.
+func parseEmailHeaders(args map[string]any) (map[string]string, error) {
+	text := getStringParam(args, "email_headers")
+	if text == "" {
+		return nil, nil
+	}
+	var headers map[string]string
+	if err := json.Unmarshal([]byte(text), &headers); err != nil {
+		return nil, fmt.Errorf(`parameter validation failed: "email_headers" must be a JSON object of strings, e.g. {"Subject":"..."}: %v`, err)
+	}
+	return headers, nil
+}
+
 // buildReceiverJSON builds the receiver for a create or, with keepSecrets, an update: then a secret left out
-// is sent as the marker, so ByLonis keeps the saved one instead of requiring the agent to know it.
-func buildReceiverJSON(channelType, name string, sendResolved bool, args map[string]any, keepSecrets bool) ([]byte, error) {
+// is sent as the marker, so ByLonis keeps the saved one instead of requiring the agent to know it. savedEmail,
+// on an update of an email channel, gives the template, text and headers to keep when they are left out.
+func buildReceiverJSON(channelType, name string, sendResolved bool, args map[string]any, keepSecrets bool, savedEmail *types.EmailConfig) ([]byte, error) {
 	receiver := types.Receiver{Name: name}
 	secret := func(key string) string {
 		if v := getStringParam(args, key); v != "" || !keepSecrets {
@@ -541,10 +600,25 @@ func buildReceiverJSON(channelType, name string, sendResolved bool, args map[str
 		if to == "" {
 			return nil, fmt.Errorf(`parameter validation failed: "email_to" is required when type=email. Provide comma-separated email addresses`)
 		}
+		headers, err := parseEmailHeaders(args)
+		if err != nil {
+			return nil, err
+		}
 		cfg := types.EmailConfig{
 			SendResolved: sendResolved,
 			To:           to,
 			HTML:         getStringParam(args, "email_html"),
+			Headers:      headers,
+		}
+		// The SMTP connection is not sent: ByLonis keeps the saved one when it comes without smarthost (bylonis#783).
+		if savedEmail != nil {
+			if cfg.HTML == "" {
+				cfg.HTML = savedEmail.HTML
+			}
+			if cfg.Headers == nil {
+				cfg.Headers = savedEmail.Headers
+			}
+			cfg.Text = savedEmail.Text
 		}
 		receiver.EmailConfigs = []types.EmailConfig{cfg}
 

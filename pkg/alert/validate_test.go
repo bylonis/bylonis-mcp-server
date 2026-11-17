@@ -1117,3 +1117,44 @@ func TestValidate_InvalidSourceValueRejected(t *testing.T) {
 		t.Errorf("expected source error, got: %v", err)
 	}
 }
+
+// holdDuration (bylonis#594) goes through as ByLonis takes it: a Go duration string between 0s and 24h.
+func TestValidate_HoldDuration(t *testing.T) {
+	for _, hold := range []any{"10m", "0s", "24h", "1h30m"} {
+		rule := minimalValidAlert()
+		rule["holdDuration"] = hold
+		out, err := ValidateFromMap(rule)
+		if err != nil {
+			t.Fatalf("holdDuration %v: unexpected error: %v", hold, err)
+		}
+		var got map[string]any
+		if err := json.Unmarshal(out, &got); err != nil {
+			t.Fatal(err)
+		}
+		if got["holdDuration"] != hold {
+			t.Errorf("holdDuration %v not kept: %v", hold, got["holdDuration"])
+		}
+	}
+	for _, hold := range []any{"1d", "25h", "-5m", "ten", 600} {
+		rule := minimalValidAlert()
+		rule["holdDuration"] = hold
+		if _, err := ValidateFromMap(rule); err == nil || !strings.Contains(err.Error(), "holdDuration") {
+			t.Errorf("holdDuration %v: expected a holdDuration error, got %v", hold, err)
+		}
+	}
+	rule := minimalValidAlert()
+	rule["holdDuration"] = ""
+	out, err := ValidateFromMap(rule)
+	if err != nil || strings.Contains(string(out), "holdDuration") {
+		t.Errorf("an empty holdDuration must be left out: %v %s", err, out)
+	}
+}
+
+func TestValidate_HoldDurationAnomalyRule(t *testing.T) {
+	rule := minimalValidAnomalyRule()
+	rule["holdDuration"] = "15m"
+	out, err := ValidateFromMap(rule)
+	if err != nil || !strings.Contains(string(out), `"holdDuration":"15m"`) {
+		t.Errorf("anomaly rule with holdDuration: %v %s", err, out)
+	}
+}

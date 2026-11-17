@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 )
 
 // Valid enum values for alert fields.
@@ -134,6 +135,7 @@ func Validate(jsonBytes []byte) ([]byte, error) {
 	validateEnums(rule, errs)
 	validateCondition(rule, errs)
 	validateEvaluation(rule, errs)
+	validateHoldDuration(rule, errs)
 	validateNotificationSettings(rule, errs)
 	validateCrossConstraints(rule, errs)
 
@@ -364,6 +366,34 @@ func validateCondition(rule map[string]any, errs *ValidationError) {
 // A rolling window needs spec.evalWindow; a cumulative window needs spec.schedule.
 // An omitted evaluation is auto-defaulted to rolling later, so it is not an error
 // here. Anomaly rules use top-level evalWindow/frequency instead and are skipped.
+// maxHoldDuration is the longest ByLonis lets a rule wait with its condition true before firing (bylonis#594).
+const maxHoldDuration = 24 * time.Hour
+
+// validateHoldDuration checks holdDuration as ByLonis does: a Go duration string between 0s and 24h.
+func validateHoldDuration(rule map[string]any, errs *ValidationError) {
+	raw, ok := rule["holdDuration"]
+	if !ok || raw == nil {
+		return
+	}
+	text, ok := raw.(string)
+	if !ok {
+		errs.Addf("holdDuration", "must be a Go duration string such as \"10m\"; got %v", raw)
+		return
+	}
+	if text == "" {
+		delete(rule, "holdDuration")
+		return
+	}
+	hold, err := time.ParseDuration(text)
+	if err != nil {
+		errs.Addf("holdDuration", "must be a Go duration string such as \"10m\" (units up to h: 24h, not 1d); got %q", text)
+		return
+	}
+	if hold < 0 || hold > maxHoldDuration {
+		errs.Addf("holdDuration", "must be between 0s and 24h; got %q", text)
+	}
+}
+
 func validateEvaluation(rule map[string]any, errs *ValidationError) {
 	if strVal(rule, "ruleType") == "anomaly_rule" {
 		// Anomaly rules use the v1 schema (top-level evalWindow/frequency) and must

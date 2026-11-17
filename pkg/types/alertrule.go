@@ -47,6 +47,7 @@ type AlertRule struct {
 	Source            string            `json:"source,omitempty" jsonschema_extras:"description=Source URL for the alert. Set automatically."`
 	PreferredChannels []string          `json:"preferredChannels,omitempty" jsonschema_extras:"description=Notification channel names to send alerts to. Use bylonis_list_notification_channels to discover available channel names."`
 	Version           string            `json:"version,omitempty" jsonschema_extras:"description=API version. Always v5. Set automatically if omitted."`
+	HoldDuration      string            `json:"holdDuration,omitempty" jsonschema_extras:"description=How long the condition of a series must hold before its alert fires (Go duration string between 0s and 24h: 5m or 10m or 1h). Until then the alert is pending and nothing is sent; a series that recovers before does not fire. Like the for of Prometheus. Use it on rules that flap. Omit or 0s to fire at once. Valid for every ruleType. On update keep the value of the saved rule unless the user asks to change it."`
 
 	// v1-schema fields (used only when ruleType=anomaly_rule).
 	EvalWindow string `json:"evalWindow,omitempty" jsonschema_extras:"description=v1 schema only (anomaly_rule). Evaluation window as a Go duration string (e.g. 5m, 15m, 1h, 24h). For threshold/promql rules, use evaluation.spec.evalWindow instead."`

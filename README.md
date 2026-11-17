@@ -215,6 +215,8 @@ Query metrics with smart aggregation defaults and validation. Automatically appl
 
 Lists currently firing/silenced/inhibited alert *instances* from Alertmanager — **not** rule definitions. Use `bylonis_list_alert_rules` for configured rules, `bylonis_get_alert` with a `ruleId` for one full rule definition, or `bylonis_get_alert_history` for the state timeline.
 
+An acknowledged alert (bylonis#595) also has `acknowledgedBy`, `acknowledgedAt` and `acknowledgementNote`; every alert has the `series` and `firedAt` that identify it. Acknowledging is done by a person in ByLonis, not with the MCP.
+
 #### `bylonis_list_alert_rules`
 
 Lists configured alert rules from `GET /api/v2/rules`, including inactive/OK and disabled rules. Returns compact summaries with `ruleId`, `alert`, `alertType`, `ruleType`, `state`, `disabled`, `severity`, `labels`, `createdAt`, and `updatedAt`.
@@ -227,8 +229,8 @@ Lists configured alert rules from `GET /api/v2/rules`, including inactive/OK and
 
 Gets the rule definition for an alert (`GET /api/v2/rules/{ruleId}`).
 
-- **Parameters**: `ruleId` (required) - Alert rule ID (UUIDv7 on v2-capable servers).
-- **Note**: Response shape depends on the ByLonis server version. Post-#10997 servers return the canonical `Rule` type with `createdAt/updatedAt/createdBy/updatedBy`; older servers return `GettableRule` with `createAt/updateAt/createBy/updateBy` (no 'd').
+- **Parameters**: `ruleId` (required) - Alert rule ID (UUIDv7).
+- Returns the rule with its audit fields `createdAt/updatedAt/createdBy/updatedBy`.
 
 #### `bylonis_list_dashboards`
 
@@ -459,10 +461,12 @@ Create a new alert rule in ByLonis via `POST /api/v2/rules`.
   - `threshold_rule` / `promql_rule` → **v2alpha1** (structured `condition.thresholds`, `evaluation`, `notificationSettings`).
   - `anomaly_rule` → **v1** schema: top-level `evalWindow` and `frequency`; `condition.op`/`matchType`/`target`/`algorithm`/`seasonality`; anomaly function inside `compositeQuery.queries[].spec.functions`. Omit `thresholds`, `evaluation`, `schemaVersion`.
 - **Tip**: Read MCP resources `bylonis://alert/instructions` and `bylonis://alert/examples` (ten canonical payloads plus a Cost Meter cumulative-budget example) before composing payloads. For `promql_rule`, also read `bylonis://promql/instructions` — OTel dotted metric names require the Prometheus 3.x UTF-8 quoted-selector form.
+- **`holdDuration`** (bylonis#594, any `ruleType`): how long the condition must hold before the alert fires, between `0s` and `24h`, like the `for` of Prometheus.
+- **Fleet rules**: rules with the label `fleet` belong to Inventario → Alertas. ByLonis rejects creating, updating or deleting them through the API with `400 fleet_managed_rule` (bylonis#589).
 
 #### `bylonis_update_alert`
 
-Update an existing alert rule via `PUT /api/v2/rules/{ruleId}`. Replaces the full rule configuration — fetch the current rule with `bylonis_get_alert` first and merge changes on top of it.
+Update an existing alert rule via `PUT /api/v2/rules/{ruleId}`. Replaces the full rule configuration — fetch the current rule with `bylonis_get_alert` first and merge changes on top of it, `holdDuration` included. Not for fleet rules (label `fleet`).
 
 - **Parameters**:
   - `ruleId` (required) - UUIDv7 of the rule to update (obtain from `bylonis_list_alert_rules` / `bylonis_get_alert`).
@@ -470,7 +474,7 @@ Update an existing alert rule via `PUT /api/v2/rules/{ruleId}`. Replaces the ful
 
 #### `bylonis_delete_alert`
 
-Delete an alert rule via `DELETE /api/v2/rules/{ruleId}`. Irreversible — confirm with the user first.
+Delete an alert rule via `DELETE /api/v2/rules/{ruleId}`. Irreversible — confirm with the user first. A firing rule sends its resolved notification and its alerts are closed in the history. Not for fleet rules (label `fleet`).
 
 - **Parameters**:
   - `ruleId` (required) - UUIDv7 of the rule to delete. The server rejects non-UUIDv7 values with `invalid_input`.
@@ -497,6 +501,7 @@ Create a notification channel and send a test notification.
   - `type` (required) - Channel type: slack, webhook, pagerduty, email, opsgenie, msteams
   - `name` (required) - Channel name
   - Type-specific fields (required by channel type), such as `slack_api_url`, `webhook_url`, `pagerduty_routing_key`, `email_to`, `opsgenie_api_key`, or `msteams_webhook_url`
+  - `email_headers` (optional) - JSON object of email headers, e.g. `{"Subject":"[{{ .CommonLabels.severity }}] {{ .CommonLabels.alertname }}"}`
 
 #### `bylonis_update_notification_channel`
 
@@ -506,7 +511,8 @@ Update an existing notification channel and send a test notification.
   - `id` (required) - Notification channel UUID
   - `type` (required) - Channel type
   - `name` (required) - Channel name
-  - Full channel configuration fields for the selected channel type
+  - Full channel configuration fields for the selected channel type, except the secrets: omitted, the saved ones are kept (bylonis#272)
+  - **Email**: the saved template (`email_html`), headers (`email_headers`, the subject) and SMTP connection are kept when omitted (bylonis#1023, bylonis#783). If the saved channel cannot be read, nothing is changed.
 
 #### `bylonis_get_notification_channel`
 

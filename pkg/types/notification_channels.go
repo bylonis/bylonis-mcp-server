@@ -57,10 +57,14 @@ type PagerdutyConfig struct {
 }
 
 // EmailConfig mirrors the ByLonis/Alertmanager email_configs entry.
+// An update keeps the saved html, text and headers that it does not get, so a channel does not lose its subject
+// or its template (bylonis#1023). Text has no parameter of its own; Headers comes from email_headers.
 type EmailConfig struct {
-	SendResolved bool   `json:"send_resolved"`
-	To           string `json:"to"`
-	HTML         string `json:"html,omitempty"`
+	SendResolved bool              `json:"send_resolved"`
+	To           string            `json:"to"`
+	HTML         string            `json:"html,omitempty"`
+	Text         string            `json:"text,omitempty"`
+	Headers      map[string]string `json:"headers,omitempty"`
 }
 
 // OpsgenieConfig mirrors the ByLonis/Alertmanager opsgenie_configs entry.
