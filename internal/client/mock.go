@@ -45,6 +45,9 @@ type MockClient struct {
 	CreateAlertRuleFn           func(ctx context.Context, alertJSON []byte) (json.RawMessage, error)
 	UpdateAlertRuleFn           func(ctx context.Context, ruleID string, alertJSON []byte) error
 	DeleteAlertRuleFn           func(ctx context.Context, ruleID string) error
+	CreateDowntimeScheduleFn    func(ctx context.Context, body []byte) (json.RawMessage, error)
+	DeleteDowntimeScheduleFn    func(ctx context.Context, id string) error
+	AcknowledgeAlertFn          func(ctx context.Context, body []byte) (json.RawMessage, error)
 	ListNotificationChannelsFn  func(ctx context.Context) (json.RawMessage, error)
 	GetNotificationChannelFn    func(ctx context.Context, id string) (json.RawMessage, error)
 	CreateNotificationChannelFn func(ctx context.Context, receiverJSON []byte) (json.RawMessage, error)
@@ -327,4 +330,25 @@ func (m *MockClient) PostReadOnly(ctx context.Context, path string, query url.Va
 		return m.PostReadOnlyFn(ctx, path, query, body)
 	}
 	return json.RawMessage(`{}`), nil
+}
+
+func (m *MockClient) CreateDowntimeSchedule(ctx context.Context, body []byte) (json.RawMessage, error) {
+	if m.CreateDowntimeScheduleFn != nil {
+		return m.CreateDowntimeScheduleFn(ctx, body)
+	}
+	return json.RawMessage(`{"status":"success","data":{}}`), nil
+}
+
+func (m *MockClient) DeleteDowntimeSchedule(ctx context.Context, id string) error {
+	if m.DeleteDowntimeScheduleFn != nil {
+		return m.DeleteDowntimeScheduleFn(ctx, id)
+	}
+	return nil
+}
+
+func (m *MockClient) AcknowledgeAlert(ctx context.Context, body []byte) (json.RawMessage, error) {
+	if m.AcknowledgeAlertFn != nil {
+		return m.AcknowledgeAlertFn(ctx, body)
+	}
+	return json.RawMessage(`{"status":"success","data":{}}`), nil
 }

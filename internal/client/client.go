@@ -648,6 +648,29 @@ func (s *ByLonis) DeleteAlertRule(ctx context.Context, ruleID string) error {
 	return err
 }
 
+// CreateDowntimeSchedule crea un silencio (POST /api/v1/downtime_schedules). Pide rol de editor en ByLonis.
+func (s *ByLonis) CreateDowntimeSchedule(ctx context.Context, body []byte) (json.RawMessage, error) {
+	reqURL := fmt.Sprintf("%s/api/v1/downtime_schedules", s.baseURL)
+	s.logger.DebugContext(s.ensureTenantContext(ctx), "Creating downtime schedule")
+	return s.doRequest(ctx, http.MethodPost, reqURL, bytes.NewBuffer(body), DashboardWriteTimeout)
+}
+
+// DeleteDowntimeSchedule quita un silencio (DELETE /api/v1/downtime_schedules/{id}). Pide rol de editor.
+func (s *ByLonis) DeleteDowntimeSchedule(ctx context.Context, id string) error {
+	reqURL := fmt.Sprintf("%s/api/v1/downtime_schedules/%s", s.baseURL, url.PathEscape(id))
+	s.logger.DebugContext(s.ensureTenantContext(ctx), "Deleting downtime schedule", slog.String("id", id))
+	_, err := s.doRequest(ctx, http.MethodDelete, reqURL, nil, DashboardWriteTimeout)
+	return err
+}
+
+// AcknowledgeAlert reconoce una alerta que dispara (POST /api/v2/alert_acknowledgements): quien la reconoce
+// trabaja en ella. ByLonis lo permite con rol de lector.
+func (s *ByLonis) AcknowledgeAlert(ctx context.Context, body []byte) (json.RawMessage, error) {
+	reqURL := fmt.Sprintf("%s/api/v2/alert_acknowledgements", s.baseURL)
+	s.logger.DebugContext(s.ensureTenantContext(ctx), "Acknowledging alert")
+	return s.doRequest(ctx, http.MethodPost, reqURL, bytes.NewBuffer(body), DashboardWriteTimeout)
+}
+
 func (s *ByLonis) ListViews(ctx context.Context, sourcePage, name, category string) (json.RawMessage, error) {
 	params := url.Values{}
 	params.Set("sourcePage", sourcePage)

@@ -38,6 +38,10 @@ type Client interface {
 	CreateAlertRule(ctx context.Context, alertJSON []byte) (json.RawMessage, error)
 	UpdateAlertRule(ctx context.Context, ruleID string, alertJSON []byte) error
 	DeleteAlertRule(ctx context.Context, ruleID string) error
+	// Ventanas de mantenimiento (downtime schedules) y reconocimientos de alertas (bylonis#1052).
+	CreateDowntimeSchedule(ctx context.Context, body []byte) (json.RawMessage, error)
+	DeleteDowntimeSchedule(ctx context.Context, id string) error
+	AcknowledgeAlert(ctx context.Context, body []byte) (json.RawMessage, error)
 	ListNotificationChannels(ctx context.Context) (json.RawMessage, error)
 	GetNotificationChannel(ctx context.Context, id string) (json.RawMessage, error)
 	CreateNotificationChannel(ctx context.Context, receiverJSON []byte) (json.RawMessage, error)
