@@ -14,8 +14,8 @@ import (
 
 // What ByLonis tells about the alerts, the changes and the logs (bylonis#1024): the rules that flap, who
 // acknowledged the alerts, the change events, the maintenance windows, the log patterns and the replay of a rule.
-// Only these paths, and nothing that changes ByLonis: acknowledging an alert or creating a maintenance window is
-// for a person in ByLonis.
+// Only these paths, and nothing that changes ByLonis: acknowledging an alert and creating or removing a maintenance
+// window have their own write methods and tools (bylonis#1052).
 
 // readOnlyGets are the only paths GetReadOnly reads.
 var readOnlyGets = []*regexp.Regexp{

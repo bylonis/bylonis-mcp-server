@@ -293,6 +293,7 @@ func (m *MCPServer) registerHandlers(s *server.MCPServer) {
 	m.handler.RegisterMetricsHandlers(s)
 	m.handler.RegisterFieldsHandlers(s)
 	m.handler.RegisterAlertsHandlers(s)
+	m.handler.RegisterMaintenanceHandlers(s)
 	m.handler.RegisterDashboardHandlers(s)
 	m.handler.RegisterServiceHandlers(s)
 	m.handler.RegisterQueryBuilderV5Handlers(s)

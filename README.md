@@ -131,6 +131,9 @@ The server's variables are listed under [Environment Variables](#environment-var
 | `bylonis_create_alert` | Create an alert rule via POST /api/v2/rules; v2alpha1 for threshold/promql, v1 for anomaly |
 | `bylonis_update_alert` | Update an alert rule by UUIDv7 via PUT /api/v2/rules/{ruleId} |
 | `bylonis_delete_alert` | Delete an alert rule by UUIDv7 via DELETE /api/v2/rules/{ruleId} |
+| `bylonis_acknowledge_alert` | Acknowledge a firing alert (someone works on it) via POST /api/v2/alert_acknowledgements; note required |
+| `bylonis_create_maintenance_window` | Silence named alert rules for a fixed window (max 24h, reason required) via POST /api/v1/downtime_schedules |
+| `bylonis_delete_maintenance_window` | Remove a maintenance window via DELETE /api/v1/downtime_schedules/{id} |
 | `bylonis_list_dashboards` | List all dashboards with summaries |
 | `bylonis_get_dashboard` | Get full dashboard configuration |
 | `bylonis_create_dashboard` | Create a new dashboard |
@@ -490,6 +493,27 @@ Delete an alert rule via `DELETE /api/v2/rules/{ruleId}`. Irreversible — confi
 
 - **Parameters**:
   - `ruleId` (required) - UUIDv7 of the rule to delete. The server rejects non-UUIDv7 values with `invalid_input`.
+
+#### `bylonis_acknowledge_alert`
+
+Acknowledge a firing alert (bylonis#1052): someone works on it, and its channel is not notified again until something in its group changes. Allowed with the viewer role in ByLonis. The origin of the call (`X-ByLonis-Client-Source`) is added to the note.
+
+- **Parameters**:
+  - `ruleId` (required) - UUIDv7 of the rule.
+  - `note` (required, at least 10 characters) - who works on it and what is being done.
+  - `series`, `firedAt` (optional, together) - from `bylonis_list_alerts`; needed when the rule has several firing alerts. Without them the tool takes the only firing alert or lists the candidates.
+
+#### `bylonis_create_maintenance_window`
+
+Silence the notifications of named alert rules for a fixed window (bylonis#1052), e.g. during a planned intervention. Needs the editor role in ByLonis. Stricter than the API: the rules are required (an empty list would silence every rule), they must exist, the window lasts at most 24h and starts now or at `start` (not in the past), and a reason is required; the reason and the origin of the call go into the description.
+
+- **Parameters**: `ruleIds` (required, comma-separated UUIDv7), `duration` (required, `<n>m` or `<n>h`, max 24h), `reason` (required, at least 10 characters), `start` (optional, RFC 3339), `name` (optional).
+
+#### `bylonis_delete_maintenance_window`
+
+Remove a maintenance window by id (from `bylonis_list_maintenance_windows`). Needs the editor role in ByLonis.
+
+- **Parameters**: `id` (required).
 
 #### `bylonis_delete_dashboard`
 
