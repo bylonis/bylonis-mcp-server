@@ -27,6 +27,7 @@ A repeatable mental model for going from a user request ("alert me when login p9
 6. **Configure thresholds.** Tier name (critical | error | warning | info), op, matchType, target. Add channels only if the user named them — otherwise leave empty and let channel validation prompt the user.
 7. **Evaluation.** Leave defaults (evalWindow=5m, frequency=1m) unless the user asked for a different window. If the user says the problem must last (e.g. "only if it stays down 10 minutes"), set holdDuration.
 8. **Notification.** Always ask the user for channel names — never guess. Set notificationSettings.groupBy on high-cardinality queries to reduce noise.
+9. **Replay it.** Before creating it, run bylonis_backtest_alert with the same payload and tell the user how often it would have fired in the last days, and how many of those firings were short (flapping). If it would fire too often, adjust the threshold or holdDuration first.
 
 ## Alert Types (alertType)
 | Value | Signal | Use When |
@@ -235,6 +236,7 @@ evaluation controls how the rule is evaluated:
 - Between 0s and 24h (Go duration string). Omitted or 0s fires at once.
 - It is the lever against a rule that flaps (fires and resolves within minutes again and again). In a ClickHouse SQL rule, where the query decides the condition, it is the main one.
 - PUT replaces the whole rule: on bylonis_update_alert, keep the holdDuration of the saved rule unless the user asks to change it.
+- To choose the value, bylonis_list_flapping_rules gives, per rule that flaps, how many alerts each wait would have avoided and the one ByLonis proposes; bylonis_backtest_alert replays the rule with the new value before saving it.
 
 ### Cumulative window (daily/monthly totals)
 

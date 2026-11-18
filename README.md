@@ -107,6 +107,9 @@ The server's variables are listed under [Environment Variables](#environment-var
 "Create a dashboard with CPU and memory widgets"
 "Why is the agent of compute-n07 disconnected?"
 "What changed on storage-02 before yesterday's incident?"
+"Which alert rules make noise, and what hold would fix them?"
+"What is new in the logs of the API since yesterday?"
+"Is the collector of lumina-k3s up to date, and how is its upgrade going?"
 ```
 
 ## Available Tools
@@ -174,6 +177,15 @@ The server's variables are listed under [Environment Variables](#environment-var
 | `bylonis_list_themes` | List the themes of the organization with their contrast status |
 | `bylonis_get_theme` | Get a theme with its colors and the pairs that fail the contrast |
 | `bylonis_save_theme` | Create a theme or update one (administrator API key) |
+| `bylonis_list_flapping_rules` | Rules that flap, with how many alerts each holdDuration would have avoided and the one ByLonis proposes |
+| `bylonis_list_alert_acknowledgements` | Who acknowledged the alerts of the last days, when and with what note, also the resolved ones |
+| `bylonis_list_maintenance_windows` | Planned maintenance windows, their schedule and the rules they cover |
+| `bylonis_list_change_events` | Deploys, alerts and fleet deployments of a range, for "what changed before the incident?" |
+| `bylonis_get_log_patterns` | Logs grouped by message template, optionally compared with an earlier range |
+| `bylonis_backtest_alert` | Replay a rule over the last days and say how often it would have fired, **creating nothing** |
+| `bylonis_list_collector_versions` | Versions of the collector, their status and advisories, and the version each fleet runs |
+| `bylonis_list_fleet_upgrades` | Upgrades of the collector of the fleets, and the upgrade windows of a fleet |
+| `bylonis_get_fleet_upgrade` | One upgrade with its hosts in their batches and its history |
 
 <details>
 <summary><strong>Parameter Reference</strong></summary>
@@ -595,6 +607,33 @@ and an Ansible playbook (a version in the library, then its `--check --diff`), m
 their notes. **Nothing is deployed nor run**: there is no tool to deploy a version or to approve a run, the
 client only posts to the paths of the proposals, and ByLonis refuses the approval of a run with an API key. A
 person deploys or approves in ByLonis.
+
+### Alert quality, changes and log patterns (bylonis#1024)
+
+Read-only tools over what ByLonis already computes. The client only reads `/api/v2/alert_quality/flapping`,
+`/api/v2/alert_acknowledgements`, `/api/v1/events` and `/api/v1/downtime_schedules`, and only posts to
+`/api/v5/logs/patterns` and `/api/v1/rules/backtest`, which save nothing. **There is no tool to acknowledge an
+alert, create a maintenance window, or start, pause or cancel an upgrade of the collector:** a person does it in
+ByLonis. A ByLonis older than the endpoint answers its path with the web page; the tools then say that the tenant
+has to be upgraded for it.
+
+- `bylonis_list_flapping_rules` (bylonis#594): `days` (1–90, default 7). Per rule: alerts, share of short ones
+  (under 5 minutes), median duration, current holdDuration, how many alerts each hold would have avoided, and
+  the suggestion of ByLonis. Rules of a fleet (`fleet: true`) are changed in Inventario → Alertas.
+- `bylonis_list_alert_acknowledgements` (bylonis#595): `ruleId`, `days` (1–90, default 30). Same field names as
+  `bylonis_list_alerts`: `acknowledgedBy`, `acknowledgedAt`, `acknowledgementNote`.
+- `bylonis_list_maintenance_windows`: `ruleId` (the windows that cover it), `status`, `includeExpired`. The rules
+  come by name; `allRules: true` when the window has none, so it covers every rule.
+- `bylonis_list_change_events`: `service`, `environment`, `kinds` (`deploy`, `alert_firing`, `alert_resolved`,
+  `fleet_config`), and `timeRange` (default `24h`) or `start`/`end`; at most 31 days and 500 events.
+- `bylonis_get_log_patterns`: `filter` (expression of the logs explorer), `limit` (default 50, max 1000),
+  `compareShift` (e.g. `24h`, at most `30d`), `exact`, and the range (default `1h`). Each pattern carries a
+  `regex` to read its lines with `bylonis_search_logs`.
+- `bylonis_backtest_alert` (bylonis#37): the fields of `bylonis_create_alert`, without channels, and `days`
+  (1–14, default 7). Same validation as create. ByLonis asks for the editor role.
+- `bylonis_list_collector_versions`, `bylonis_list_fleet_upgrades` (`fleet`, `limit`) and
+  `bylonis_get_fleet_upgrade` (`upgradeId`, `hostname`) (bylonis#460, bylonis#602): the hosts of an upgrade
+  come by name, without the ids of their jobs or their agents.
 
 ### Themes (bylonis#705)
 

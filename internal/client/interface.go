@@ -56,4 +56,10 @@ type Client interface {
 	// SendTheme generates, patches or validates a theme (nothing is saved), or creates (POST) or updates (PUT) one.
 	// Only those paths: never deleting a theme nor picking the theme of the organization.
 	SendTheme(ctx context.Context, method, path string, body any) (json.RawMessage, error)
+	// GetReadOnly reads the rules that flap, the acknowledgements of the alerts, the change events and the
+	// maintenance windows (bylonis#1024). Only those paths.
+	GetReadOnly(ctx context.Context, path string, query url.Values) (json.RawMessage, error)
+	// PostReadOnly sends the POSTs that save nothing (bylonis#1024): the patterns of the logs and the replay of a
+	// rule (backtest). Only those paths.
+	PostReadOnly(ctx context.Context, path string, query url.Values, body []byte) (json.RawMessage, error)
 }

@@ -35,7 +35,7 @@ func (h *Handler) RegisterProposalHandlers(s *server.MCPServer) {
 	}
 
 	addTool(s, readOnly("bylonis_list_fleets",
-		"Lists the fleets of Fleet Control: groups of agents that share a configuration of the collector. Returns name, kind (linux_host, windows_host or k8s_cluster), members, collector version, and the newest and stable versions of its configuration."),
+		"Lists the fleets of Fleet Control: groups of agents that share a configuration of the collector. Returns name, kind (linux_host, windows_host or k8s_cluster), members, the version of the collector it runs and its policy (versionPolicy, pinnedVersion, targetVersion, versionStatus), its upgrade window, and the newest and stable versions of its configuration."),
 		h.handleListFleets)
 	addTool(s, readOnly("bylonis_get_fleet_config",
 		"Gets a configuration of the collector of a fleet: its template (text/template over YAML of the OpenTelemetry Collector, with .Node, .Labels and .Tenant), its note and who wrote it. Read it before proposing a change, to start from it.",
@@ -150,7 +150,8 @@ func (h *Handler) handleListFleets(ctx context.Context, req mcp.CallToolRequest)
 	out := make([]map[string]any, 0, len(fleets))
 	for _, fleet := range fleets {
 		row := map[string]any{}
-		for _, key := range []string{"id", "name", "description", "kind", "collectorVersion", "members", "latestVersion", "stableVersion"} {
+		for _, key := range []string{"id", "name", "description", "kind", "collectorVersion", "versionPolicy", "pinnedVersion", "targetVersion",
+			"versionStatus", "upgradeWindow", "members", "latestVersion", "stableVersion"} {
 			if value, ok := fleet[key]; ok {
 				row[key] = value
 			}
