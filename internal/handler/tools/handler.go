@@ -20,6 +20,7 @@ type Handler struct {
 	configURL     string
 	customHeaders map[string]string
 	meters        *otelpkg.Meters
+	iaOpsURL      string
 
 	// clientOverride, when non-nil, is returned by GetClient instead of
 	// looking up the cache. This exists solely to support unit testing
@@ -44,6 +45,7 @@ func NewHandler(log *slog.Logger, cfg *config.Config) *Handler {
 		clientCache:   expirable.NewLRU[string, *bylonisclient.ByLonis](cfg.ClientCacheSize, nil, cfg.ClientCacheTTL),
 		configURL:     normalizedURL,
 		customHeaders: cfg.CustomHeaders,
+		iaOpsURL:      cfg.IAOpsURL,
 	}
 }
 

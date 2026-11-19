@@ -12,7 +12,10 @@ import (
 )
 
 type Config struct {
-	URL           string
+	URL string
+	// IAOpsURL es la API de IA OPS del tenant (p. ej. https://houston.bylonis.ai/ia-ops-api), para
+	// bylonis_ask_ia_ops (bylonis#1053). Vacía: la herramienta no se registra.
+	IAOpsURL      string
 	APIKey        string
 	LogLevel      string
 	TransportMode string
@@ -66,6 +69,7 @@ const (
 	OAuthAuthCodeTTLSeconds = "OAUTH_AUTH_CODE_TTL_SECONDS"
 
 	MaxRequestBytesEnv = "MCP_MAX_REQUEST_BYTES"
+	IAOpsURLEnv        = "IA_OPS_URL"
 
 	defaultClientCacheSize       = 256
 	defaultClientCacheTTLMinutes = 30
@@ -109,6 +113,7 @@ func LoadConfig() (*Config, error) {
 
 	return &Config{
 		URL:                  url,
+		IAOpsURL:             strings.TrimSuffix(getEnv(IAOpsURLEnv, ""), "/"),
 		APIKey:               getEnv(ByLonisAPIKey, ""),
 		LogLevel:             getEnv(LogLevel, "info"),
 		TransportMode:        getEnv(TransportMode, "stdio"),

@@ -134,6 +134,7 @@ The server's variables are listed under [Environment Variables](#environment-var
 | `bylonis_acknowledge_alert` | Acknowledge a firing alert (someone works on it) via POST /api/v2/alert_acknowledgements; note required |
 | `bylonis_create_maintenance_window` | Silence named alert rules for a fixed window (max 24h, reason required) via POST /api/v1/downtime_schedules |
 | `bylonis_delete_maintenance_window` | Remove a maintenance window via DELETE /api/v1/downtime_schedules/{id} |
+| `bylonis_ask_ia_ops` | Ask IA OPS (the SRE agent) a question; returns its conclusion and evidence. Read-only, costs model tokens. Needs `IA_OPS_URL` |
 | `bylonis_list_dashboards` | List all dashboards with summaries |
 | `bylonis_get_dashboard` | Get full dashboard configuration |
 | `bylonis_create_dashboard` | Create a new dashboard |
@@ -514,6 +515,12 @@ Silence the notifications of named alert rules for a fixed window (bylonis#1052)
 Remove a maintenance window by id (from `bylonis_list_maintenance_windows`). Needs the editor role in ByLonis.
 
 - **Parameters**: `id` (required).
+
+#### `bylonis_ask_ia_ops`
+
+Ask IA OPS, the SRE agent of ByLonis, a question (bylonis#1053) and get its conclusion with the evidence it used. Sent to `IA_OPS_URL/ask` with the same credential the client used (`BYLONIS-API-KEY` of a service account, or a session token) and its `X-ByLonis-Client-Source`. IA OPS runs a read-only turn without a user conversation (bounded in time, one at a time, a few per hour per account) and saves it as a conversation of the account (`agente:<name>`). It costs model tokens to the tenant. Registered only when `IA_OPS_URL` is set (e.g. `https://<tenant>.bylonis.ai/ia-ops-api`).
+
+- **Parameters**: `question` (required, 3–2000 characters).
 
 #### `bylonis_delete_dashboard`
 
