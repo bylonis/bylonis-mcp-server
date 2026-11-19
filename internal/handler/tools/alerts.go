@@ -82,10 +82,10 @@ func (h *Handler) RegisterAlertsHandlers(s *server.MCPServer) {
 			"Creates a new alert rule in ByLonis (POST /api/v2/rules).\n\n"+
 				"SCHEMA — pick based on ruleType:\n"+
 				"- threshold_rule / promql_rule → v2alpha1 with structured condition.thresholds (per-tier channel routing), evaluation block, notificationSettings.\n"+
-				"- anomaly_rule → **v1 schema**: top-level evalWindow and frequency; condition.op, condition.matchType, condition.target, condition.algorithm, condition.seasonality; compositeQuery.queries[].spec.functions carries the anomaly function. Omit thresholds, evaluation, schemaVersion.\n\n"+
+				"- anomaly_rule → v2alpha1 with condition.thresholds.kind=anomaly: per tier z (deviations, 2 high / 3 medium / 4 low sensitivity), direction (up/down/both), minAnomalous (N of the M points of the window) and optional recoveryZ; condition.seasonality (none/hourly/daily/weekly) and optional condition.anomaly {resolution 5m|1h, minExpected, acceptLevelShiftAfter, baselineFrom}; rolling evaluation with evalWindow a multiple of the resolution and frequency between 1m and the resolution (default 15m every 5m). Works on metrics, logs and traces builder queries. The older v1 shape (top-level evalWindow/frequency, condition.op/matchType/target) is still accepted.\n\n"+
 				"CRITICAL: You MUST read these resources BEFORE generating any alert payload:\n"+
 				"1. bylonis://alert/instructions — REQUIRED: Alert structure, field descriptions, valid values\n"+
-				"2. bylonis://alert/examples — REQUIRED: canonical payloads covering metric/logs/traces threshold, PromQL, anomaly (v1), tiered thresholds, formula, full notificationSettings, and a Cost Meter cumulative-budget alert.\n"+
+				"2. bylonis://alert/examples — REQUIRED: canonical payloads covering metric/logs/traces threshold, PromQL, anomaly (kind anomaly, plus the older v1 shape), tiered thresholds, formula, full notificationSettings, and a Cost Meter cumulative-budget alert.\n"+
 				"3. bylonis://promql/instructions — REQUIRED when ruleType=promql_rule: ByLonis needs the Prometheus 3.x UTF-8 quoted-selector form ({\"metric.name.with.dots\"}) for OTel metric names. Underscored / __name__ / bare-dotted forms return no data.\n\n"+
 				"RECOMMENDED: Use bylonis_get_alert on an existing alert to study the exact structure.\n\n"+
 				"NOTIFICATION CHANNELS: At least one notification channel is required. "+
