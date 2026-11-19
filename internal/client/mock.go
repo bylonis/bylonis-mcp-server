@@ -20,6 +20,7 @@ type MockClient struct {
 	GetThemeFn                  func(ctx context.Context, path string) (json.RawMessage, error)
 	SendThemeFn                 func(ctx context.Context, method, path string, body any) (json.RawMessage, error)
 	GetFleetFn                  func(ctx context.Context, path string, query url.Values) (json.RawMessage, error)
+	GetCapacityResourcesFn      func(ctx context.Context, query url.Values) (json.RawMessage, error)
 	GetReadOnlyFn               func(ctx context.Context, path string, query url.Values) (json.RawMessage, error)
 	PostReadOnlyFn              func(ctx context.Context, path string, query url.Values, body []byte) (json.RawMessage, error)
 	GetAlertByRuleIDFn          func(ctx context.Context, ruleID string) (json.RawMessage, error)
@@ -293,6 +294,13 @@ func (m *MockClient) TestNotificationChannel(ctx context.Context, receiverJSON [
 func (m *MockClient) GetFleet(ctx context.Context, path string, query url.Values) (json.RawMessage, error) {
 	if m.GetFleetFn != nil {
 		return m.GetFleetFn(ctx, path, query)
+	}
+	return json.RawMessage(`{}`), nil
+}
+
+func (m *MockClient) GetCapacityResources(ctx context.Context, query url.Values) (json.RawMessage, error) {
+	if m.GetCapacityResourcesFn != nil {
+		return m.GetCapacityResourcesFn(ctx, query)
 	}
 	return json.RawMessage(`{}`), nil
 }

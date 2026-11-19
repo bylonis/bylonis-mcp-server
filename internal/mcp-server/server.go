@@ -302,6 +302,7 @@ func (m *MCPServer) registerHandlers(s *server.MCPServer) {
 	m.handler.RegisterTracesHandlers(s)
 	m.handler.RegisterNotificationChannelHandlers(s)
 	m.handler.RegisterFleetHandlers(s)
+	m.handler.RegisterCapacityHandlers(s)
 	m.handler.RegisterProposalHandlers(s)
 	m.handler.RegisterThemeHandlers(s)
 	m.handler.RegisterInsightHandlers(s)
