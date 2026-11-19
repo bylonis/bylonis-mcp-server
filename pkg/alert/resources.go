@@ -9,7 +9,7 @@ The alert is created via POST /api/v2/rules.
 
 Schemas supported:
 - **v2alpha1** for threshold_rule and promql_rule — structured thresholds + evaluation + notificationSettings. Applied automatically.
-- **v1** for anomaly_rule — top-level evalWindow/frequency with condition.op/matchType/target/algorithm/seasonality. No thresholds block.
+- **v2alpha1** for anomaly_rule too, with thresholds.kind = anomaly (see the Anomaly Alerts section). The older v1 anomaly shape (top-level evalWindow/frequency with condition.op/matchType/target, no thresholds) is still accepted.
 
 ## CRITICAL: Before Creating an Alert
 1. ALWAYS read bylonis://alert/examples for complete working payloads (metric, logs and traces thresholds, PromQL, anomaly, tiered thresholds, notification settings and a Cost Meter cumulative-budget example).
@@ -20,7 +20,7 @@ Schemas supported:
 ## Quick Workflow: From User Intent to Payload
 A repeatable mental model for going from a user request ("alert me when login p99 > 2s") to a valid payload:
 1. **Signal → alertType.** CPU, memory, latency histograms, request rate → METRIC_BASED_ALERT. Log lines or log volume → LOGS_BASED_ALERT. Span latency or span error rate → TRACES_BASED_ALERT. Exception counts → EXCEPTIONS_BASED_ALERT.
-2. **Pick ruleType.** Default to threshold_rule. Use promql_rule only if the user provided a PromQL expression. Use anomaly_rule only for metric deviation detection — it uses a different (v1) schema; see the Anomaly Alerts section.
+2. **Pick ruleType.** Default to threshold_rule. Use promql_rule only if the user provided a PromQL expression. Use anomaly_rule when the user wants to know when a series behaves unusually for that time of day or week, without a fixed number (traffic spike at 3 a.m., drop at peak); see the Anomaly Alerts section.
 3. **Pick compositeQuery.queryType + matching envelope type.** See the "Query envelope type" table.
 4. **Pick the aggregation shape.** Metrics → object {metricName, timeAggregation, spaceAggregation}. Logs/traces → {expression: "count()" | "p99(duration_nano)" | …}.
 5. **Write the filter.** See "Filter & Having Expressions" for the operator set. Prefer resource attributes (service.name, deployment.environment, k8s.*) — the backend indexes them.
@@ -42,7 +42,7 @@ A repeatable mental model for going from a user request ("alert me when login p9
 |-------|--------|-------------|-------------|
 | threshold_rule | v2alpha1 | Compare series against a static threshold | Works with all alert types |
 | promql_rule | v2alpha1 | Evaluate a PromQL expression | queryType must be "promql" |
-| anomaly_rule | **v1** | Detect anomalies via an anomaly function (e.g. z-score) | Only with METRIC_BASED_ALERT; omit thresholds, set top-level evalWindow/frequency, set condition.op/matchType/target/algorithm/seasonality |
+| anomaly_rule | v2alpha1 | Fire when the value leaves its expected range | Builder queries (metrics, logs, traces); thresholds.kind anomaly; rolling evaluation, window a multiple of the resolution |
 
 ## Composite Query Structure
 
@@ -68,7 +68,7 @@ The envelope type must match compositeQuery.queryType:
 - aggregations: see "Aggregation shapes" below
 - filter: {expression: "service.name = 'frontend' AND http.status_code >= 500"}
 - groupBy: [{name, fieldContext: "resource" | "attribute", fieldDataType}]
-- functions: post-query transforms. Required for anomaly_rule: [{name: "anomaly", args: [{name: "z_score_threshold", value: 2}]}]
+- functions: post-query transforms. Not needed for anomaly_rule: the rule applies its own model.
 - disabled: true when the query is used only as an input to a formula
 
 ### PromQL / ClickHouse query spec (envelope type=promql or clickhouse_sql)
@@ -316,41 +316,41 @@ Example: deployment.environment = "production" AND threshold.name = "critical"
 - Use {{$labels.key}} for label values (e.g. {{$labels.k8s_pod_name}}).
 - Common annotations: description, summary, runbook.
 
-## Anomaly Alerts (ruleType: anomaly_rule — v1 schema)
-Anomaly rules use the **v1 schema** today. Do NOT set thresholds, evaluation, notificationSettings, or schemaVersion.
+## Anomaly Alerts (ruleType: anomaly_rule)
+For each series of the selected query, ByLonis predicts every point from its history (Holt-Winters, with the seasonality of the rule) and scores it with a signed z = (value − expected) / σ, where σ is a robust deviation of the past errors. A tier fires when N of the M points of the evaluation window pass its z in its direction. It needs no fixed threshold.
 
-Required fields:
-- alertType: METRIC_BASED_ALERT
-- ruleType: anomaly_rule
-- **evalWindow** (top-level): e.g. 24h
-- **frequency** (top-level): e.g. 3h
-- condition.compositeQuery: normal builder query with spec.functions carrying an anomaly function, e.g. [{name: "anomaly", args: [{name: "z_score_threshold", value: 2}]}]
-- condition.op / condition.matchType / condition.target: same accepted values as threshold.op / matchType / target. Applied to the anomaly score.
-- condition.algorithm: e.g. "standard" (z-score based).
-- condition.seasonality: hourly, daily, or weekly.
-- condition.requireMinPoints + condition.requiredNumPoints are recommended to guard against noisy intervals.
+Fields (v2alpha1):
+- ruleType: anomaly_rule; alertType: METRIC_BASED_ALERT, LOGS_BASED_ALERT or TRACES_BASED_ALERT. Builder queries or formulas only (no PromQL or SQL).
+- condition.thresholds: {kind: "anomaly", spec: [{name, z, direction, minAnomalous, recoveryZ, channels}]}
+  - z (required): deviations, 0.5–10.
+  - direction: up (above the expected value), down (below) or both (default).
+  - minAnomalous: N of «N of M»; M = evalWindow / resolution. 1 = at least once (default), M = always. 2 of 3 skips single-point noise.
+  - recoveryZ: an active alert recovers only when no point passes it (hysteresis). Default max(z − 1, 0.5).
+- condition.seasonality: none, hourly (5m resolution only), daily (business hours vs nights) or weekly (weekdays vs weekends).
+- condition.algorithm: "standard" or omitted.
+- condition.anomaly (optional): resolution "5m" (default) or "1h"; minExpected (minimum traffic in the unit of the query, e.g. 0.5 for calls/s: lower points are not evaluated); acceptLevelShiftAfter (Go duration 1h–168h, default 24h: a sustained level change becomes normal); baselineFrom (unix ms, to reset the baseline after a deploy).
+- evaluation: rolling; evalWindow a multiple of the resolution (at most 288 points), frequency between 1m and the resolution. Default 15m every 5m.
 
 ### Anomaly tuning
-- **algorithm**: only "standard" is supported today (z-score based prediction per seasonal bucket).
-- **seasonality**: "hourly" for short-period patterns, "daily" for business-hours / off-hours patterns, "weekly" for weekend-vs-weekday traffic.
-- **z_score_threshold** (in spec.functions args): controls the anomaly function's sensitivity.
+| z | Sensitivity | Use case |
+|---|-------------|----------|
+| 4 | Low | Only strong anomalies — few false positives |
+| 3 | Medium (default) | Most series |
+| 2 | High | Noisy; for well-behaved series |
 
-  | Value | Sensitivity | Use case |
-  |-------|-------------|----------|
-  | 4.0 | Conservative | Only the strongest anomalies — minimal false positives |
-  | 3.0 | Balanced (recommended) | Default choice for most series |
-  | 2.5 | Sensitive | Catch moderate deviations |
-  | 2.0 | Very sensitive | Noisy; reserve for low-volume or tightly-behaved series |
+- Warning and critical are two tiers with different z (e.g. warning z=3 with 2 of 3 points, critical z=4 with 1).
+- History: the rule needs 2 cycles (2 hours hourly, 2 days daily, 14 days weekly). Until then it compares without seasonality; its alerts carry the label anomaly_learning="true" and {{$learning}} says how far it is. Retention is 30 days, so weekly gets about 4 cycles.
+- Low-volume series: set condition.anomaly.minExpected; one failed request on a tiny series is a huge z.
+- Templates: {{$value}} real value, {{$expected}}, {{$lower}}, {{$upper}} (the band at the tier's z), {{$z}}, {{$seasonality}}, {{$learning}}.
 
-- **Scoring**: anomaly_score = |actual_value − predicted_value| / stddev(current_season). The alert fires when this score satisfies the condition.op / condition.target comparison (e.g. op="above", target=3 ≈ "score above 3 standard deviations").
-- **evalWindow** should span at least one seasonal cycle so the predictor has enough history (≥24h for daily seasonality, ≥7d for weekly).
+The older v1 shape is still accepted: top-level evalWindow (a multiple of 5m) and frequency (1m–5m), condition.op/matchType/target (target = z, op below = down, outside_bounds = both; matchType at_least_once or all_the_times), algorithm and seasonality, no thresholds.
 
-See bylonis://alert/examples → "metric_anomaly" for a complete payload.
+See bylonis://alert/examples → "metric_anomaly" (kind anomaly) and "metric_anomaly_v1" for complete payloads.
 
 ## Absent-data alerting
 Set condition.alertOnAbsent=true to fire when no series is returned. condition.absentFor is in **minutes** (equivalent to consecutive evaluation cycles when frequency is 1m). Example: absentFor=15 fires after 15 minutes of no data.
 
-## Auto-Applied Defaults (threshold_rule / promql_rule only)
+## Auto-Applied Defaults (threshold_rule / promql_rule; anomaly_rule with kind anomaly gets evaluation 15m every 5m, or 3h every 1h at the 1h resolution)
 - version → "v5"
 - schemaVersion → "v2alpha1"
 - evaluation → {kind: "rolling", spec: {evalWindow: "5m0s", frequency: "1m0s"}}
@@ -550,18 +550,24 @@ PromQL expression instead of the builder. Dotted OTEL resource attributes are qu
 }
 ` + "```" + `
 
-## 4. metric_anomaly — anomaly rule (v1 schema)
-Anomaly rules are not yet supported under schemaVersion v2alpha1, so this example uses the **v1 shape**: top-level evalWindow/frequency, condition.op/matchType/target/algorithm/seasonality at the condition level, and an anomaly function inside the builder-query spec. No thresholds block.
+## 4. metric_anomaly — anomaly rule (kind anomaly)
+Fires when the calls of a service leave their usual band for that time of day. ByLonis predicts each 5-minute point from the history of the series (daily seasonality: 7 days) and scores it with a signed z = (value − expected) / σ. Each severity in thresholds.spec has:
+- **z**: the deviations that fire it, 0.5–10. Sensitivity presets: 2 high, 3 medium, 4 low.
+- **direction**: up, down or both (default).
+- **minAnomalous**: N of «N of M», how many of the M points of the window (evalWindow / resolution) must pass z. 1 is «at least once», M is «always». Default 1.
+- **recoveryZ**: an active alert recovers when no point passes it (hysteresis). Default max(z − 1, 0.5).
+
+condition.anomaly is optional: resolution 5m (default) or 1h; minExpected (minimum traffic in the unit of the query: points expected under it are not evaluated); acceptLevelShiftAfter (1h–168h, default 24h); baselineFrom (unix ms: «reset baseline» after a deploy). seasonality: none, hourly (5m only), daily or weekly. The window must be a multiple of the resolution and the frequency between 1m and the resolution. Works on metrics, logs and traces builder queries and formulas, not PromQL or SQL. The rule needs 2 cycles of history (2 days for daily); until then it compares without seasonality and its alerts carry the label anomaly_learning. Templates can use {{$expected}}, {{$lower}}, {{$upper}}, {{$z}}, {{$seasonality}} and {{$learning}}; {{$value}} is the real value.
 
 ` + "```" + `json
 {
-  "alert": "Anomalous drop in ingested spans",
+  "alert": "Anomalous calls to checkout",
   "alertType": "METRIC_BASED_ALERT",
-  "description": "Detect an abrupt drop in span ingestion using a z-score anomaly function",
+  "description": "Calls per second of the checkout service out of their usual band",
   "ruleType": "anomaly_rule",
   "version": "v5",
-  "evalWindow": "24h",
-  "frequency": "3h",
+  "schemaVersion": "v2alpha1",
+  "evaluation": {"kind": "rolling", "spec": {"evalWindow": "15m", "frequency": "5m"}},
   "condition": {
     "compositeQuery": {
       "queryType": "builder",
@@ -570,12 +576,60 @@ Anomaly rules are not yet supported under schemaVersion v2alpha1, so this exampl
         {
           "type": "builder_query",
           "spec": {
-            "name": "A", "signal": "metrics", "stepInterval": 21600,
+            "name": "A", "signal": "metrics",
+            "aggregations": [{"metricName": "bylonis_calls_total", "timeAggregation": "rate", "spaceAggregation": "sum"}],
+            "filter": {"expression": "service.name = 'checkout'"},
+            "groupBy": [{"name": "service.name", "fieldContext": "resource", "fieldDataType": "string"}]
+          }
+        }
+      ]
+    },
+    "selectedQueryName": "A",
+    "algorithm": "standard",
+    "seasonality": "daily",
+    "anomaly": {"resolution": "5m", "minExpected": 0.5},
+    "thresholds": {
+      "kind": "anomaly",
+      "spec": [
+        {"name": "critical", "z": 4, "direction": "both", "minAnomalous": 1, "channels": ["on-call"]},
+        {"name": "warning", "z": 3, "recoveryZ": 2, "direction": "both", "minAnomalous": 2, "channels": ["team"]}
+      ]
+    }
+  },
+  "notificationSettings": {"renotify": {"enabled": true, "interval": "4h", "alertStates": ["firing"]}},
+  "labels": {"severity": "critical"},
+  "annotations": {
+    "description": "{{$service.name}}: {{$value}} calls/s, expected {{$expected}} ({{$lower}}–{{$upper}}), z {{$z}}.",
+    "summary": "Anomalous calls to {{$service.name}}"
+  }
+}
+` + "```" + `
+
+## 4b. metric_anomaly_v1 — anomaly rule (older v1 shape, still accepted)
+Prefer kind anomaly above. The v1 shape has top-level evalWindow/frequency and condition.op/matchType/target/algorithm/seasonality, and no thresholds block: target is z, op the direction (below fires on drops, outside_bounds on both), matchType at_least_once or all_the_times. It works at the 5-minute resolution: the window must be a multiple of 5m (at most 24h) and the frequency between 1m and 5m. The anomaly function in the query is optional; the rule replaces it with its own parameters.
+
+` + "```" + `json
+{
+  "alert": "Anomalous drop in ingested spans",
+  "alertType": "METRIC_BASED_ALERT",
+  "description": "Detect an abrupt drop in span ingestion",
+  "ruleType": "anomaly_rule",
+  "version": "v5",
+  "evalWindow": "15m",
+  "frequency": "5m",
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A", "signal": "metrics",
             "aggregations": [{"metricName": "otelcol_receiver_accepted_spans", "timeAggregation": "rate", "spaceAggregation": "sum"}],
-            "filter": {"expression": "tenant_tier = 'premium'"},
             "groupBy": [{"name": "tenant_id", "fieldContext": "attribute", "fieldDataType": "string"}],
             "functions": [
-              {"name": "anomaly", "args": [{"name": "z_score_threshold", "value": 2}]}
+              {"name": "anomaly", "args": [{"name": "z_score_threshold", "value": 3}]}
             ],
             "legend": "{{tenant_id}}"
           }
@@ -584,17 +638,15 @@ Anomaly rules are not yet supported under schemaVersion v2alpha1, so this exampl
     },
     "op": "below",
     "matchType": "all_the_times",
-    "target": 2,
+    "target": 3,
     "algorithm": "standard",
     "seasonality": "daily",
-    "selectedQueryName": "A",
-    "requireMinPoints": true,
-    "requiredNumPoints": 3
+    "selectedQueryName": "A"
   },
   "labels": {"severity": "warning"},
   "preferredChannels": ["slack-ingestion"],
   "annotations": {
-    "description": "Ingestion rate for tenant {{$tenant_id}} is anomalously low (z-score {{$value}}).",
+    "description": "Ingestion for tenant {{$tenant_id}} is anomalously low: {{$value}} spans/s, expected {{$expected}} (z {{$z}}).",
     "summary": "Span ingestion anomaly"
   }
 }

@@ -147,7 +147,11 @@ func Validate(jsonBytes []byte) ([]byte, error) {
 	// Anomaly rules use the v1 schema (top-level evalWindow/frequency,
 	// condition.op/matchType/target). They must not carry a v2alpha1
 	// schemaVersion or an evaluation block.
-	if strVal(rule, "ruleType") != "anomaly_rule" {
+	switch {
+	case isAnomalyKind(rule):
+		applyAnomalyDefaults(rule)
+		applyV2Defaults(rule)
+	case strVal(rule, "ruleType") != "anomaly_rule":
 		applyV2Defaults(rule)
 	}
 
@@ -233,12 +237,17 @@ func validateCondition(rule map[string]any, errs *ValidationError) {
 	hasThresholds := mapVal(cond, "thresholds") != nil
 	hasAlertOnAbsent := boolVal(cond, "alertOnAbsent")
 
-	if isAnomaly {
+	anomalyKind := isAnomaly && strVal(mapVal(cond, "thresholds"), "kind") == "anomaly"
+	switch {
+	case anomalyKind:
+		// v2alpha1 (bylonis#901): thresholds.kind = anomaly.
+		validateAnomalyKind(rule, cond, errs)
+	case isAnomaly:
 		if hasThresholds {
-			errs.Add("condition.thresholds", "must be omitted for anomaly_rule (v1 schema); use condition.op/matchType/target/algorithm/seasonality at the condition level instead")
+			errs.Add("condition.thresholds", "for anomaly_rule use kind anomaly (z, direction, minAnomalous per severity), or omit thresholds and use the v1 condition.op/matchType/target/algorithm/seasonality")
 		}
 		validateAnomalyFields(rule, cond, errs)
-	} else if !hasThresholds && !hasAlertOnAbsent {
+	case !hasThresholds && !hasAlertOnAbsent:
 		errs.Add("condition.thresholds", "is required (v2alpha1 schema); use condition.thresholds with kind and spec array")
 	}
 
@@ -324,7 +333,7 @@ func validateCondition(rule map[string]any, errs *ValidationError) {
 	}
 
 	// Validate v2alpha1 thresholds structure (skipped for anomaly).
-	if hasThresholds {
+	if hasThresholds && !isAnomaly {
 		thresholds := mapVal(cond, "thresholds")
 		if strVal(thresholds, "kind") == "" {
 			errs.Add("condition.thresholds.kind", "is required (use 'basic')")
@@ -395,6 +404,16 @@ func validateHoldDuration(rule map[string]any, errs *ValidationError) {
 }
 
 func validateEvaluation(rule map[string]any, errs *ValidationError) {
+	if strVal(rule, "ruleType") == "anomaly_rule" && isAnomalyKind(rule) {
+		// The anomaly kind (bylonis#901) uses a rolling evaluation; an omitted one is defaulted later.
+		if raw, ok := rule["evaluation"]; ok && raw != nil {
+			eval, isMap := raw.(map[string]any)
+			if !isMap || strVal(eval, "kind") != "rolling" {
+				errs.Add("evaluation.kind", "must be rolling for an anomaly rule")
+			}
+		}
+		return
+	}
 	if strVal(rule, "ruleType") == "anomaly_rule" {
 		// Anomaly rules use the v1 schema (top-level evalWindow/frequency) and must
 		// not carry a v2alpha1 evaluation block.
@@ -451,10 +470,10 @@ func validateEvaluation(rule map[string]any, errs *ValidationError) {
 // seasonality. The compositeQuery.queries must carry an anomaly function spec.
 func validateAnomalyFields(rule, cond map[string]any, errs *ValidationError) {
 	if strVal(rule, "evalWindow") == "" {
-		errs.Add("evalWindow", "is required for anomaly_rule (v1 schema). Use a Go duration string, e.g. 24h")
+		errs.Add("evalWindow", "is required for anomaly_rule (v1 schema). Use a Go duration string, a multiple of 5m, e.g. 15m")
 	}
 	if strVal(rule, "frequency") == "" {
-		errs.Add("frequency", "is required for anomaly_rule (v1 schema). Use a Go duration string, e.g. 3h")
+		errs.Add("frequency", "is required for anomaly_rule (v1 schema). Use a Go duration string between 1m and 5m, e.g. 5m")
 	}
 
 	op := strVal(cond, "op")
@@ -478,8 +497,24 @@ func validateAnomalyFields(rule, cond map[string]any, errs *ValidationError) {
 	if strVal(cond, "algorithm") == "" {
 		errs.Add("condition.algorithm", "is required for anomaly_rule (e.g. standard)")
 	}
-	if strVal(cond, "seasonality") == "" {
-		errs.Add("condition.seasonality", "is required for anomaly_rule (hourly, daily, or weekly)")
+	if s := strVal(cond, "seasonality"); s == "" {
+		errs.Add("condition.seasonality", "is required for anomaly_rule (none, hourly, daily, or weekly)")
+	} else if !validAnomalySeasonality[s] {
+		errs.Addf("condition.seasonality", "must be none, hourly, daily or weekly; got %q", s)
+	}
+
+	// The rule works at the 5-minute resolution (bylonis ADR-001 D4, D10): the window is a multiple of 5m with at
+	// most 288 points, and the frequency between 1m and 5m.
+	resolution := 5 * time.Minute
+	if w := strVal(rule, "evalWindow"); w != "" {
+		if d, err := time.ParseDuration(w); err != nil || d%resolution != 0 || d/resolution < 1 || d/resolution > anomalyMaxWindow {
+			errs.Addf("evalWindow", "must be a multiple of 5m, at most 24h, for anomaly_rule; got %q", w)
+		}
+	}
+	if f := strVal(rule, "frequency"); f != "" {
+		if d, err := time.ParseDuration(f); err != nil || d < time.Minute || d > resolution {
+			errs.Addf("frequency", "must be between 1m and 5m for anomaly_rule (a new 5-minute point each 5m); got %q", f)
+		}
 	}
 }
 
@@ -511,9 +546,10 @@ func validateCrossConstraints(rule map[string]any, errs *ValidationError) {
 	alertType := strVal(rule, "alertType")
 	ruleType := strVal(rule, "ruleType")
 
-	// anomaly_rule only works with METRIC_BASED_ALERT
-	if ruleType == "anomaly_rule" && alertType != "" && alertType != "METRIC_BASED_ALERT" {
-		errs.Addf("ruleType", "anomaly_rule can only be used with METRIC_BASED_ALERT, got alertType=%q", alertType)
+	// The v1 anomaly_rule only works with METRIC_BASED_ALERT; the anomaly kind (bylonis#901) works on any builder
+	// query: metrics, logs or traces.
+	if ruleType == "anomaly_rule" && !isAnomalyKind(rule) && alertType != "" && alertType != "METRIC_BASED_ALERT" {
+		errs.Addf("ruleType", "anomaly_rule in the v1 shape can only be used with METRIC_BASED_ALERT, got alertType=%q; use thresholds.kind anomaly for logs or traces", alertType)
 	}
 
 	// promql_rule requires queryType=promql

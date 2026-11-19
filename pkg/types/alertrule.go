@@ -40,12 +40,13 @@ type UpdateAlertInput struct {
 // AlertRule is the payload for creating an alert rule via POST /api/v2/rules.
 // It matches the ByLonis PostableRule structure. Threshold and PromQL rules use
 // the v2alpha1 schema (structured thresholds + evaluation + notificationSettings).
-// Anomaly rules use the v1 schema: top-level evalWindow/frequency with
-// condition.op/matchType/target/algorithm/seasonality (no thresholds block).
+// Anomaly rules use v2alpha1 with thresholds.kind=anomaly (bylonis#901); the older
+// v1 shape (top-level evalWindow/frequency with condition.op/matchType/target/
+// algorithm/seasonality and no thresholds block) is still accepted.
 type AlertRule struct {
 	Alert             string            `json:"alert" jsonschema:"required" jsonschema_extras:"description=Name of the alert rule. Must be unique and descriptive."`
 	AlertType         AlertType         `json:"alertType" jsonschema:"required" jsonschema_extras:"description=Signal type: METRIC_BASED_ALERT or LOGS_BASED_ALERT or TRACES_BASED_ALERT or EXCEPTIONS_BASED_ALERT."`
-	RuleType          RuleType          `json:"ruleType" jsonschema:"required" jsonschema_extras:"description=Evaluation type: threshold_rule (compare against value) or promql_rule (PromQL expression) or anomaly_rule (anomaly detection on metrics)."`
+	RuleType          RuleType          `json:"ruleType" jsonschema:"required" jsonschema_extras:"description=Evaluation type: threshold_rule (compare against value) or promql_rule (PromQL expression) or anomaly_rule (fires when the value leaves its expected range for that time of day or week; metrics or logs or traces builder queries)."`
 	Description       string            `json:"description,omitempty" jsonschema_extras:"description=Human-readable description of what this alert monitors."`
 	Condition         AlertCondition    `json:"condition" jsonschema:"required" jsonschema_extras:"description=Alert condition containing the query and threshold configuration."`
 	Labels            map[string]string `json:"labels,omitempty" jsonschema_extras:"description=Labels for the alert rule. MUST include severity (one of critical, error, warning, info). When thresholds is used, threshold.name (e.g. critical) acts as the routing tier - set labels.severity to match the highest tier you want this rule to carry. Additional labels like team/service/environment enable routing policies."`
@@ -56,13 +57,13 @@ type AlertRule struct {
 	Version           string            `json:"version,omitempty" jsonschema_extras:"description=API version. Always v5. Set automatically if omitted."`
 	HoldDuration      string            `json:"holdDuration,omitempty" jsonschema_extras:"description=How long the condition of a series must hold before its alert fires (Go duration string between 0s and 24h: 5m or 10m or 1h). Until then the alert is pending and nothing is sent; a series that recovers before does not fire. Like the for of Prometheus. Use it on rules that flap. Omit or 0s to fire at once. Valid for every ruleType. On update keep the value of the saved rule unless the user asks to change it."`
 
-	// v1-schema fields (used only when ruleType=anomaly_rule).
-	EvalWindow string `json:"evalWindow,omitempty" jsonschema_extras:"description=v1 schema only (anomaly_rule). Evaluation window as a Go duration string (e.g. 5m, 15m, 1h, 24h). For threshold/promql rules, use evaluation.spec.evalWindow instead."`
-	Frequency  string `json:"frequency,omitempty" jsonschema_extras:"description=v1 schema only (anomaly_rule). Evaluation frequency as a Go duration string (e.g. 1m, 5m, 3h). For threshold/promql rules, use evaluation.spec.frequency instead."`
+	// v1-schema fields (used only by the older anomaly_rule shape without thresholds).
+	EvalWindow string `json:"evalWindow,omitempty" jsonschema_extras:"description=Older v1 anomaly_rule shape only. Evaluation window as a Go duration string, a multiple of 5m (e.g. 15m, 1h). Prefer thresholds.kind anomaly with evaluation.spec.evalWindow."`
+	Frequency  string `json:"frequency,omitempty" jsonschema_extras:"description=Older v1 anomaly_rule shape only. Evaluation frequency between 1m and 5m (e.g. 5m). Prefer thresholds.kind anomaly with evaluation.spec.frequency."`
 
 	// v2alpha1 schema fields (used for threshold_rule and promql_rule).
-	Evaluation           *AlertEvaluation      `json:"evaluation,omitempty" jsonschema_extras:"description=v2alpha1 only. Evaluation configuration. kind=rolling (sliding window) auto-generated with defaults (5m/1m) if omitted; kind=cumulative (daily/monthly reset) for period-total alerts such as daily error counts or Cost Meter spend budgets. Skipped entirely for anomaly_rule which uses top-level evalWindow/frequency instead."`
-	SchemaVersion        string                `json:"schemaVersion,omitempty" jsonschema_extras:"description=Schema version. Set to v2alpha1 automatically for threshold_rule/promql_rule. Must be omitted (or empty) for anomaly_rule."`
+	Evaluation           *AlertEvaluation      `json:"evaluation,omitempty" jsonschema_extras:"description=v2alpha1 only. Evaluation configuration. kind=rolling (sliding window) auto-generated with defaults (5m/1m) if omitted; kind=cumulative (daily/monthly reset) for period-total alerts such as daily error counts or Cost Meter spend budgets. For anomaly_rule with thresholds.kind anomaly: rolling only; evalWindow a multiple of condition.anomaly.resolution (5m default) and frequency between 1m and the resolution; defaults to 15m every 5m. Omit for the older v1 anomaly shape."`
+	SchemaVersion        string                `json:"schemaVersion,omitempty" jsonschema_extras:"description=Schema version. Set to v2alpha1 automatically for threshold_rule/promql_rule and for anomaly_rule with thresholds.kind anomaly. Omit only for the older v1 anomaly shape."`
 	NotificationSettings *NotificationSettings `json:"notificationSettings,omitempty" jsonschema_extras:"description=v2alpha1 only. Notification settings - controls grouping and re-notification behavior. Auto-generated with defaults if omitted."`
 }
 
@@ -78,18 +79,20 @@ type AlertCondition struct {
 	RequireMinPoints  bool   `json:"requireMinPoints,omitempty" jsonschema_extras:"description=Require a minimum number of data points before evaluating the condition."`
 	RequiredNumPoints int    `json:"requiredNumPoints,omitempty" jsonschema_extras:"description=Minimum number of data points required when requireMinPoints is true."`
 
-	// v1-schema anomaly-rule fields. Used only when the parent AlertRule has
-	// ruleType=anomaly_rule. All six are required together in that case and
-	// replace the v2alpha1 thresholds block.
-	Op          string      `json:"op,omitempty" jsonschema_extras:"description=v1 (anomaly_rule) only. Comparison operator applied to the anomaly score - same accepted values as threshold.op (above, below, equal, not_equal, above_or_equal, below_or_equal, outside_bounds)."`
-	MatchType   string      `json:"matchType,omitempty" jsonschema_extras:"description=v1 (anomaly_rule) only. Match type - same accepted values as threshold.matchType (at_least_once, all_the_times, on_average/avg, in_total/sum, last)."`
-	Target      interface{} `json:"target,omitempty" jsonschema_extras:"description=v1 (anomaly_rule) only. Threshold value compared against the anomaly score."`
-	Algorithm   string      `json:"algorithm,omitempty" jsonschema_extras:"description=v1 (anomaly_rule) only. Anomaly detection algorithm. Accepted values include standard (z-score based). Used only when ruleType=anomaly_rule."`
-	Seasonality string      `json:"seasonality,omitempty" jsonschema_extras:"description=v1 (anomaly_rule) only. Seasonality pattern for anomaly detection: hourly, daily, or weekly."`
+	// v1-schema anomaly-rule fields. Used only by the older anomaly_rule shape
+	// (no thresholds block); op/matchType/target replace it.
+	Op          string      `json:"op,omitempty" jsonschema_extras:"description=Older v1 anomaly_rule shape only. Comparison operator applied to the anomaly score - same accepted values as threshold.op (above, below, equal, not_equal, above_or_equal, below_or_equal, outside_bounds)."`
+	MatchType   string      `json:"matchType,omitempty" jsonschema_extras:"description=Older v1 anomaly_rule shape only. Match type - same accepted values as threshold.matchType (at_least_once, all_the_times, on_average/avg, in_total/sum, last)."`
+	Target      interface{} `json:"target,omitempty" jsonschema_extras:"description=Older v1 anomaly_rule shape only. The z threshold."`
+	Algorithm   string      `json:"algorithm,omitempty" jsonschema_extras:"description=anomaly_rule only. standard (the only one) or omitted."`
+	Seasonality string      `json:"seasonality,omitempty" jsonschema_extras:"description=anomaly_rule only. The cycle the expected value follows: none, hourly (5m resolution only), daily or weekly. The rule needs 2 cycles of history (2 days for daily, 14 for weekly); until then it compares without seasonality and its alerts carry the label anomaly_learning."`
+
+	// Options of the model of an anomaly_rule with thresholds.kind anomaly (bylonis#901).
+	Anomaly *AnomalyOptions `json:"anomaly,omitempty" jsonschema_extras:"description=anomaly_rule with thresholds.kind anomaly only. Options of the model; all optional."`
 
 	// Threshold configuration (v2alpha1 schema). Required for threshold_rule
 	// and promql_rule unless alertOnAbsent is true. Omit for anomaly_rule.
-	Thresholds *AlertThresholds `json:"thresholds,omitempty" jsonschema_extras:"description=v2alpha1 only (threshold_rule, promql_rule). Each threshold level (critical, error, warning, info) can route to different notification channels. Required unless alertOnAbsent is true. Omit entirely for anomaly_rule - use condition.op/matchType/target there instead."`
+	Thresholds *AlertThresholds `json:"thresholds,omitempty" jsonschema_extras:"description=v2alpha1. Each threshold level (critical, error, warning, info) can route to different notification channels. kind basic for threshold_rule/promql_rule (required unless alertOnAbsent is true); kind anomaly for anomaly_rule (z, direction, minAnomalous, recoveryZ per level). Omit only for the older v1 anomaly shape."`
 }
 
 // AlertCompositeQuery contains the queries that define what data to monitor.
@@ -120,7 +123,7 @@ type AlertQuerySpec struct {
 	GroupBy      []AlertGroupByField  `json:"groupBy,omitempty" jsonschema_extras:"description=Fields to group by. Grouped dimensions appear as labels in alert notifications."`
 	Order        []AlertOrderField    `json:"order,omitempty" jsonschema_extras:"description=Order by specification."`
 	Having       *AlertQueryFilter    `json:"having,omitempty" jsonschema_extras:"description=Having clause to filter aggregation results."`
-	Functions    []AlertQueryFunction `json:"functions,omitempty" jsonschema_extras:"description=Post-query functions applied to the series. Required for anomaly_rule: wrap with {name: anomaly, args: [{name: z_score_threshold, value: 2}]}."`
+	Functions    []AlertQueryFunction `json:"functions,omitempty" jsonschema_extras:"description=Post-query functions applied to the series. Not needed for anomaly_rule: the rule applies its own model."`
 
 	// For promql / clickhouse_sql query types
 	Query  string `json:"query,omitempty" jsonschema_extras:"description=PromQL or ClickHouse SQL query string. Used when queryType is promql or clickhouse_sql. PromQL with OTel dotted metric names MUST use the Prometheus 3.x UTF-8 quoted-selector form: {\"metric.name.with.dots\"}. Underscored / __name__ / bare-dotted forms return no data. Read bylonis://promql/instructions for the full guide (histogram patterns dotted labels pre-flight checklist)."`
@@ -182,18 +185,23 @@ type AlertOrderKey struct {
 
 // AlertThresholds holds multi-threshold configuration for v2 schema alerts.
 type AlertThresholds struct {
-	Kind string           `json:"kind" jsonschema:"required" jsonschema_extras:"description=Threshold kind. Currently only basic is supported."`
+	Kind string           `json:"kind" jsonschema:"required" jsonschema_extras:"description=Threshold kind: basic (threshold_rule, promql_rule) or anomaly (anomaly_rule)."`
 	Spec []BasicThreshold `json:"spec" jsonschema:"required" jsonschema_extras:"description=Array of threshold specifications. Each threshold can route to different channels."`
 }
 
-// BasicThreshold defines a single threshold level with routing.
+// BasicThreshold defines a single threshold level with routing. With kind anomaly (bylonis#901) a level uses z,
+// direction, minAnomalous and recoveryZ instead of target, op and matchType.
 type BasicThreshold struct {
 	Name           string   `json:"name" jsonschema:"required" jsonschema_extras:"description=Threshold tier: critical, error, warning, or info. Also used as the routing label - alerts carry threshold_name equal to this value."`
-	Target         *float64 `json:"target" jsonschema:"required" jsonschema_extras:"description=Threshold value to compare against."`
+	Target         *float64 `json:"target,omitempty" jsonschema_extras:"description=kind basic (required): threshold value to compare against."`
 	TargetUnit     string   `json:"targetUnit,omitempty" jsonschema_extras:"description=Unit of the threshold target value. If different from compositeQuery.unit the backend converts between them during evaluation. Common values: percent, ms, s, bytes, ns."`
-	RecoveryTarget *float64 `json:"recoveryTarget" jsonschema_extras:"description=Hysteresis - value at which a firing alert is considered resolved. Useful to avoid flapping near the threshold (e.g. target=80 percent, recoveryTarget=75 percent). Use null to use the threshold target itself as the recovery point."`
-	MatchType      string   `json:"matchType" jsonschema:"required" jsonschema_extras:"description=How to evaluate the threshold. Canonical: at_least_once, all_the_times, on_average, in_total, last. Aliases accepted: avg (=on_average), sum (=in_total). Numeric 1-5 also accepted but discouraged."`
-	CompareOp      string   `json:"op" jsonschema:"required" jsonschema_extras:"description=Comparison operator. Canonical literals: above, below, equal, not_equal, above_or_equal, below_or_equal, outside_bounds. Short forms accepted: eq, not_eq, above_or_eq, below_or_eq. Symbolic accepted: >, <, =, !=, >=, <=. Numeric 1-7 also accepted but discouraged."`
+	RecoveryTarget *float64 `json:"recoveryTarget,omitempty" jsonschema_extras:"description=Hysteresis - value at which a firing alert is considered resolved. Useful to avoid flapping near the threshold (e.g. target=80 percent, recoveryTarget=75 percent). Use null to use the threshold target itself as the recovery point."`
+	MatchType      string   `json:"matchType,omitempty" jsonschema_extras:"description=kind basic (required): how to evaluate the threshold. Canonical: at_least_once, all_the_times, on_average, in_total, last. Aliases accepted: avg (=on_average), sum (=in_total). Numeric 1-5 also accepted but discouraged."`
+	CompareOp      string   `json:"op,omitempty" jsonschema_extras:"description=kind basic (required): comparison operator. Canonical literals: above, below, equal, not_equal, above_or_equal, below_or_equal, outside_bounds. Short forms accepted: eq, not_eq, above_or_eq, below_or_eq. Symbolic accepted: >, <, =, !=, >=, <=. Numeric 1-7 also accepted but discouraged."`
+	Z              *float64 `json:"z,omitempty" jsonschema_extras:"description=kind anomaly (required): fire when the signed z score (value − expected) / σ passes this many deviations. 0.5 to 10; presets 2 high sensitivity, 3 medium, 4 low."`
+	RecoveryZ      *float64 `json:"recoveryZ,omitempty" jsonschema_extras:"description=kind anomaly: an active alert recovers when no point of the window passes this (hysteresis). Greater than 0 and lower than z; default max(z − 1, 0.5)."`
+	Direction      string   `json:"direction,omitempty" jsonschema_extras:"description=kind anomaly: up (above the expected value) or down (below) or both (default)."`
+	MinAnomalous   int      `json:"minAnomalous,omitempty" jsonschema_extras:"description=kind anomaly: N of «N of M» - how many of the M points of the window (evalWindow / resolution) must pass z. 1 (default) is at least once, M is always. 2 of 3 avoids single-point noise."`
 	Channels       []string `json:"channels,omitempty" jsonschema_extras:"description=Notification channel names for this threshold tier. Use bylonis_list_notification_channels to discover available names. Ignored when notificationSettings.usePolicy is true."`
 }
 
@@ -232,4 +240,12 @@ type Renotify struct {
 	Enabled     bool     `json:"enabled" jsonschema_extras:"description=Whether re-notification is enabled."`
 	Interval    string   `json:"interval,omitempty" jsonschema_extras:"description=Re-notification interval as a Go duration string (e.g. 15m, 30m, 1h, 4h)."`
 	AlertStates []string `json:"alertStates,omitempty" jsonschema_extras:"description=Alert states that trigger re-notification. Accepted values: firing, nodata. Other values are rejected."`
+}
+
+// AnomalyOptions are the model options of an anomaly_rule with thresholds.kind anomaly (bylonis ADR-001 D2, D4, D5).
+type AnomalyOptions struct {
+	Resolution            string   `json:"resolution,omitempty" jsonschema_extras:"description=Fixed step of the rule: 5m (default) or 1h."`
+	MinExpected           *float64 `json:"minExpected,omitempty" jsonschema_extras:"description=Minimum traffic in the unit of the query (e.g. 0.5 calls/s): points whose expected value is lower are not evaluated. Avoids noise on low-volume series."`
+	AcceptLevelShiftAfter string   `json:"acceptLevelShiftAfter,omitempty" jsonschema_extras:"description=A sustained level change is taken as normal after this Go duration, 1h to 168h. Default 24h."`
+	BaselineFrom          *int64   `json:"baselineFrom,omitempty" jsonschema_extras:"description=Unix milliseconds: the model does not train on anything older (reset baseline after a deploy or an accepted level change). Set it to now with bylonis_update_alert."`
 }

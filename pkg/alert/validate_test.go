@@ -683,8 +683,8 @@ func minimalValidAnomalyRule() map[string]any {
 		"alert":      "Anomalous ingest drop",
 		"alertType":  "METRIC_BASED_ALERT",
 		"ruleType":   "anomaly_rule",
-		"evalWindow": "24h",
-		"frequency":  "3h",
+		"evalWindow": "15m",
+		"frequency":  "5m",
 		"condition": map[string]any{
 			"compositeQuery": map[string]any{
 				"queryType": "builder",
@@ -733,11 +733,11 @@ func TestValidate_AnomalyRule_Accepted(t *testing.T) {
 		t.Errorf("evaluation block must be absent for anomaly_rule (v1 shape)")
 	}
 	// But top-level evalWindow/frequency are preserved verbatim.
-	if parsed["evalWindow"] != "24h" {
-		t.Errorf("expected evalWindow=24h, got %v", parsed["evalWindow"])
+	if parsed["evalWindow"] != "15m" {
+		t.Errorf("expected evalWindow=15m, got %v", parsed["evalWindow"])
 	}
-	if parsed["frequency"] != "3h" {
-		t.Errorf("expected frequency=3h, got %v", parsed["frequency"])
+	if parsed["frequency"] != "5m" {
+		t.Errorf("expected frequency=5m, got %v", parsed["frequency"])
 	}
 }
 

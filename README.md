@@ -128,7 +128,7 @@ The server's variables are listed under [Environment Variables](#environment-var
 | `bylonis_list_alert_rules` | List configured alert rules, including inactive/OK and disabled rules |
 | `bylonis_get_alert` | Get an alert rule definition by ID via GET /api/v2/rules/{ruleId} |
 | `bylonis_get_alert_history` | Get alert state history timeline for a rule, or how many times every rule fired (without `ruleId`) |
-| `bylonis_create_alert` | Create an alert rule via POST /api/v2/rules; v2alpha1 for threshold/promql, v1 for anomaly |
+| `bylonis_create_alert` | Create an alert rule via POST /api/v2/rules; v2alpha1 for threshold/promql and for anomaly (`thresholds.kind` anomaly) |
 | `bylonis_update_alert` | Update an alert rule by UUIDv7 via PUT /api/v2/rules/{ruleId} |
 | `bylonis_delete_alert` | Delete an alert rule by UUIDv7 via DELETE /api/v2/rules/{ruleId} |
 | `bylonis_acknowledge_alert` | Acknowledge a firing alert (someone works on it) via POST /api/v2/alert_acknowledgements; note required |
@@ -475,7 +475,8 @@ Create a new alert rule in ByLonis via `POST /api/v2/rules`.
 - **Parameters**: JSON payload matching the ByLonis alert rule schema.
 - **Schema varies by `ruleType`**:
   - `threshold_rule` / `promql_rule` → **v2alpha1** (structured `condition.thresholds`, `evaluation`, `notificationSettings`).
-  - `anomaly_rule` → **v1** schema: top-level `evalWindow` and `frequency`; `condition.op`/`matchType`/`target`/`algorithm`/`seasonality`; anomaly function inside `compositeQuery.queries[].spec.functions`. Omit `thresholds`, `evaluation`, `schemaVersion`.
+  - `anomaly_rule` → **v2alpha1** with `condition.thresholds.kind` = `anomaly` (bylonis#901): per tier `z` (2 high, 3 medium, 4 low sensitivity), `direction` (up/down/both), `minAnomalous` (N of the M points of the window) and an optional `recoveryZ`; `condition.seasonality` (none/hourly/daily/weekly) and an optional `condition.anomaly` (`resolution` 5m or 1h, `minExpected`, `acceptLevelShiftAfter`, `baselineFrom`). The evaluation is rolling: `evalWindow` a multiple of the resolution and `frequency` between 1m and the resolution (default 15m every 5m). It works on metrics, logs and traces builder queries.
+  - The older **v1** anomaly shape (top-level `evalWindow`/`frequency`, `condition.op`/`matchType`/`target`/`algorithm`/`seasonality`, no `thresholds`) is still accepted, with a window that is a multiple of 5m and a frequency between 1m and 5m.
 - **Tip**: Read MCP resources `bylonis://alert/instructions` and `bylonis://alert/examples` (ten canonical payloads plus a Cost Meter cumulative-budget example) before composing payloads. For `promql_rule`, also read `bylonis://promql/instructions` — OTel dotted metric names require the Prometheus 3.x UTF-8 quoted-selector form.
 - **`holdDuration`** (bylonis#594, any `ruleType`): how long the condition must hold before the alert fires, between `0s` and `24h`, like the `for` of Prometheus.
 - **Fleet rules**: rules with the label `fleet` belong to Inventario → Alertas. ByLonis rejects creating, updating or deleting them through the API with `400 fleet_managed_rule` (bylonis#589).
