@@ -365,10 +365,6 @@ func (h *Handler) handleGetAlertHistory(ctx context.Context, req mcp.CallToolReq
 		Offset: offset,
 		Limit:  limit,
 		Order:  order,
-		Filters: types.AlertHistoryFilters{
-			Items: []interface{}{},
-			Op:    "AND",
-		},
 	}
 
 	h.logger.DebugContext(ctx, "Tool called: bylonis_get_alert_history",

@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -899,194 +900,108 @@ func TestListServices(t *testing.T) {
 }
 
 func TestGetAlertHistory(t *testing.T) {
+	v2 := map[string]any{
+		"status": "success",
+		"data": map[string]any{
+			"total":      2,
+			"nextCursor": "abc",
+			"items": []map[string]any{
+				{"unixMilli": 1641031200000, "state": "firing", "value": 85.5,
+					"labels": []map[string]any{{"key": map[string]any{"name": "service"}, "value": "frontend"}}},
+			},
+		},
+	}
 	tests := []struct {
 		name          string
 		ruleID        string
 		request       types.AlertHistoryRequest
-		resp          map[string]interface{}
 		statusCode    int
 		expectedError bool
-		expectedData  []map[string]interface{}
+		wantQuery     map[string]string
+		wantCursor    *struct{ Offset, Limit int }
 	}{
 		{
-			name:   "successful alert history retrieval",
-			ruleID: "ruleid-abc",
-			request: types.AlertHistoryRequest{
-				Start:  1640995200000,
-				End:    1641081600000,
-				Offset: 0,
-				Limit:  20,
-				Order:  "desc",
-				Filters: types.AlertHistoryFilters{
-					Items: []interface{}{},
-					Op:    "AND",
-				},
-			},
-			resp: map[string]interface{}{
-				"status": "success",
-				"data": []map[string]interface{}{
-					{
-						"timestamp": "2022-01-01T10:00:00Z",
-						"state":     "firing",
-						"value":     85.5,
-						"labels": map[string]interface{}{
-							"service":  "frontend",
-							"severity": "warning",
-						},
-					},
-					{
-						"timestamp": "2022-01-01T11:00:00Z",
-						"state":     "resolved",
-						"value":     45.2,
-						"labels": map[string]interface{}{
-							"service":  "frontend",
-							"severity": "warning",
-						},
-					},
-				},
-			},
-			statusCode:    http.StatusOK,
-			expectedError: false,
-			expectedData: []map[string]interface{}{
-				{
-					"timestamp": "2022-01-01T10:00:00Z",
-					"state":     "firing",
-					"value":     85.5,
-					"labels": map[string]interface{}{
-						"service":  "frontend",
-						"severity": "warning",
-					},
-				},
-				{
-					"timestamp": "2022-01-01T11:00:00Z",
-					"state":     "resolved",
-					"value":     45.2,
-					"labels": map[string]interface{}{
-						"service":  "frontend",
-						"severity": "warning",
-					},
-				},
-			},
+			name:       "first page, from the API v2 with the parameters in the URL",
+			ruleID:     "ruleid-abc",
+			request:    types.AlertHistoryRequest{Start: 1640995200000, End: 1641081600000, Limit: 20, Order: "desc", State: "firing"},
+			statusCode: http.StatusOK,
+			wantQuery:  map[string]string{"start": "1640995200000", "end": "1641081600000", "limit": "20", "order": "desc", "state": "firing", "cursor": ""},
 		},
 		{
-			name:   "server error",
-			ruleID: "ruleid-abc",
-			request: types.AlertHistoryRequest{
-				Start:  1640995200000,
-				End:    1641081600000,
-				Offset: 0,
-				Limit:  20,
-				Order:  "desc",
-				Filters: types.AlertHistoryFilters{
-					Items: []interface{}{},
-					Op:    "AND",
-				},
-			},
-			resp:          map[string]interface{}{"status": "error", "message": "Internal server error"},
+			name:       "an offset goes as the cursor of the API v2",
+			ruleID:     "ruleid-abc",
+			request:    types.AlertHistoryRequest{Start: 1640995200000, End: 1641081600000, Offset: 40, Limit: 20, Order: "asc"},
+			statusCode: http.StatusOK,
+			wantQuery:  map[string]string{"limit": "20", "order": "asc", "state": ""},
+			wantCursor: &struct{ Offset, Limit int }{40, 20},
+		},
+		{
+			name:          "server error",
+			ruleID:        "ruleid-abc",
+			request:       types.AlertHistoryRequest{Start: 1, End: 2, Limit: 20},
 			statusCode:    http.StatusInternalServerError,
 			expectedError: true,
 		},
 		{
-			name:   "rule not found",
-			ruleID: "non-existent-rule",
-			request: types.AlertHistoryRequest{
-				Start:  1640995200000,
-				End:    1641081600000,
-				Offset: 0,
-				Limit:  20,
-				Order:  "desc",
-				Filters: types.AlertHistoryFilters{
-					Items: []interface{}{},
-					Op:    "AND",
-				},
-			},
-			resp:          map[string]interface{}{"status": "error", "message": "Rule not found"},
+			name:          "rule not found",
+			ruleID:        "non-existent-rule",
+			request:       types.AlertHistoryRequest{Start: 1, End: 2, Limit: 20},
 			statusCode:    http.StatusNotFound,
 			expectedError: true,
-		},
-		{
-			name:   "empty response",
-			ruleID: "ruleid-abc",
-			request: types.AlertHistoryRequest{
-				Start:  1640995200000,
-				End:    1641081600000,
-				Offset: 0,
-				Limit:  20,
-				Order:  "desc",
-				Filters: types.AlertHistoryFilters{
-					Items: []interface{}{},
-					Op:    "AND",
-				},
-			},
-			resp:          map[string]interface{}{"status": "success", "data": []map[string]interface{}{}},
-			statusCode:    http.StatusOK,
-			expectedError: false,
-			expectedData:  []map[string]interface{}{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assert.Equal(t, http.MethodPost, r.Method)
-				expectedPath := fmt.Sprintf("/api/v1/rules/%s/history/timeline", tt.ruleID)
-				assert.Equal(t, expectedPath, r.URL.Path)
-
-				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+				assert.Equal(t, http.MethodGet, r.Method)
+				assert.Equal(t, fmt.Sprintf("/api/v2/rules/%s/history/timeline", tt.ruleID), r.URL.Path)
 				assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
-
-				var requestBody types.AlertHistoryRequest
-				err := json.NewDecoder(r.Body).Decode(&requestBody)
-				require.NoError(t, err)
-				assert.Equal(t, tt.request.Start, requestBody.Start)
-				assert.Equal(t, tt.request.End, requestBody.End)
-				assert.Equal(t, tt.request.Offset, requestBody.Offset)
-				assert.Equal(t, tt.request.Limit, requestBody.Limit)
-				assert.Equal(t, tt.request.Order, requestBody.Order)
-
+				q := r.URL.Query()
+				for k, v := range tt.wantQuery {
+					assert.Equal(t, v, q.Get(k), k)
+				}
+				if tt.wantCursor != nil {
+					raw, err := base64.RawURLEncoding.DecodeString(q.Get("cursor"))
+					require.NoError(t, err)
+					var c struct {
+						Offset int `json:"offset"`
+						Limit  int `json:"limit"`
+					}
+					require.NoError(t, json.Unmarshal(raw, &c))
+					assert.Equal(t, tt.wantCursor.Offset, c.Offset)
+					assert.Equal(t, tt.wantCursor.Limit, c.Limit)
+				}
 				w.WriteHeader(tt.statusCode)
-				responseBody, _ := json.Marshal(tt.resp)
-				_, _ = w.Write(responseBody)
+				if tt.statusCode == http.StatusOK {
+					body, _ := json.Marshal(v2)
+					_, _ = w.Write(body)
+				} else {
+					_, _ = w.Write([]byte(`{"status":"error","error":{"message":"boom"}}`))
+				}
 			}))
 			defer server.Close()
 
-			logger := logpkg.New("debug")
-			client := NewClient(logger, server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
-
-			ctx := context.Background()
-			result, err := client.GetAlertHistory(ctx, tt.ruleID, tt.request)
-
+			client := NewClient(logpkg.New("debug"), server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
+			result, err := client.GetAlertHistory(context.Background(), tt.ruleID, tt.request)
 			if tt.expectedError {
 				assert.Error(t, err)
 				assert.Nil(t, result)
-			} else {
-				var response map[string]interface{}
-				err = json.Unmarshal(result, &response)
-				require.NoError(t, err)
-
-				assert.Equal(t, "success", response["status"])
-				if data, ok := response["data"].([]interface{}); ok {
-					assert.Equal(t, len(tt.expectedData), len(data))
-					for i, expectedHistory := range tt.expectedData {
-						if i < len(data) {
-							if history, ok := data[i].(map[string]interface{}); ok {
-								assert.Equal(t, expectedHistory["timestamp"], history["timestamp"])
-								assert.Equal(t, expectedHistory["state"], history["state"])
-								assert.Equal(t, expectedHistory["value"], history["value"])
-								if labels, ok := history["labels"].(map[string]interface{}); ok {
-									expectedLabels := expectedHistory["labels"].(map[string]interface{})
-									assert.Equal(t, expectedLabels["service"], labels["service"])
-									assert.Equal(t, expectedLabels["severity"], labels["severity"])
-								}
-							}
-						}
-					}
-				}
+				return
 			}
+			require.NoError(t, err)
+			var resp struct {
+				Data struct {
+					Total      int    `json:"total"`
+					NextCursor string `json:"nextCursor"`
+				} `json:"data"`
+			}
+			require.NoError(t, json.Unmarshal(result, &resp))
+			assert.Equal(t, 2, resp.Data.Total)
+			assert.Equal(t, "abc", resp.Data.NextCursor)
 		})
 	}
 }
-
 func TestQueryBuilderV5(t *testing.T) {
 	tests := []struct {
 		name          string

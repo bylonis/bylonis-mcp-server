@@ -132,3 +132,18 @@ func TestHandleGetAlertHistory_SummaryWhenListingRulesFails(t *testing.T) {
 		t.Fatal("expected an error result when the rules cannot be listed")
 	}
 }
+
+// Las etiquetas de la API v2 (bylonis#1185) llegan como lista de clave y valor.
+func TestSeriesLabelsOfTheAPIv2(t *testing.T) {
+	raw := json.RawMessage(`[{"key":{"name":"service.name"},"value":"checkout"},{"key":{"name":"code"},"value":500},{"key":{"name":"__name__"},"value":"x"},{"key":{"name":"alertname"},"value":"y"}]`)
+	got := seriesLabels(raw)
+	if len(got) != 2 || got["service.name"] != "checkout" || got["code"] != "500" {
+		t.Fatalf("labels of the API v2: %v", got)
+	}
+	if seriesLabels(json.RawMessage(`[]`)) != nil {
+		t.Fatal("an empty list has no labels")
+	}
+	if m := seriesLabels(json.RawMessage(`{"host":"h1"}`)); m["host"] != "h1" {
+		t.Fatalf("labels as a map: %v", m)
+	}
+}

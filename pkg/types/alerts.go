@@ -6,20 +6,14 @@ import (
 )
 
 // AlertHistoryRequest is the request payload for alert history
+// La API v2 (bylonis#1185) los lee de la URL; Offset se pasa como su cursor.
 type AlertHistoryRequest struct {
-	Start   int64               `json:"start"`
-	End     int64               `json:"end"`
-	State   string              `json:"state,omitempty"`
-	Offset  int                 `json:"offset"`
-	Limit   int                 `json:"limit"`
-	Order   string              `json:"order"`
-	Filters AlertHistoryFilters `json:"filters"`
-}
-
-// AlertHistoryFilters is filters for alert history
-type AlertHistoryFilters struct {
-	Items []interface{} `json:"items"`
-	Op    string        `json:"op"`
+	Start  int64  `json:"start"`
+	End    int64  `json:"end"`
+	State  string `json:"state,omitempty"`
+	Offset int    `json:"offset"`
+	Limit  int    `json:"limit"`
+	Order  string `json:"order"`
 }
 
 // Alert contains only essential information
