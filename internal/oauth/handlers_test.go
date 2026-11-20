@@ -35,7 +35,7 @@ func newBufferedLogger(buf *bytes.Buffer, level slog.Level) *slog.Logger {
 
 func TestOAuthAuthorizationFlow(t *testing.T) {
 	backendServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/user/me" {
+		if r.URL.Path != "/api/v2/users/me" {
 			http.NotFound(w, r)
 			return
 		}
@@ -220,7 +220,7 @@ func TestOAuthAuthorizationFlow(t *testing.T) {
 func TestOAuthAuthorizationFlowServiceAccountFallback(t *testing.T) {
 	backendServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/api/v1/user/me":
+		case "/api/v2/users/me":
 			// Service-account key triggers 404 on user/me.
 			w.WriteHeader(http.StatusNotFound)
 		case "/api/v1/service_accounts/me":
@@ -328,7 +328,7 @@ func TestOAuthAuthorizationFlowServiceAccountFallback(t *testing.T) {
 
 func TestAuthorizeSubmitRejectsInvalidByLonisCredentials(t *testing.T) {
 	backendServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/user/me" {
+		if r.URL.Path != "/api/v2/users/me" {
 			http.NotFound(w, r)
 			return
 		}
@@ -417,7 +417,7 @@ func TestAuthorizeSubmitRejectsInvalidByLonisCredentials(t *testing.T) {
 
 func TestAuthorizeSubmitStripsByLonisURLPathQueryFragment(t *testing.T) {
 	backendServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/user/me" {
+		if r.URL.Path != "/api/v2/users/me" {
 			http.NotFound(w, r)
 			return
 		}
@@ -545,7 +545,7 @@ func TestRegisterClientRejectsUnsupportedCustomRedirectScheme(t *testing.T) {
 
 func TestAuthorizePageUsesIssuerPathPrefixForFormAndCSRFCookie(t *testing.T) {
 	backendServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/user/me" {
+		if r.URL.Path != "/api/v2/users/me" {
 			http.NotFound(w, r)
 			return
 		}
@@ -661,7 +661,7 @@ func (c *capturingEmitter) snapshot() []capturedEmission {
 
 func TestOAuthEmitterFiresOnAuthorizeAndTokenIssue(t *testing.T) {
 	backendServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/user/me" {
+		if r.URL.Path != "/api/v2/users/me" {
 			http.NotFound(w, r)
 			return
 		}
@@ -834,7 +834,7 @@ func TestWriteOAuthErrorRecordsFailureMetric(t *testing.T) {
 
 func TestAuthorizeSubmitUnauthorizedRecordsFailureMetric(t *testing.T) {
 	backendServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/user/me" {
+		if r.URL.Path != "/api/v2/users/me" {
 			http.NotFound(w, r)
 			return
 		}

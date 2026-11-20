@@ -153,7 +153,7 @@ func TestListAlertRules(t *testing.T) {
 func TestValidateCredentials(t *testing.T) {
 	tests := []struct {
 		name            string
-		userMeStatus    int // status for /api/v1/user/me (always hit first)
+		userMeStatus    int // status for /api/v2/users/me (always hit first)
 		saStatus        int // status for /api/v1/service_accounts/me (only hit on user/me 502)
 		expectedError   bool
 		checkErr        func(t *testing.T, err error)
@@ -219,7 +219,7 @@ func TestValidateCredentials(t *testing.T) {
 				assert.Equal(t, http.MethodGet, r.Method)
 
 				switch r.URL.Path {
-				case "/api/v1/user/me":
+				case "/api/v2/users/me":
 					userMeRequests++
 					w.WriteHeader(tt.userMeStatus)
 				case "/api/v1/service_accounts/me":
@@ -556,94 +556,6 @@ func TestDoRequest_NonRetryableStatusOmitsRetriesExhausted(t *testing.T) {
 	assert.True(t, sawTerminalWarn, "expected terminal non-retryable warning log")
 }
 
-func TestListMetricKeys(t *testing.T) {
-	tests := []struct {
-		name          string
-		resp          map[string]interface{}
-		statusCode    int
-		expectedError bool
-		expectedData  []string
-	}{
-		{
-			name: "successful metric keys retrieval",
-			resp: map[string]interface{}{
-				"status": "success",
-				"data": []string{
-					"cpu_data",
-					"memory_data",
-				},
-			},
-			statusCode:    http.StatusOK,
-			expectedError: false,
-			expectedData: []string{
-				"cpu_data",
-				"memory_data",
-			},
-		},
-		{
-			name:          "server error",
-			resp:          map[string]interface{}{"status": "error", "message": "Internal server error"},
-			statusCode:    http.StatusInternalServerError,
-			expectedError: true,
-		},
-		{
-			name:          "unauthorized",
-			resp:          map[string]interface{}{"status": "error", "message": "Unauthorized"},
-			statusCode:    http.StatusUnauthorized,
-			expectedError: true,
-		},
-		{
-			name:          "empty response",
-			resp:          map[string]interface{}{"status": "success", "data": []string{}},
-			statusCode:    http.StatusOK,
-			expectedError: false,
-			expectedData:  []string{},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assert.Equal(t, http.MethodGet, r.Method)
-				assert.Equal(t, "/api/v1/metrics/filters/keys", r.URL.Path)
-
-				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-				assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
-
-				w.WriteHeader(tt.statusCode)
-				responseBody, _ := json.Marshal(tt.resp)
-				_, _ = w.Write(responseBody)
-			}))
-			defer server.Close()
-
-			logger := logpkg.New("debug")
-			client := NewClient(logger, server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
-
-			ctx := context.Background()
-			result, err := client.ListMetricKeys(ctx)
-
-			if tt.expectedError {
-				assert.Error(t, err)
-				assert.Nil(t, result)
-			} else {
-				var response map[string]interface{}
-				err = json.Unmarshal(result, &response)
-				require.NoError(t, err)
-
-				assert.Equal(t, "success", response["status"])
-				if data, ok := response["data"].([]interface{}); ok {
-					assert.Equal(t, len(tt.expectedData), len(data))
-					for i, expectedKey := range tt.expectedData {
-						if i < len(data) {
-							assert.Equal(t, expectedKey, data[i])
-						}
-					}
-				}
-			}
-		})
-	}
-}
-
 func TestListDashboards(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -849,11 +761,11 @@ func TestListServices(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, http.MethodPost, r.Method)
-				assert.Equal(t, "/api/v1/services", r.URL.Path)
+				assert.Equal(t, "/api/v2/services", r.URL.Path)
 				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 				assert.Equal(t, "test-api-key", r.Header.Get("BYLONIS-API-KEY"))
 
-				var requestBody map[string]string
+				var requestBody map[string]any
 				err := json.NewDecoder(r.Body).Decode(&requestBody)
 				require.NoError(t, err)
 				assert.Equal(t, tt.start, requestBody["start"])
@@ -876,12 +788,11 @@ func TestListServices(t *testing.T) {
 				assert.Nil(t, result)
 			} else {
 
-				var response map[string]interface{}
-				err = json.Unmarshal(result, &response)
+				// The v2 wraps the list in {status, data}: the client gives the list, as the v1 did.
+				var data []interface{}
+				err = json.Unmarshal(result, &data)
 				require.NoError(t, err)
-
-				assert.Equal(t, "success", response["status"])
-				if data, ok := response["data"].([]interface{}); ok {
+				{
 					assert.Equal(t, len(tt.expectedData), len(data))
 					for i, expectedService := range tt.expectedData {
 						if i < len(data) {
@@ -1881,4 +1792,30 @@ func TestDoRequest_AllowsLargeUnderCapResponse(t *testing.T) {
 	got, err := client.doRequest(context.Background(), http.MethodGet, server.URL, nil, 30*time.Second)
 	require.NoError(t, err)
 	assert.Equal(t, len(body), len(got))
+}
+
+func TestGetServiceTopOperationsV2(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.Equal(t, "/api/v2/service/top_operations", r.URL.Path)
+		var body map[string]any
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&body))
+		assert.Equal(t, "frontend", body["service"])
+		assert.EqualValues(t, topOperationsLimit, body["limit"])
+		_, _ = w.Write([]byte(`{"status":"success","data":[{"name":"GET /api","p99":12.5,"numCalls":40}]}`))
+	}))
+	defer server.Close()
+
+	client := NewClient(logpkg.New("debug"), server.URL, "test-api-key", "BYLONIS-API-KEY", nil)
+	result, err := client.GetServiceTopOperations(context.Background(), "1", "2", "frontend", json.RawMessage("[]"))
+	require.NoError(t, err)
+	var ops []map[string]any
+	require.NoError(t, json.Unmarshal(result, &ops))
+	require.Len(t, ops, 1)
+	assert.Equal(t, "GET /api", ops[0]["name"])
+}
+
+func TestUnwrapData(t *testing.T) {
+	assert.JSONEq(t, `[1,2]`, string(unwrapData(json.RawMessage(`{"status":"success","data":[1,2]}`))))
+	assert.JSONEq(t, `[1,2]`, string(unwrapData(json.RawMessage(`[1,2]`))))
 }

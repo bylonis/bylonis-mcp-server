@@ -137,16 +137,15 @@ func (s *ByLonis) ensureTenantContext(ctx context.Context) context.Context {
 // ByLonis API so the OAuth flow can reject bad API keys or instance URLs before
 // redirecting back to the MCP client.
 //
-// It first tries the user endpoint (/api/v1/user/me). A 404 response indicates
-// the API key belongs to a service account (newer ByLonis releases), so it
-// retries against /api/v1/service_accounts/me. Any other response from user/me
-// is returned directly.
+// It first tries the user endpoint (/api/v2/users/me; the v1 /api/v1/user/me goes away, bylonis#644). A 404
+// response indicates the API key belongs to a service account, so it retries against
+// /api/v1/service_accounts/me. Any other response from users/me is returned directly.
 func (s *ByLonis) ValidateCredentials(ctx context.Context) error {
 	ctx = s.ensureTenantContext(ctx)
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	userURL := fmt.Sprintf("%s/api/v1/user/me", s.baseURL)
+	userURL := fmt.Sprintf("%s/api/v2/users/me", s.baseURL)
 	status, body, err := s.doValidationRequest(ctx, userURL)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "ByLonis credential validation request failed",
@@ -156,7 +155,7 @@ func (s *ByLonis) ValidateCredentials(ctx context.Context) error {
 
 	// 404 means the key is a service-account key; validate via service account endpoint.
 	if status == http.StatusNotFound {
-		s.logger.DebugContext(ctx, "user/me returned non-user status, retrying with service_accounts/me",
+		s.logger.DebugContext(ctx, "users/me returned non-user status, retrying with service_accounts/me",
 			slog.Int("status", status))
 		saURL := fmt.Sprintf("%s/api/v1/service_accounts/me", s.baseURL)
 		status, body, err = s.doValidationRequest(ctx, saURL)
@@ -486,14 +485,6 @@ func (s *ByLonis) ListMetrics(ctx context.Context, start, end int64, limit int, 
 	return s.doRequest(ctx, http.MethodGet, reqURL, nil, DefaultQueryTimeout)
 }
 
-func (s *ByLonis) ListMetricKeys(ctx context.Context) (json.RawMessage, error) {
-	reqURL := fmt.Sprintf("%s/api/v1/metrics/filters/keys", s.baseURL)
-	s.logger.DebugContext(s.ensureTenantContext(ctx), "Making request to ByLonis API",
-		slog.String("method", "GET"),
-		slog.String("endpoint", "/api/v1/metrics/filters/keys"))
-	return s.doRequest(ctx, http.MethodGet, reqURL, nil, DefaultQueryTimeout)
-}
-
 func (s *ByLonis) ListAlerts(ctx context.Context, params types.ListAlertsParams) (json.RawMessage, error) {
 	reqURL := fmt.Sprintf("%s/api/v1/alerts", s.baseURL)
 	if qp := params.QueryParams(); len(qp) > 0 {
@@ -587,23 +578,49 @@ func (s *ByLonis) GetDashboard(ctx context.Context, uuid string) (json.RawMessag
 	return s.doRequest(ctx, http.MethodGet, reqURL, nil, DefaultQueryTimeout)
 }
 
+// ListServices lists the services with their RED metrics (POST /api/v2/services; the v1 goes away, bylonis#644). The v2
+// wraps the list in {status, data}: the callers get the list, as the v1 gave it.
 func (s *ByLonis) ListServices(ctx context.Context, start, end string) (json.RawMessage, error) {
-	reqURL := fmt.Sprintf("%s/api/v1/services", s.baseURL)
-	payload := map[string]string{"start": start, "end": end}
+	reqURL := fmt.Sprintf("%s/api/v2/services", s.baseURL)
+	payload := map[string]any{"start": start, "end": end, "tags": []any{}}
 	bodyBytes, _ := json.Marshal(payload)
 
 	s.logger.DebugContext(s.ensureTenantContext(ctx), "Fetching services from ByLonis",
 		slog.String("start", start), slog.String("end", end))
-	return s.doRequest(ctx, http.MethodPost, reqURL, bytes.NewReader(bodyBytes), DefaultQueryTimeout)
+	body, err := s.doRequest(ctx, http.MethodPost, reqURL, bytes.NewReader(bodyBytes), DefaultQueryTimeout)
+	if err != nil {
+		return nil, err
+	}
+	return unwrapData(body), nil
 }
 
+// topOperationsLimit is the most operations the v2 gives (1–5000); the v1 had no limit.
+const topOperationsLimit = 5000
+
+// GetServiceTopOperations lists the operations of a service (POST /api/v2/service/top_operations; the v1 goes away,
+// bylonis#644). The v2 needs a limit and wraps the list in {status, data}: the callers get the list.
 func (s *ByLonis) GetServiceTopOperations(ctx context.Context, start, end, service string, tags json.RawMessage) (json.RawMessage, error) {
-	reqURL := fmt.Sprintf("%s/api/v1/service/top_operations", s.baseURL)
-	payload := map[string]any{"start": start, "end": end, "service": service, "tags": tags}
+	reqURL := fmt.Sprintf("%s/api/v2/service/top_operations", s.baseURL)
+	payload := map[string]any{"start": start, "end": end, "service": service, "tags": tags, "limit": topOperationsLimit}
 	bodyBytes, _ := json.Marshal(payload)
 
 	s.logger.DebugContext(s.ensureTenantContext(ctx), "Fetching service top operations", slog.String("service", service))
-	return s.doRequest(ctx, http.MethodPost, reqURL, bytes.NewReader(bodyBytes), DefaultQueryTimeout)
+	body, err := s.doRequest(ctx, http.MethodPost, reqURL, bytes.NewReader(bodyBytes), DefaultQueryTimeout)
+	if err != nil {
+		return nil, err
+	}
+	return unwrapData(body), nil
+}
+
+// unwrapData returns the data of a {status, data} response of the API v2, or the body as it is when it is not one.
+func unwrapData(body json.RawMessage) json.RawMessage {
+	var wrapped struct {
+		Data json.RawMessage `json:"data"`
+	}
+	if json.Unmarshal(body, &wrapped) == nil && len(wrapped.Data) > 0 {
+		return wrapped.Data
+	}
+	return body
 }
 
 func (s *ByLonis) QueryBuilderV5(ctx context.Context, body []byte) (json.RawMessage, error) {
