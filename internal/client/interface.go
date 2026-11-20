@@ -51,6 +51,8 @@ type Client interface {
 	// GetFleet reads the inventory and Fleet Control of ByLonis (bylonis#463): a GET under /api/v1/inventory/ or
 	// /api/v1/fleet/, nothing else.
 	GetFleet(ctx context.Context, path string, query url.Values) (json.RawMessage, error)
+	// GetCapacityResources reads the capacity view of ByLonis (bylonis#893, bylonis#1091).
+	GetCapacityResources(ctx context.Context, query url.Values) (json.RawMessage, error)
 	// PostFleet saves a proposal of IA OPS (bylonis#459): a collector configuration validated or saved as a new
 	// version of a fleet, a playbook or its version, or the check of a playbook. Only those paths: never a
 	// deployment nor the approval of a run.

@@ -26,6 +26,17 @@ func (s *ByLonis) GetFleet(ctx context.Context, path string, query url.Values) (
 	return s.doRequest(ctx, http.MethodGet, reqURL, nil, DefaultQueryTimeout)
 }
 
+// GetCapacityResources reads GET /api/v1/capacity/resources: the snapshot of the capacity view (bylonis#893), the
+// resources with a limit sorted by when they fill up. Read only (bylonis#1091).
+func (s *ByLonis) GetCapacityResources(ctx context.Context, query url.Values) (json.RawMessage, error) {
+	reqURL := s.baseURL + "/api/v1/capacity/resources"
+	if len(query) > 0 {
+		reqURL += "?" + query.Encode()
+	}
+	s.logger.DebugContext(s.ensureTenantContext(ctx), "Fetching capacity resources from ByLonis")
+	return s.doRequest(ctx, http.MethodGet, reqURL, nil, DefaultQueryTimeout)
+}
+
 // fleetWrites are the only paths PostFleet sends to: proposals, never what runs them (bylonis#459).
 var fleetWrites = []*regexp.Regexp{
 	regexp.MustCompile(`^/api/v1/fleet/fleets/[0-9a-zA-Z-]+/configs/validate$`),
