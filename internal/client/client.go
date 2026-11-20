@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -617,15 +619,40 @@ func (s *ByLonis) QueryBuilderV5(ctx context.Context, body []byte) (json.RawMess
 	return s.doRequest(ctx, http.MethodPost, reqURL, bytes.NewBuffer(body), DefaultQueryTimeout)
 }
 
+// GetAlertHistory lee la línea temporal de una regla de la API v2 (bylonis#1185): GET con los parámetros en la URL.
+// La v2 pagina por cursor; el offset de la herramienta se pasa como el cursor que da el backend, {offset, limit} en
+// JSON y base64url sin relleno. La respuesta trae items (las etiquetas como lista de clave y valor, y los enlaces a
+// logs o trazas de cada evento), total y nextCursor.
 func (s *ByLonis) GetAlertHistory(ctx context.Context, ruleID string, req types.AlertHistoryRequest) (json.RawMessage, error) {
-	reqURL := fmt.Sprintf("%s/api/v1/rules/%s/history/timeline", s.baseURL, url.PathEscape(ruleID))
-	reqBody, err := json.Marshal(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	q := url.Values{}
+	q.Set("start", strconv.FormatInt(req.Start, 10))
+	q.Set("end", strconv.FormatInt(req.End, 10))
+	if req.State != "" {
+		q.Set("state", req.State)
 	}
+	if req.Limit > 0 {
+		q.Set("limit", strconv.Itoa(req.Limit))
+	}
+	if req.Order != "" {
+		q.Set("order", req.Order)
+	}
+	if req.Offset > 0 {
+		q.Set("cursor", historyCursor(req.Offset, req.Limit))
+	}
+	reqURL := fmt.Sprintf("%s/api/v2/rules/%s/history/timeline?%s", s.baseURL, url.PathEscape(ruleID), q.Encode())
 
 	s.logger.DebugContext(s.ensureTenantContext(ctx), "Fetching alert history", slog.String("ruleID", ruleID))
-	return s.doRequest(ctx, http.MethodPost, reqURL, bytes.NewBuffer(reqBody), DefaultQueryTimeout)
+	return s.doRequest(ctx, http.MethodGet, reqURL, nil, DefaultQueryTimeout)
+}
+
+// historyCursor es el cursor de la línea temporal v2 para una posición: el mismo que devuelve el backend en
+// nextCursor (bylonis pkg/modules/rulestatehistory: encodeCursor).
+func historyCursor(offset, limit int) string {
+	raw, _ := json.Marshal(struct {
+		Offset int `json:"offset"`
+		Limit  int `json:"limit"`
+	}{offset, limit})
+	return base64.RawURLEncoding.EncodeToString(raw)
 }
 
 func (s *ByLonis) CreateAlertRule(ctx context.Context, alertJSON []byte) (json.RawMessage, error) {

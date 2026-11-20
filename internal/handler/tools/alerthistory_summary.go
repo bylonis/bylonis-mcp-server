@@ -47,7 +47,7 @@ type alertHistorySummary struct {
 	Errors       []alertHistoryError `json:"errors,omitempty"`
 }
 
-// timelineResponse is the part of /api/v1/rules/{id}/history/timeline the summary reads.
+// timelineResponse is the part of /api/v2/rules/{id}/history/timeline the summary reads.
 type timelineResponse struct {
 	Data struct {
 		Items []struct {
@@ -93,7 +93,6 @@ func (h *Handler) alertHistorySummary(ctx context.Context, start, end int64) (*m
 			defer func() { <-sem }()
 			body, err := client.GetAlertHistory(ctx, ruleID, types.AlertHistoryRequest{
 				Start: start, End: end, State: "firing", Offset: 0, Limit: 1, Order: "desc",
-				Filters: types.AlertHistoryFilters{Items: []interface{}{}, Op: "AND"},
 			})
 			if err != nil {
 				failures[i] = err.Error()
@@ -151,7 +150,20 @@ func (h *Handler) alertHistorySummary(ctx context.Context, start, end int64) (*m
 // them as an object, or as a JSON string in older servers.
 func seriesLabels(raw json.RawMessage) map[string]string {
 	labels := map[string]string{}
-	if err := json.Unmarshal(raw, &labels); err != nil {
+	// La API v2 (bylonis#1185) da las etiquetas como lista: [{"key": {"name": …}, "value": …}].
+	var list []struct {
+		Key struct {
+			Name string `json:"name"`
+		} `json:"key"`
+		Value any `json:"value"`
+	}
+	if json.Unmarshal(raw, &list) == nil && len(list) > 0 {
+		for _, l := range list {
+			if l.Key.Name != "" {
+				labels[l.Key.Name] = fmt.Sprint(l.Value)
+			}
+		}
+	} else if err := json.Unmarshal(raw, &labels); err != nil {
 		var asString string
 		if json.Unmarshal(raw, &asString) != nil || json.Unmarshal([]byte(asString), &labels) != nil {
 			return nil
