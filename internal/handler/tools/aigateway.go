@@ -144,7 +144,7 @@ func (h *Handler) handleAIGatewayUsage(ctx context.Context, req mcp.CallToolRequ
 			}
 		}
 		if !aiGatewayFilterValue.MatchString(value) {
-			return mcp.NewToolResultError(fmt.Sprintf(`Parameter validation failed: %q has characters a %s does not have`, f, f)), nil
+			return mcp.NewToolResultError(fmt.Sprintf(`Parameter validation failed: %q may only have letters, digits and . _ : / -`, f)), nil
 		}
 		where = append(where, fmt.Sprintf("AND %s = '%s'", aiGatewayGroups[f], value))
 	}
