@@ -135,6 +135,9 @@ The server's variables are listed under [Environment Variables](#environment-var
 | `bylonis_create_maintenance_window` | Silence named alert rules for a fixed window (max 24h, reason required) via POST /api/v1/downtime_schedules |
 | `bylonis_delete_maintenance_window` | Remove a maintenance window via DELETE /api/v1/downtime_schedules/{id} |
 | `bylonis_ask_ia_ops` | Ask IA OPS (the SRE agent) a question; returns its conclusion and evidence. Read-only, costs model tokens. Needs `IA_OPS_URL` |
+| `bylonis_ai_gateway_usage` | AI Gateway usage by team, application, model or provider in a time range: requests, rejected, tokens and cost (USD). Read-only |
+| `bylonis_ai_gateway_pool` | The AI Gateway pool of provider accounts: provider, scope, status, models, RPM and last connection check. Never a credential. Read-only |
+| `bylonis_ai_gateway_budgets` | The AI Gateway budgets with what each spent in its window: percent, remaining, and which are exhausted, stop before 100 % or have a stale report. Read-only |
 | `bylonis_list_dashboards` | List all dashboards with summaries |
 | `bylonis_get_dashboard` | Get full dashboard configuration |
 | `bylonis_create_dashboard` | Create a new dashboard |
@@ -522,6 +525,24 @@ Remove a maintenance window by id (from `bylonis_list_maintenance_windows`). Nee
 Ask IA OPS, the SRE agent of ByLonis, a question (bylonis#1053) and get its conclusion with the evidence it used. Sent to `IA_OPS_URL/ask` with the same credential the client used (`BYLONIS-API-KEY` of a service account, or a session token) and its `X-ByLonis-Client-Source`. IA OPS runs a read-only turn without a user conversation (bounded in time, one at a time, a few per hour per account) and saves it as a conversation of the account (`agente:<name>`). It costs model tokens to the tenant. Registered only when `IA_OPS_URL` is set (e.g. `https://<tenant>.bylonis.ai/ia-ops-api`).
 
 - **Parameters**: `question` (required, 3–2000 characters).
+
+#### `bylonis_ai_gateway_usage`
+
+How much the AI Gateway was used (bylonis#1348), from the gateway's own traces (`service.name` bylonis-aigateway, span `gateway.request`) through `/api/v5/query_range`: requests, rejected requests, unpriced requests, input and output tokens and cost in USD, sorted by cost. Teams come with their name (`/api/v1/ai/teams`) when the caller can read them. The SQL only takes columns from a fixed set and filter values that match `[A-Za-z0-9._:/-]`; anything else is refused before reaching ByLonis.
+
+- **Parameters**: `groupBy` (team, app, model, provider; default `team,app,model`), `team` (id or name), `app`, `model`, `timeRange` (default `24h`), `start`, `end`, `limit` (default 20, at most 200).
+
+#### `bylonis_ai_gateway_pool`
+
+The pool of provider accounts of the AI Gateway (`/api/v1/ai/accounts`, organization and teams): provider, scope and team name, status (active, draining, disabled), endpoint, models, RPM, priority and the last connection check. It leaves out the credential's last four characters and the URL. Needs the permission to read the AI accounts.
+
+- **Parameters**: `provider`, `status` (both optional).
+
+#### `bylonis_ai_gateway_budgets`
+
+The budgets of the AI Gateway (`/api/v1/ai-gateway/budgets`: organization, teams, users, keys and projects) with what each has spent in its current window as the gateway last reported it: limit, spent, reserved, remaining, percent, end of the window, policy and parent. Sorted by percent. `warnings` lists the budgets that are exhausted, that stop before 100 % (what is left is less than the last request reserved), whose report is stale, and those the gateway has not reported yet. Needs the permission to read the AI Gateway administration.
+
+- **Parameters**: `level`, `name` (contains), `minPercent` (all optional).
 
 #### `bylonis_delete_dashboard`
 

@@ -307,6 +307,7 @@ func (m *MCPServer) registerHandlers(s *server.MCPServer) {
 	m.handler.RegisterThemeHandlers(s)
 	m.handler.RegisterInsightHandlers(s)
 	m.handler.RegisterIAOpsHandlers(s)
+	m.handler.RegisterAIGatewayHandlers(s)
 	m.handler.RegisterResourceTemplates(s)
 	prompts.RegisterPrompts(s.AddPrompt)
 }
