@@ -96,3 +96,51 @@ func TestAIGatewayUsageRefusesWhatCouldBreakTheQuery(t *testing.T) {
 	}
 	assert.Empty(t, bodies, "nothing reached ByLonis")
 }
+
+const aiBudgetsAnswer = `{"status":"success","data":[
+ {"id":"b-org","parentId":"","name":"Organización","level":"org","limitUsd":100,"period":"monthly","unlimited":false,"policy":"block","warnAt":[0.8],
+  "usage":{"spentUsd":40,"reservedUsd":0,"remainingUsd":60,"percent":40,"periodStart":"2026-11-01T00:00:00Z","periodEnd":"2026-12-01T00:00:00Z","reportedAt":"2026-11-27T10:00:00Z","stale":false,"lastRequestUsd":0.1,"stopsBeforeLimit":false}},
+ {"id":"b-qa","parentId":"b-org","name":"QA Team IA","level":"team","limitUsd":1,"period":"daily","unlimited":false,"policy":"degrade","warnAt":[],
+  "usage":{"spentUsd":0.97,"reservedUsd":0,"remainingUsd":0.03,"percent":97,"periodStart":"2026-11-27T00:00:00Z","periodEnd":"2026-11-28T00:00:00Z","reportedAt":"2026-11-27T10:00:00Z","stale":true,"lastRequestUsd":0.05,"stopsBeforeLimit":true}},
+ {"id":"b-k","parentId":"b-qa","name":"clave qa","level":"key","limitUsd":0.5,"period":"daily","unlimited":false,"policy":"block","warnAt":[],
+  "usage":{"spentUsd":0.5,"reservedUsd":0,"remainingUsd":0,"percent":100,"periodStart":"2026-11-27T00:00:00Z","periodEnd":"2026-11-28T00:00:00Z","reportedAt":"2026-11-27T10:00:00Z","stale":false,"lastRequestUsd":null,"stopsBeforeLimit":false}},
+ {"id":"b-u","parentId":"b-org","name":"Sin límite","level":"user","limitUsd":0,"period":"monthly","unlimited":true,"policy":"warn","warnAt":[],"usage":null}]}`
+
+func TestAIGatewayBudgetsShowsSpendAndWarnings(t *testing.T) {
+	var paths []string
+	h := newTestHandler(&bylonisclient.MockClient{
+		GetReadOnlyFn: func(_ context.Context, path string, _ url.Values) (json.RawMessage, error) {
+			paths = append(paths, path)
+			return json.RawMessage(aiBudgetsAnswer), nil
+		},
+	})
+	result, err := h.handleAIGatewayBudgets(testCtx(), makeToolRequest("bylonis_ai_gateway_budgets", map[string]any{}))
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+	assert.Equal(t, []string{"/api/v1/ai-gateway/budgets"}, paths)
+	out := resultJSON(t, result)
+	assert.EqualValues(t, 4, out["total"])
+	budgets := out["budgets"].([]any)
+	first, second := budgets[0].(map[string]any), budgets[1].(map[string]any)
+	assert.Equal(t, "clave qa", first["name"], "the highest percent first")
+	assert.Equal(t, true, first["exhausted"])
+	assert.Equal(t, "QA Team IA", first["parent"], "the parent by its name")
+	assert.Equal(t, "QA Team IA", second["name"])
+	assert.Equal(t, true, second["stopsBeforeLimit"])
+	last := budgets[3].(map[string]any)
+	assert.Equal(t, "Sin límite", last["name"], "without a report, last")
+	assert.Equal(t, true, last["noReport"])
+	assert.Nil(t, last["spentUsd"])
+	warnings := out["warnings"].(map[string]any)
+	assert.Equal(t, []any{"clave qa"}, warnings["exhausted"])
+	assert.Equal(t, []any{"QA Team IA"}, warnings["stopsBeforeLimit"])
+	assert.Equal(t, []any{"QA Team IA"}, warnings["stale"])
+	assert.Equal(t, []any{"Sin límite"}, warnings["noReport"])
+
+	result, _ = h.handleAIGatewayBudgets(testCtx(), makeToolRequest("bylonis_ai_gateway_budgets", map[string]any{"minPercent": "90", "level": "team"}))
+	out = resultJSON(t, result)
+	assert.EqualValues(t, 1, out["total"])
+
+	result, _ = h.handleAIGatewayBudgets(testCtx(), makeToolRequest("bylonis_ai_gateway_budgets", map[string]any{"minPercent": "mucho"}))
+	assert.True(t, result.IsError)
+}

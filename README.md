@@ -137,6 +137,7 @@ The server's variables are listed under [Environment Variables](#environment-var
 | `bylonis_ask_ia_ops` | Ask IA OPS (the SRE agent) a question; returns its conclusion and evidence. Read-only, costs model tokens. Needs `IA_OPS_URL` |
 | `bylonis_ai_gateway_usage` | AI Gateway usage by team, application, model or provider in a time range: requests, rejected, tokens and cost (USD). Read-only |
 | `bylonis_ai_gateway_pool` | The AI Gateway pool of provider accounts: provider, scope, status, models, RPM and last connection check. Never a credential. Read-only |
+| `bylonis_ai_gateway_budgets` | The AI Gateway budgets with what each spent in its window: percent, remaining, and which are exhausted, stop before 100 % or have a stale report. Read-only |
 | `bylonis_list_dashboards` | List all dashboards with summaries |
 | `bylonis_get_dashboard` | Get full dashboard configuration |
 | `bylonis_create_dashboard` | Create a new dashboard |
@@ -536,6 +537,12 @@ How much the AI Gateway was used (bylonis#1348), from the gateway's own traces (
 The pool of provider accounts of the AI Gateway (`/api/v1/ai/accounts`, organization and teams): provider, scope and team name, status (active, draining, disabled), endpoint, models, RPM, priority and the last connection check. It leaves out the credential's last four characters and the URL. Needs the permission to read the AI accounts.
 
 - **Parameters**: `provider`, `status` (both optional).
+
+#### `bylonis_ai_gateway_budgets`
+
+The budgets of the AI Gateway (`/api/v1/ai-gateway/budgets`: organization, teams, users, keys and projects) with what each has spent in its current window as the gateway last reported it: limit, spent, reserved, remaining, percent, end of the window, policy and parent. Sorted by percent. `warnings` lists the budgets that are exhausted, that stop before 100 % (what is left is less than the last request reserved), whose report is stale, and those the gateway has not reported yet. Needs the permission to read the AI Gateway administration.
+
+- **Parameters**: `level`, `name` (contains), `minPercent` (all optional).
 
 #### `bylonis_delete_dashboard`
 

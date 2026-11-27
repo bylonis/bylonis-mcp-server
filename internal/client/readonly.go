@@ -23,9 +23,11 @@ var readOnlyGets = []*regexp.Regexp{
 	regexp.MustCompile(`^/api/v2/alert_acknowledgements$`),
 	regexp.MustCompile(`^/api/v1/events$`),
 	regexp.MustCompile(`^/api/v1/downtime_schedules$`),
-	// The AI Gateway (bylonis#1348): the pool of accounts (never their credentials) and the teams, by name.
+	// The AI Gateway (bylonis#1348): the pool of accounts (never their credentials), the teams, by name, and the
+	// budgets with their spend.
 	regexp.MustCompile(`^/api/v1/ai/accounts$`),
 	regexp.MustCompile(`^/api/v1/ai/teams$`),
+	regexp.MustCompile(`^/api/v1/ai-gateway/budgets$`),
 }
 
 // readOnlyPosts are the only paths PostReadOnly sends to: POSTs that save nothing. The patterns of the logs are

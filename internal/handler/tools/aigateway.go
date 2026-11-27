@@ -1,7 +1,7 @@
 package tools
 
-// The AI Gateway of ByLonis (bylonis#1348): how much each team, application and model uses, and the state of the pool
-// of provider accounts, read only, so IA OPS and other agents answer «who spends the most on AI this week?» or «is
+// The AI Gateway of ByLonis (bylonis#1348): how much each team, application and model uses, what each budget has
+// spent in its window, and the state of the pool of provider accounts, read only, so IA OPS and other agents answer «who spends the most on AI this week?» or «is
 // any account of the pool down?» without the operator opening Ajustes → AI Gateway. Never a credential: the pool
 // tool leaves out even the last four characters the API shows.
 
@@ -72,6 +72,20 @@ func (h *Handler) RegisterAIGatewayHandlers(s *server.MCPServer) {
 		mcp.WithString("provider", mcp.Description("Only accounts of this provider (anthropic, openai, gemini, xai, onprem).")),
 		mcp.WithString("status", mcp.Description("Only accounts in this status (active, draining, disabled).")),
 	), h.handleAIGatewayPool)
+
+	addTool(s, mcp.NewTool("bylonis_ai_gateway_budgets",
+		mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithDestructiveHintAnnotation(false),
+		mcp.WithString("searchContext", mcp.Description("The user's original question or search text that triggered this tool call. Always include the user's raw query here for better results.")),
+		mcp.WithDescription("The budgets of the AI Gateway (organization, teams, users, keys and projects) with what each has spent in its current window, as the gateway applies it: "+
+			"limit, spent and reserved USD, what is left, percent, when the window ends, the policy when it runs out (block, degrade, onprem, warn) and three warnings: "+
+			"exhausted, stopsBeforeLimit (what is left is less than the last request reserved, so the next one like it is refused before 100 %) and stale (the gateway has "+
+			"not reported for a while: the figures are the last known). Sorted by percent, the highest first. Use it for «which budget is about to run out?», "+
+			"«how much is left for team X this month?» or to explain a 429 budget_exhausted. Read only; needs the permission to read the AI Gateway administration."),
+		mcp.WithString("level", mcp.Description("Only budgets of this level (org, team, user, key, project).")),
+		mcp.WithString("name", mcp.Description("Only budgets whose name contains this text (case-insensitive).")),
+		mcp.WithString("minPercent", mcp.Description("Only budgets at or above this percent of their limit (e.g. '80').")),
+	), h.handleAIGatewayBudgets)
 }
 
 // aiTeams maps team ids to names and names (lower case) to ids. Empty when the caller cannot read the teams.
@@ -295,4 +309,124 @@ func (h *Handler) handleAIGatewayPool(ctx context.Context, req mcp.CallToolReque
 		return accounts[i].Name < accounts[j].Name
 	})
 	return fleetResult(map[string]any{"accounts": accounts, "byProvider": summary, "total": len(accounts)})
+}
+
+// aiBudget is what the budgets tool returns of a budget.
+type aiBudget struct {
+	Name             string   `json:"name"`
+	Level            string   `json:"level"`
+	Parent           string   `json:"parent,omitempty"`
+	Period           string   `json:"period"`
+	Policy           string   `json:"policy"`
+	Unlimited        bool     `json:"unlimited"`
+	LimitUSD         float64  `json:"limitUsd"`
+	SpentUSD         *float64 `json:"spentUsd"`
+	ReservedUSD      *float64 `json:"reservedUsd,omitempty"`
+	RemainingUSD     *float64 `json:"remainingUsd,omitempty"`
+	Percent          *float64 `json:"percent,omitempty"`
+	PeriodEnd        string   `json:"periodEnd,omitempty"`
+	ReportedAt       string   `json:"reportedAt,omitempty"`
+	LastRequestUSD   *float64 `json:"lastRequestUsd,omitempty"`
+	Exhausted        bool     `json:"exhausted"`
+	StopsBeforeLimit bool     `json:"stopsBeforeLimit"`
+	Stale            bool     `json:"stale"`
+	NoReport         bool     `json:"noReport,omitempty"`
+}
+
+func (h *Handler) handleAIGatewayBudgets(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	args, _ := req.Params.Arguments.(map[string]any)
+	text := func(k string) string { v, _ := args[k].(string); return strings.TrimSpace(strings.ToLower(v)) }
+	minPercent := -1.0
+	if v := text("minPercent"); v != "" {
+		p, err := strconv.ParseFloat(v, 64)
+		if err != nil || p < 0 {
+			return mcp.NewToolResultError(`Parameter validation failed: "minPercent" must be a number, 0 or more`), nil
+		}
+		minPercent = p
+	}
+	client, err := h.GetClient(ctx)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+	raw, err := client.GetReadOnly(ctx, "/api/v1/ai-gateway/budgets", nil)
+	if err != nil {
+		h.logger.ErrorContext(ctx, "AI Gateway budgets failed", logpkg.ErrAttr(err))
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+	var envelope struct {
+		Data []struct {
+			ID        string  `json:"id"`
+			ParentID  string  `json:"parentId"`
+			Name      string  `json:"name"`
+			Level     string  `json:"level"`
+			LimitUSD  float64 `json:"limitUsd"`
+			Period    string  `json:"period"`
+			Unlimited bool    `json:"unlimited"`
+			Policy    string  `json:"policy"`
+			Usage     *struct {
+				SpentUSD         float64  `json:"spentUsd"`
+				ReservedUSD      float64  `json:"reservedUsd"`
+				RemainingUSD     *float64 `json:"remainingUsd"`
+				Percent          *float64 `json:"percent"`
+				PeriodEnd        string   `json:"periodEnd"`
+				ReportedAt       string   `json:"reportedAt"`
+				Stale            bool     `json:"stale"`
+				LastRequestUSD   *float64 `json:"lastRequestUsd"`
+				StopsBeforeLimit bool     `json:"stopsBeforeLimit"`
+			} `json:"usage"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(raw, &envelope); err != nil {
+		return mcp.NewToolResultError("failed to parse response: " + err.Error()), nil
+	}
+	names := map[string]string{}
+	for _, b := range envelope.Data {
+		names[b.ID] = b.Name
+	}
+	budgets := []aiBudget{}
+	warnings := map[string][]string{"exhausted": {}, "stopsBeforeLimit": {}, "stale": {}, "noReport": {}}
+	for _, b := range envelope.Data {
+		if l := text("level"); l != "" && b.Level != l {
+			continue
+		}
+		if n := text("name"); n != "" && !strings.Contains(strings.ToLower(b.Name), n) {
+			continue
+		}
+		out := aiBudget{Name: b.Name, Level: b.Level, Parent: names[b.ParentID], Period: b.Period, Policy: b.Policy,
+			Unlimited: b.Unlimited, LimitUSD: b.LimitUSD}
+		if u := b.Usage; u != nil {
+			spent, reserved := u.SpentUSD, u.ReservedUSD
+			out.SpentUSD, out.ReservedUSD, out.RemainingUSD, out.Percent = &spent, &reserved, u.RemainingUSD, u.Percent
+			out.PeriodEnd, out.ReportedAt, out.LastRequestUSD = u.PeriodEnd, u.ReportedAt, u.LastRequestUSD
+			out.Stale, out.StopsBeforeLimit = u.Stale, u.StopsBeforeLimit
+			out.Exhausted = u.Percent != nil && *u.Percent >= 100
+		} else {
+			out.NoReport = true
+		}
+		if minPercent >= 0 && (out.Percent == nil || *out.Percent < minPercent) {
+			continue
+		}
+		for key, on := range map[string]bool{"exhausted": out.Exhausted, "stopsBeforeLimit": out.StopsBeforeLimit, "stale": out.Stale, "noReport": out.NoReport} {
+			if on {
+				warnings[key] = append(warnings[key], out.Name)
+			}
+		}
+		budgets = append(budgets, out)
+	}
+	percent := func(b aiBudget) float64 {
+		if b.Percent == nil {
+			return -1
+		}
+		return *b.Percent
+	}
+	sort.SliceStable(budgets, func(i, j int) bool {
+		if percent(budgets[i]) != percent(budgets[j]) {
+			return percent(budgets[i]) > percent(budgets[j])
+		}
+		return budgets[i].Name < budgets[j].Name
+	})
+	for _, list := range warnings {
+		sort.Strings(list)
+	}
+	return fleetResult(map[string]any{"budgets": budgets, "warnings": warnings, "total": len(budgets)})
 }
